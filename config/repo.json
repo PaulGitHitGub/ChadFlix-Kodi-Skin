@@ -1,0 +1,120 @@
+{
+  "_comment": "Release 2 (2026-11-14): template with the final snapshot R10.13-republish-compat-2026-11-14 (R10.15a + R10.15b + R10.10.2 + R10.13). Overlays = every shipped set in install order (rolled-back R10.9, R10.9.1, R10.10.1, R10.11b left out; R10.12 MUST stay: its 10 loading images exist only there). MAC1-laptop-layout is NOT in this release (TV-only). Edit repo_slug (and github_user) to rename the GitHub repo; everything else follows. Then run tools/build_repo.py.",
+  "github_user": "PaulGitHitGub",
+  "repo_slug": "ChadFlix-Kodi-Skin",
+  "repository": {
+    "id": "repository.chadflix",
+    "name": "ChadFlix Repository",
+    "version": "1.0.0"
+  },
+  "setup": {
+    "id": "script.chadflix.setup",
+    "name": "ChadFlix Setup",
+    "version": "1.0.2"
+  },
+  "btn_revision": 2,
+  "inputs": {
+    "snapshot": "releases/R10.13-republish-compat-2026-11-14",
+    "asset_overlays": [
+      "staged/mylists-rail/patched",
+      "staged/R8/files",
+      "staged/R8.1-cards/files",
+      "staged/R8.2-trending/files",
+      "staged/R8.3-no-video-button/files",
+      "staged/R8.4-osd-order/files",
+      "staged/R8.5-exit-confirm/files",
+      "staged/R8.6-mdblist-shortcut/files",
+      "staged/R9-movie-page/files",
+      "staged/R9.2-back/files",
+      "staged/R9.1-bursts/files",
+      "staged/R9.3-dead-skin/files",
+      "staged/R9.4-dead-pov/files",
+      "staged/R9.5-open-title/files",
+      "staged/R9.6-one-tab/files",
+      "staged/R10.6-settings-cleanup/files",
+      "staged/R10.6.1-advanced-settings-label/files",
+      "staged/R10-playback/files",
+      "staged/R10.3-playback-choices/files",
+      "staged/R10.4-osd-av/files",
+      "staged/voice-search/R10.7-voice-logo/files",
+      "staged/R10.2-browse/files",
+      "staged/R10.8-gear-sheet/files",
+      "staged/R10.5-continue-watching/files",
+      "staged/R10.10a-season-cards/files",
+      "staged/R10.9b-ratings-labels/files",
+      "staged/R10.11a-genre-views-data/files",
+      "staged/R10.5.1-cw-gate/files",
+      "staged/R10.10-customize-home/files",
+      "staged/R10.14-pov-net-bound/files",
+      "staged/R10.16-voice-back/files",
+      "staged/R10.12-loading-look/files",
+      "staged/R10.12a-sweep-off/files",
+      "staged/R10.15a-genre-menu-views/files",
+      "staged/R10.15b-showing-tiles/files",
+      "staged/R10.10.2-home-fixes-slim/files",
+      "staged/R10.13-republish-compat/files"
+    ],
+    "shield_pull": "mac-kodi/pull",
+    "addon_folders": "mac-kodi/home/Library/Application Support/Kodi/addons",
+    "skin_settings": "mac-kodi/skin-settings-from-shield.json"
+  },
+  "patched": [
+    "skin.arctic.fuse.3",
+    "plugin.video.pov"
+  ],
+  "hosted": [
+    "skin.arctic.fuse.3",
+    "plugin.video.pov",
+    "plugin.video.themoviedb.helper",
+    "script.module.tmdbhelper.sync.mdblist",
+    "script.skinvariables",
+    "script.texturemaker",
+    "script.module.jurialmunkey",
+    "script.module.infotagger",
+    "resource.images.arctic.splash",
+    "resource.images.arctic.weather",
+    "resource.font.robotocjksc"
+  ],
+  "setup_requires": [
+    "skin.arctic.fuse.3",
+    "plugin.video.pov",
+    "plugin.video.themoviedb.helper",
+    "script.module.tmdbhelper.sync.mdblist",
+    "script.skinvariables",
+    "script.texturemaker",
+    "plugin.program.autocompletion"
+  ],
+  "official_versions": {
+    "plugin.program.autocompletion": "2.1.2"
+  },
+  "skin_settings_drop": [
+    "Startup.ImageFolder"
+  ],
+  "keymaps": [
+    "NetflixRootBack.xml",
+    "NetflixMovieDetails.xml",
+    "VirtualKeyboardBack.xml",
+    "NetflixExitConfirm.xml"
+  ],
+  "stock_pov_settings_sha256": "2009543375916f49989cfabc8cf7be02c5b9078aea686384e410f137116a4b13",
+  "keymaps_previous": {
+    "NetflixRootBack.xml": [
+      "81cf4a0409e8927237bf2a2efea7f99f91ce4ba5376294ebe7fd61c592470275"
+    ],
+    "NetflixMovieDetails.xml": [
+      "74252d9867884bced67dff81c7868a10752d67ab8b219903fb329c88a04b4e20"
+    ]
+  },
+  "expected_removed": [
+    "plugin.video.pov/resources/lib/menus/netflix_bluray.py",
+    "skin.arctic.fuse.3/1080i/Custom_1143_OSD_NextOverlay.xml",
+    "skin.arctic.fuse.3/1080i/Custom_1146_OSD_AudioStreams.xml",
+    "skin.arctic.fuse.3/1080i/Custom_1162_Netflix_Shows.xml",
+    "skin.arctic.fuse.3/1080i/Custom_1163_Netflix_Movies.xml",
+    "skin.arctic.fuse.3/1080i/Custom_1164_Movie_Genres.xml",
+    "skin.arctic.fuse.3/1080i/Custom_1166_TV_Genres.xml",
+    "skin.arctic.fuse.3/1080i/Netflix_Playlists.xml"
+  ],
+  "_comment_expected_removed": "8 files: the compat stub extras/netflix_catalog_back.py is back in the final snapshot (R10.13-republish-compat). Add any tracked file a later set deletes.",
+  "_comment_keymaps_previous": "Setup 1.0.1 (the only Setup ever published, commit d66fac0) shipped these R8.6 key files."
+}

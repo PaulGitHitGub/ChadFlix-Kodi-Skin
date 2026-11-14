@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="{ID}" name="{NAME}" version="{VERSION}" provider-name="ChadFlix">
+    <extension point="xbmc.addon.repository" name="{NAME}">
+        <dir>
+            <info compressed="false">{BASE_URL}zips/addons.xml</info>
+            <checksum>{BASE_URL}zips/addons.xml.md5</checksum>
+            <datadir zip="true">{BASE_URL}zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">ChadFlix: unofficial modified Arctic Fuse 3 and POV for Kodi 21</summary>
+        <description lang="en_GB">Holds ChadFlix Setup and the add-ons it needs: a modified Arctic Fuse 3 skin, a modified POV, and the jurialmunkey add-ons the skin depends on. Unofficial: not made or supported by the original authors. See NOTICE.md at {SOURCE_URL}</description>
+        <disclaimer lang="en_GB">Unofficial modified builds. Report problems to this repository, not to the original authors.</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0-or-later (repository add-on); see NOTICE.md for each add-on</license>
+        <source>{SOURCE_URL}</source>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
