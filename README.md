@@ -135,7 +135,7 @@ need to run the setup again. Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Security
 
-Before this release, the published repository and every add-on zip were audited by an AI security review (Claude Fable 5.2). It found no passwords, tokens or personal sign-ins in the files, no telemetry or log uploads, and no unsafe file or link handling in the ChadFlix code.
+Before this release, the published repository and every add-on zip were audited by an AI security review (Fable 5.2 & Astra). It found no passwords, tokens or personal sign-ins in the files, no telemetry or log uploads, and no unsafe file or link handling in the ChadFlix code.
 
 ChadFlix is mostly a visual change: a reworked skin plus small changes to POV for the home rows and play button. It adds no new places your Shield connects to. Every connection uses HTTPS, so others on your network can't read it.
 
