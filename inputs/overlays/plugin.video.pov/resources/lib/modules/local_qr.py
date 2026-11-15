@@ -13,6 +13,7 @@ The QR matrix comes from script.module.qrcode (declared in POV's addon.xml); the
 Python Imaging Library is not needed. Files go to special://temp/pov_qr/ with a random name and owner-only access.
 """
 import os
+import re
 import struct
 import zlib
 from time import time
@@ -37,6 +38,9 @@ DOMAINS = {
 }
 
 
+_HOST = re.compile(r'[a-z0-9-]+(\.[a-z0-9-]+)*')
+
+
 class AuthLinkError(Exception):
     """A sign-in link that is not an https link to the service's own site. Carries the service name only."""
 
@@ -47,7 +51,10 @@ def official(service, url):
         text = str(url)
         parts = urlsplit(text)
         host, port = parts.hostname, parts.port
-        fine = (parts.scheme == 'https' and bool(host) and any(host == d or host.endswith('.' + d) for d in DOMAINS[service])
+        # the host must be a plain DNS name: a browser reads "\\" in it as "/" (evil.example\\.real-debrid.com opens evil.example)
+        fine = (parts.scheme == 'https' and bool(host) and _HOST.fullmatch(host) is not None
+                and '\\' not in parts.netloc and '%' not in parts.netloc
+                and any(host == d or host.endswith('.' + d) for d in DOMAINS[service])
                 and parts.username is None and parts.password is None
                 and '@' not in parts.netloc and port in (None, 443) and len(text) <= 2048
                 and not any(ord(c) <= 32 or ord(c) == 127 for c in text))
@@ -58,7 +65,7 @@ def official(service, url):
     return text
 
 
-def _with_scheme(text):
+def with_scheme(text):
     text = str(text).strip()
     return text if '://' in text else 'https://' + text
 
@@ -66,7 +73,7 @@ def _with_scheme(text):
 def shown(service, text):
     """A link line for the sign-in screen, returned as the service sent it. Services may send it without "https://"
     (tor.box/link): it is checked as an https link to the service's own domain; anything else is AuthLinkError."""
-    official(service, _with_scheme(text))
+    official(service, with_scheme(text))
     return str(text)
 
 
@@ -142,7 +149,7 @@ def icon(service, url, color=None, bgcolor=None):
     AuthLinkError when it is not the service's own https link (never drawn, never sent anywhere)."""
     if not url:
         return ''
-    url = official(service, _with_scheme(url))      # what a phone opens is always the https link
+    url = official(service, with_scheme(url))       # what a phone opens is always the https link
     try:
         folder = _folder()
         os.makedirs(folder, exist_ok=True)

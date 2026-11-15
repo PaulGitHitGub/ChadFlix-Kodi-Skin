@@ -414,7 +414,7 @@ class Trakt:
 		data['code'] = result['device_code']
 		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
 		link = local_qr.shown('trakt', result['verification_url'])
-		qr_icon = local_qr.icon('trakt', '%s/%s' % (link, result['user_code']), color='f00')
+		qr_icon = local_qr.icon('trakt', '%s/%s' % (local_qr.with_scheme(link), result['user_code']), color='f00')
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
 		detail = code_str % result['user_code'], nav2_str % link
 		progress_dialog = _make_progress_dialog(meta=meta)

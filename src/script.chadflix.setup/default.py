@@ -276,6 +276,25 @@ def switch_skin():
 
 
 # 5. keymaps ----------------------------------------------------------------------------------------
+KEYMAPS_STATE = os.path.join(OWN_DATA, 'keymaps-state.json')   # shared with service.py (see there)
+
+
+def _keymaps_state(**changes):
+    """Update keymaps-state.json: what the start-up service may still add by itself."""
+    try:
+        state = json.load(open(KEYMAPS_STATE, encoding='utf-8'))
+        if not isinstance(state, dict):
+            state = {}
+    except (OSError, ValueError):
+        state = {}
+    state.update(changes)
+    os.makedirs(OWN_DATA, exist_ok=True)
+    tmp = KEYMAPS_STATE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(state, f)
+    os.replace(tmp, KEYMAPS_STATE)
+
+
 def install_keymaps():
     os.makedirs(KEYMAPS_DST, exist_ok=True)
     changed = 0
@@ -287,6 +306,8 @@ def install_keymaps():
         backup(dst, 'keymaps/' + name)
         shutil.copyfile(src, dst)
         changed += 1
+    # Setup ran: every key file of this version is on the device, Undo is no longer in force
+    _keymaps_state(undone=False, offered=list(CFG.get('keymaps_new', [])))
     if changed:
         xbmc.executebuiltin('Action(reloadkeymaps)')
     log('keymaps changed: %d' % changed)
@@ -327,6 +348,8 @@ def undo_keymaps():
         if old:
             shutil.copyfile(old, dst)
             restored.append(name)
+    # the start-up service adds nothing by itself until Setup is run again (a kept or restored file is not "Setup ran")
+    _keymaps_state(undone=True)
     xbmc.executebuiltin('Action(reloadkeymaps)')
     log('undo keymaps: removed %s, restored %s, left %s' % (removed, restored, kept))
     msg = 'Removed %d ChadFlix key file(s)' % len(removed)

@@ -453,7 +453,10 @@ class SettingsManager:
 		if current_raw == self._last_raw_string: return
 		try: self._cache = json.loads(current_raw)
 		except Exception: self._cache = make_settings_dict()
-		self._secrets = {}  # R10.25 (M4): the property changed (it carries a stamp of the sign-in values): read them afresh
+		# R10.25 (M4): the property changed (it carries a stamp of the sign-in values): read them afresh, through a NEW Addon()
+		# (an Addon object keeps the settings it loaded at its first read; POV's service lives as long as Kodi)
+		self._secrets = {}
+		self._addon = None
 		self._last_raw_string = current_raw
 
 	def get(self, key, fallback=None):
@@ -477,6 +480,10 @@ def get_setting(setting_id, fallback=None):
 
 def set_setting(setting_id, value):
 	Addon().setSetting(setting_id, value)
+	# R10.25 (M4): the script that writes a sign-in value reads the new one back at once (not the copy it cached before)
+	if is_secret_setting(setting_id):
+		manager._secrets.pop(setting_id, None)
+		manager._addon = None
 
 def make_settings_dict():
 	import xml.etree.ElementTree as ET
