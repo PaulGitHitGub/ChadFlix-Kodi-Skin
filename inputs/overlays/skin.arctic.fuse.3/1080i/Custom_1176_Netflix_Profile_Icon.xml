@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Icon picker for the Edit profile screen (1175). Ten original flat colours drawn by the skin
+     (common/white.png through a rounded-square mask); the person's initial sits on each. The ids
+     and hex values must match PALETTE in extras/netflix_profiles.py (a unit test checks this).
+     Select = save the colour (set-color) and return to Edit profile. -->
+<window type="dialog" id="1176">
+    <defaultcontrol always="true">9400</defaultcontrol>
+    <zorder>1102</zorder>
+    <onload>SetFocus(9400,$INFO[Window(Home).Property(Netflix.Profiles.Edit.ColorPos)],absolute)</onload>
+    <animation type="WindowOpen">
+        <effect type="fade" start="0" end="100" time="140" tween="cubic" easing="out" />
+    </animation>
+    <animation type="WindowClose">
+        <effect type="fade" start="100" end="0" time="100" tween="cubic" easing="in" />
+    </animation>
+    <controls>
+        <control type="image">
+            <texture colordiffuse="FF080808">common/white.png</texture>
+        </control>
+        <control type="label">
+            <left>150</left><top>96</top><width>1200</width><height>60</height>
+            <aligny>center</aligny><font>font_huge_bold</font><textcolor>FFF5F5F5</textcolor>
+            <label>Choose an icon</label>
+        </control>
+        <control type="label">
+            <left>150</left><top>160</top><width>1600</width><height>40</height>
+            <aligny>center</aligny><font>font_main</font><textcolor>FFCBCBD0</textcolor>
+            <label>$INFO[Window(Home).Property(Netflix.Profiles.Edit.Name),Pick a colour for ,.]</label>
+        </control>
+        <control type="list" id="9400">
+            <description>Avatar colours</description>
+            <left>150</left><top>420</top><width>1680</width><height>220</height>
+            <orientation>horizontal</orientation>
+            <scrolltime tween="cubic" easing="out">160</scrolltime>
+            <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright>
+            <onback>Close</onback>
+            <itemlayout width="168" height="220">
+                <control type="image">
+                    <left>18</left><top>18</top><width>132</width><height>132</height>
+                    <colordiffuse>$INFO[ListItem.Property(hex)]</colordiffuse>
+                    <texture diffuse="diffuse/square_w120_h120.png">common/white.png</texture>
+                </control>
+                <control type="label">
+                    <left>18</left><top>18</top><width>132</width><height>132</height>
+                    <align>center</align><aligny>center</aligny>
+                    <font>font_title_main</font><textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Window(Home).Property(Netflix.Profiles.Edit.Initial)]</label>
+                </control>
+                <include content="Netflix_Profile_Color_Current">
+                    <param name="x">104</param><param name="y">104</param>
+                </include>
+            </itemlayout>
+            <focusedlayout width="168" height="220">
+                <control type="group">
+                    <animation effect="zoom" start="80" end="100" center="84,84" time="140" tween="cubic" easing="out">Focus</animation>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>168</width><height>168</height>
+                        <texture diffuse="diffuse/square_w217_h217.png" colordiffuse="FFF5F5F5">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>5</left><top>5</top><width>158</width><height>158</height>
+                        <colordiffuse>$INFO[ListItem.Property(hex)]</colordiffuse>
+                        <texture diffuse="diffuse/square_w217_h217.png">common/white.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>5</left><top>5</top><width>158</width><height>158</height>
+                        <align>center</align><aligny>center</aligny>
+                        <font>font_title_midi</font><textcolor>FFFFFFFF</textcolor>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.Edit.Initial)]</label>
+                    </control>
+                    <include content="Netflix_Profile_Color_Current">
+                        <param name="x">116</param><param name="y">116</param>
+                    </include>
+                </control>
+            </focusedlayout>
+            <content>
+                <item>
+                    <label>ocean</label>
+                    <property name="id">ocean</property>
+                    <property name="hex">FF1D68B0</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,ocean)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>ruby</label>
+                    <property name="id">ruby</property>
+                    <property name="hex">FFC8343F</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,ruby)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>moss</label>
+                    <property name="id">moss</property>
+                    <property name="hex">FF4E7D2A</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,moss)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>amber</label>
+                    <property name="id">amber</property>
+                    <property name="hex">FF9E6A06</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,amber)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>violet</label>
+                    <property name="id">violet</property>
+                    <property name="hex">FF7A3FB5</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,violet)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>teal</label>
+                    <property name="id">teal</property>
+                    <property name="hex">FF0F766E</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,teal)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>ember</label>
+                    <property name="id">ember</property>
+                    <property name="hex">FFC2541B</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,ember)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>orchid</label>
+                    <property name="id">orchid</property>
+                    <property name="hex">FFA8327F</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,orchid)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>indigo</label>
+                    <property name="id">indigo</property>
+                    <property name="hex">FF4549C2</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,indigo)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+                <item>
+                    <label>slate</label>
+                    <property name="id">slate</property>
+                    <property name="hex">FF4F5B66</property>
+                    <onclick>RunScript(special://skin/extras/netflix_profiles.py,set-color,slate)</onclick>
+                    <onclick>Close</onclick>
+                </item>
+            </content>
+        </control>
+    </controls>
+</window>

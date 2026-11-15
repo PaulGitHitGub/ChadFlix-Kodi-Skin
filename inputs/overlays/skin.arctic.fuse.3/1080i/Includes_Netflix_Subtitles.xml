@@ -1,0 +1,911 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Netflix-style subtitle appearance picker (window 1177). Preview and labels follow focus with conditions only;
+     the one script (extras/netflix_subtitle_style.py) runs on OK: to open the picker (reads Kodi's settings once)
+     and to apply a choice. Skin strings it keeps:
+       Netflix.Sub.Size / Netflix.Sub.Style        small|medium|large|custom , shadow|box|contrast|reverse|custom
+       Netflix.Sub.SizeNear / Netflix.Sub.StyleNear the closest preset, so a custom setting still previews sensibly -->
+<includes>
+
+    <!-- Which look the preview shows: the focused pill in that group, otherwise the current choice. -->
+    <expression name="Exp_NfSub_SizeFocus">[Control.HasFocus(7101) | Control.HasFocus(7102) | Control.HasFocus(7103)]</expression>
+    <expression name="Exp_NfSub_StyleFocus">[Control.HasFocus(7201) | Control.HasFocus(7202) | Control.HasFocus(7203) | Control.HasFocus(7204)]</expression>
+    <expression name="Exp_NfSub_Small">[Control.HasFocus(7101) | [!$EXP[Exp_NfSub_SizeFocus] + String.IsEqual(Skin.String(Netflix.Sub.SizeNear),small)]]</expression>
+    <expression name="Exp_NfSub_Large">[Control.HasFocus(7103) | [!$EXP[Exp_NfSub_SizeFocus] + String.IsEqual(Skin.String(Netflix.Sub.SizeNear),large)]]</expression>
+    <expression name="Exp_NfSub_Medium">[!$EXP[Exp_NfSub_Small] + !$EXP[Exp_NfSub_Large]]</expression>
+    <expression name="Exp_NfSub_Box">[Control.HasFocus(7202) | [!$EXP[Exp_NfSub_StyleFocus] + String.IsEqual(Skin.String(Netflix.Sub.StyleNear),box)]]</expression>
+    <expression name="Exp_NfSub_Contrast">[Control.HasFocus(7203) | [!$EXP[Exp_NfSub_StyleFocus] + String.IsEqual(Skin.String(Netflix.Sub.StyleNear),contrast)]]</expression>
+    <expression name="Exp_NfSub_Reverse">[Control.HasFocus(7204) | [!$EXP[Exp_NfSub_StyleFocus] + String.IsEqual(Skin.String(Netflix.Sub.StyleNear),reverse)]]</expression>
+    <expression name="Exp_NfSub_Shadow">[!$EXP[Exp_NfSub_Box] + !$EXP[Exp_NfSub_Contrast] + !$EXP[Exp_NfSub_Reverse]]</expression>
+
+    <!-- Colours of the preview line, the same values the script writes to Kodi (see STYLES in the script). -->
+    <variable name="NfSub_TextColor">
+        <value condition="$EXP[Exp_NfSub_Contrast]">FFFFFF00</value>
+        <value condition="$EXP[Exp_NfSub_Reverse]">FF000000</value>
+        <value>FFFFFFFF</value>
+    </variable>
+    <variable name="NfSub_BoxColor">
+        <value condition="$EXP[Exp_NfSub_Box]">CC000000</value>
+        <value condition="$EXP[Exp_NfSub_Contrast]">FF000000</value>
+        <value condition="$EXP[Exp_NfSub_Reverse]">FFFFFFFF</value>
+        <value>01000000</value>
+    </variable>
+
+    <!-- "Size: Medium" / "Style: Contrast": the focused pill's name, otherwise the current choice. -->
+    <variable name="NfSub_SizeName">
+        <value condition="Control.HasFocus(7101)">Small</value>
+        <value condition="Control.HasFocus(7102)">Medium</value>
+        <value condition="Control.HasFocus(7103)">Large</value>
+        <value condition="String.IsEqual(Skin.String(Netflix.Sub.Size),small)">Small</value>
+        <value condition="String.IsEqual(Skin.String(Netflix.Sub.Size),medium)">Medium</value>
+        <value condition="String.IsEqual(Skin.String(Netflix.Sub.Size),large)">Large</value>
+        <value>Custom</value>
+    </variable>
+    <variable name="NfSub_StyleName">
+        <value condition="Control.HasFocus(7201)">Shadow</value>
+        <value condition="Control.HasFocus(7202)">Box</value>
+        <value condition="Control.HasFocus(7203)">Contrast</value>
+        <value condition="Control.HasFocus(7204)">Reverse</value>
+        <value condition="String.IsEqual(Skin.String(Netflix.Sub.Style),shadow)">Shadow</value>
+        <value condition="String.IsEqual(Skin.String(Netflix.Sub.Style),box)">Box</value>
+        <value condition="String.IsEqual(Skin.String(Netflix.Sub.Style),contrast)">Contrast</value>
+        <value condition="String.IsEqual(Skin.String(Netflix.Sub.Style),reverse)">Reverse</value>
+        <value>Custom</value>
+    </variable>
+
+    <!-- Text drawn like Kodi's "Shadow" subtitle: black outline (8 offset copies) and a soft drop shadow, then the text.
+         Full-width centred labels, so they line up with the auto-width box line drawn by NfSub_Line. -->
+    <include name="NfSub_ShadowText">
+        <param name="o">2</param>
+        <definition>
+            <control type="group">
+                <visible>$PARAM[visible]</visible>
+                <control type="label"><width>$PARAM[w]</width><left>3</left><top>3</top><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>B3000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><left>-$PARAM[o]</left><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><left>$PARAM[o]</left><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><top>-$PARAM[o]</top><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><top>$PARAM[o]</top><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><left>-$PARAM[o]</left><top>-$PARAM[o]</top><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><left>$PARAM[o]</left><top>-$PARAM[o]</top><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><left>-$PARAM[o]</left><top>$PARAM[o]</top><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+                <control type="label"><width>$PARAM[w]</width><left>$PARAM[o]</left><top>$PARAM[o]</top><height>$PARAM[h]</height><align>center</align><aligny>center</aligny><font>$PARAM[font]</font><textcolor>FF000000</textcolor><label>$PARAM[text]</label></control>
+            </control>
+        </definition>
+    </include>
+
+    <!-- One preview line at one size: outline layer (shadow style only), then a non-focusable auto-width button that
+         draws the per-line box (transparent for shadow) and the text, centred by a full-width grouplist. -->
+    <include name="NfSub_Line">
+        <definition>
+            <control type="group">
+                <top>$PARAM[top]</top>
+                <height>$PARAM[h]</height>
+                <visible>$PARAM[visible]</visible>
+                <include content="NfSub_ShadowText">
+                    <param name="visible">$EXP[Exp_NfSub_Shadow]</param>
+                    <param name="font">$PARAM[font]</param>
+                    <param name="h">$PARAM[h]</param>
+                    <param name="w">1920</param>
+                    <param name="text">$PARAM[text]</param>
+                </include>
+                <control type="grouplist">
+                    <height>$PARAM[h]</height>
+                    <orientation>horizontal</orientation>
+                    <align>center</align>
+                    <itemgap>0</itemgap>
+                    <control type="button">
+                        <width>auto</width>
+                        <height>$PARAM[h]</height>
+                        <enable>false</enable>
+                        <font>$PARAM[font]</font>
+                        <label>$PARAM[text]</label>
+                        <align>center</align>
+                        <aligny>center</aligny>
+                        <textoffsetx>$PARAM[pad]</textoffsetx>
+                        <textoffsety>0</textoffsety>
+                        <textcolor>$VAR[NfSub_TextColor]</textcolor>
+                        <disabledcolor>$VAR[NfSub_TextColor]</disabledcolor>
+                        <focusedcolor>$VAR[NfSub_TextColor]</focusedcolor>
+                        <texturenofocus colordiffuse="$VAR[NfSub_BoxColor]">common/white.png</texturenofocus>
+                        <texturefocus colordiffuse="$VAR[NfSub_BoxColor]">common/white.png</texturefocus>
+                    </control>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <!-- One pill: the button (focus ring), its sample, and the check when it is the current choice. -->
+    <include name="NfSub_Pill">
+        <param name="box">FF000000</param>
+        <param name="hasbox">false</param>
+        <param name="boxx">34</param>
+        <param name="boxy">25</param>
+        <param name="textcolor">FFFFFFFF</param>
+        <param name="shadow">false</param>
+        <param name="font">font_nfsub_m</param>
+        <param name="lineh">45</param>
+        <definition>
+            <control type="group">
+                <left>$PARAM[x]</left>
+                <top>0</top>
+                <width>132</width>
+                <height>96</height>
+                <animation effect="zoom" start="100" end="106" center="auto" time="120" tween="cubic" easing="out" reversible="true" condition="Control.HasFocus($PARAM[id])">Conditional</animation>
+                <control type="button" id="$PARAM[id]">
+                    <width>132</width>
+                    <height>96</height>
+                    <label />
+                    <font />
+                    <texturenofocus>special://skin/extras/subtitles/pill-idle.png</texturenofocus>
+                    <texturefocus>special://skin/extras/subtitles/pill-focus.png</texturefocus>
+                    <onleft>$PARAM[left]</onleft>
+                    <onright>$PARAM[right]</onright>
+                    <onup>noop</onup>
+                    <ondown>noop</ondown>
+                    <onclick>RunScript(special://skin/extras/netflix_subtitle_style.py,$PARAM[apply])</onclick>
+                </control>
+                <!-- current choice when not focused: a brighter ring (plus the check), so it reads at 10 ft -->
+                <control type="image">
+                    <width>132</width>
+                    <height>96</height>
+                    <texture>special://skin/extras/subtitles/pill-selected.png</texture>
+                    <visible>$PARAM[selected] + !Control.HasFocus($PARAM[id])</visible>
+                </control>
+                <control type="image">
+                    <left>$PARAM[boxx]</left>
+                    <top>$PARAM[boxy]</top>
+                    <width>$PARAM[boxw]</width>
+                    <height>$PARAM[lineh]</height>
+                    <texture colordiffuse="$PARAM[box]">common/white.png</texture>
+                    <visible>$PARAM[hasbox]</visible>
+                </control>
+                <control type="group">
+                    <top>$PARAM[texty]</top>
+                    <include content="NfSub_ShadowText" condition="$PARAM[shadow]">
+                        <param name="visible">true</param>
+                        <param name="font">$PARAM[font]</param>
+                        <param name="h">96</param>
+                        <param name="w">132</param>
+                        <param name="text">Aa</param>
+                        <param name="o">$PARAM[o]</param>
+                    </include>
+                    <control type="label">
+                        <width>132</width>
+                        <height>96</height>
+                        <align>center</align>
+                        <aligny>center</aligny>
+                        <font>$PARAM[font]</font>
+                        <textcolor>$PARAM[textcolor]</textcolor>
+                        <label>Aa</label>
+                    </control>
+                </control>
+                <control type="image">
+                    <left>110</left>
+                    <top>-12</top>
+                    <width>34</width>
+                    <height>34</height>
+                    <texture>special://skin/extras/subtitles/check.png</texture>
+                    <visible>$PARAM[selected]</visible>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+
+    <!-- ===== Netflix-style Audio / Subtitles cards (windows 1146 / 1147): plain names, check on the current choice,
+         no icons, flags, codecs or radio buttons. Rows are static items fed by extras/netflix_av_streams.py through
+         Window(Home) properties, so nothing runs per key press. Generated by tools/gen_cards.py. ===== -->
+    <include name="NfAV_Row">
+        <param name="focus">false</param>
+        <param name="fg">FFC4C4C8</param>
+        <param name="font">font_main</param>
+        <param name="scroll">false</param>
+        <param name="pill">av-pill-480.png</param>
+        <param name="checkcol">FFFFFFFF</param>
+        <param name="shadow">C0000000</param>
+        <definition>
+                            <!-- clear look: no panel; the focused row is a white pill with dark text. The check sits in a
+                                 fixed gutter reserved on every row, so every label starts at the same x. -->
+                            <control type="group">
+                                <left>20</left>
+                                <right>20</right>
+                                <top>4</top>
+                                <height>64</height>
+                                <control type="image">
+                                    <texture>special://skin/extras/subtitles/$PARAM[pill]</texture>
+                                    <visible>$PARAM[focus]</visible>
+                                </control>
+                                <control type="image">
+                                    <left>16</left>
+                                    <top>14</top>
+                                    <width>36</width>
+                                    <height>36</height>
+                                    <texture colordiffuse="$PARAM[checkcol]">special://skin/extras/subtitles/av-check.png</texture>
+                                    <visible>!String.IsEmpty(ListItem.Label2)</visible>
+                                </control>
+                                <control type="label">
+                                    <left>64</left>
+                                    <right>24</right>
+                                    <aligny>center</aligny>
+                                    <font>$PARAM[font]</font>
+                                    <scroll>$PARAM[scroll]</scroll>
+                                    <textcolor>$PARAM[fg]</textcolor>
+                                    <shadowcolor>$PARAM[shadow]</shadowcolor>
+                                    <label>$INFO[ListItem.Label]</label>
+                                </control>
+                            </control>
+        </definition>
+    </include>
+
+
+    <!-- R10.4: both cards now live side by side in the combined window 1147 only. Required params besides id, buttonid,
+         scrollbarid, header, width, right: onleft / onright / ondown (the list's routes to the other column and the
+         button); onleft_if / onright_if (default true) gate the column jumps, so an empty column is never entered
+         (review L1/L2). Both slide by NfAV_Slides_Shared. -->
+    <include name="NfAV_Card_A">
+        <param name="onup">noop</param>
+        <param name="onleft_if">true</param>
+        <param name="onright_if">true</param>
+        <param name="right">-20</param>
+        <definition>
+            <control type="group">
+                <visible>!Window.IsVisible(DialogSettings.xml)</visible>
+                <include content="Animation_SlideIn_Dialog">
+                    <param name="posy">48</param>
+                </include>
+                <animation effect="fade" start="100" end="0" condition="Integer.IsEqual(Container($PARAM[id]).NumItems,0)">Conditional</animation>
+                <right>$PARAM[right]</right>
+                <width>$PARAM[width]</width>
+                <bottom>220</bottom>
+                <height>688</height>
+                <control type="group">
+                    <include>NfAV_Slides_Shared</include>
+                    <control type="label">
+                        <left>84</left>
+                        <top>20</top>
+                        <right>40</right>
+                        <height>64</height>
+                        <aligny>center</aligny>
+                        <font>font_main_bold</font>
+                        <textcolor>FFFFFFFF</textcolor>
+                        <shadowcolor>C0000000</shadowcolor>
+                        <label>$PARAM[header]</label>
+                    </control>
+                    <control type="panel" id="$PARAM[id]">
+                        <top>100</top>
+                        <bottom>12</bottom>
+                        <ondown>$PARAM[ondown]</ondown>
+                        <onleft condition="$PARAM[onleft_if]">$PARAM[onleft]</onleft>
+                        <onright condition="$PARAM[onright_if]">$PARAM[onright]</onright>
+                        <onup>$PARAM[onup]</onup>
+                        <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.AV.A.Full))">RunScript(special://skin/extras/netflix_av_streams.py,audio_view=simple)</onback>
+                        <onback>SetFocus($PARAM[buttonid])</onback>
+                        <pagecontrol>$PARAM[scrollbarid]</pagecontrol>
+                        <orientation>vertical</orientation>
+                        <itemlayout height="72">
+                            <include content="NfAV_Row" />
+                        </itemlayout>
+                        <focusedlayout height="72">
+                            <include content="NfAV_Row">
+                                <param name="focus">true</param>
+                                <param name="fg">FF141414</param>
+                                <param name="pill">av-pill-480.png</param>
+                                <param name="checkcol">FF141414</param>
+                                <param name="shadow">00000000</param>
+                                <param name="font">font_main_bold</param>
+                                <param name="scroll">true</param>
+                            </include>
+                        </focusedlayout>
+                        <content>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A0.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A0.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=0)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A0.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A1.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A1.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=1)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A1.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A2.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A2.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=2)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A2.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A3.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A3.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=3)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A3.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A4.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A4.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=4)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A4.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A5.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A5.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=5)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A5.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A6.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A6.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=6)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A6.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A7.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A7.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=7)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A7.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A8.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A8.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=8)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A8.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A9.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A9.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=9)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A9.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A10.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A10.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=10)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A10.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A11.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A11.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=11)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A11.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A12.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A12.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=12)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A12.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A13.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A13.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=13)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A13.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A14.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A14.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=14)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A14.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A15.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A15.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=15)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A15.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A16.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A16.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=16)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A16.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A17.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A17.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=17)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A17.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A18.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A18.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=18)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A18.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A19.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A19.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=19)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A19.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A20.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A20.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=20)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A20.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A21.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A21.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=21)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A21.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A22.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A22.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=22)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A22.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A23.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A23.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=23)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A23.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A24.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A24.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=24)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A24.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A25.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A25.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=25)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A25.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A26.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A26.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=26)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A26.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A27.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A27.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=27)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A27.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A28.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A28.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=28)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A28.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A29.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A29.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=29)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A29.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A30.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A30.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=30)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A30.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A31.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A31.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=31)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A31.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A32.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A32.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=32)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A32.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A33.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A33.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=33)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A33.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A34.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A34.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=34)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A34.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A35.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A35.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=35)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A35.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A36.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A36.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=36)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A36.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A37.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A37.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=37)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A37.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A38.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A38.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=38)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A38.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.A39.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.A39.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,audio=39)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A39.L))</visible>
+                    </item>
+                    <!-- R10.4 (av-card-design R1): Kodi's own audio settings (sync offset, volume boost), the last row of the full list only -->
+                    <item>
+                        <label>Audio Sync</label>
+                        <onclick>CancelAlarm(osd_timeout,true)</onclick>
+                        <onclick>ActivateWindow(osdaudiosettings)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.A.Full))</visible>
+                    </item>
+                        </content>
+                    </control>
+                </control>
+                <include content="Part_Scrollbar_Max">
+                    <param name="id">$PARAM[scrollbarid]</param>
+                    <top>100</top>
+                    <bottom>20</bottom>
+                    <onleft>$PARAM[id]</onleft>
+                    <onright>$PARAM[buttonid]</onright>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <include name="NfAV_Card_S">
+        <param name="onup">noop</param>
+        <param name="onleft_if">true</param>
+        <param name="onright_if">true</param>
+        <param name="right">-20</param>
+        <definition>
+            <control type="group">
+                <visible>!Window.IsVisible(DialogSettings.xml)</visible>
+                <include content="Animation_SlideIn_Dialog">
+                    <param name="posy">48</param>
+                </include>
+                <animation effect="fade" start="100" end="0" condition="Integer.IsEqual(Container($PARAM[id]).NumItems,0)">Conditional</animation>
+                <right>$PARAM[right]</right>
+                <width>$PARAM[width]</width>
+                <bottom>220</bottom>
+                <height>688</height>
+                <control type="group">
+                    <include>NfAV_Slides_Shared</include>
+                    <control type="label">
+                        <left>84</left>
+                        <top>20</top>
+                        <right>40</right>
+                        <height>64</height>
+                        <aligny>center</aligny>
+                        <font>font_main_bold</font>
+                        <textcolor>FFFFFFFF</textcolor>
+                        <shadowcolor>C0000000</shadowcolor>
+                        <label>$PARAM[header]</label>
+                    </control>
+                    <control type="panel" id="$PARAM[id]">
+                        <top>100</top>
+                        <bottom>12</bottom>
+                        <ondown>$PARAM[ondown]</ondown>
+                        <onleft condition="$PARAM[onleft_if]">$PARAM[onleft]</onleft>
+                        <onright condition="$PARAM[onright_if]">$PARAM[onright]</onright>
+                        <onup>$PARAM[onup]</onup>
+                        <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.AV.S.Full))">RunScript(special://skin/extras/netflix_av_streams.py,sub_view=simple)</onback>
+                        <onback>SetFocus($PARAM[buttonid])</onback>
+                        <pagecontrol>$PARAM[scrollbarid]</pagecontrol>
+                        <orientation>vertical</orientation>
+                        <itemlayout height="72">
+                            <include content="NfAV_Row" />
+                        </itemlayout>
+                        <focusedlayout height="72">
+                            <include content="NfAV_Row">
+                                <param name="focus">true</param>
+                                <param name="fg">FF141414</param>
+                                <param name="pill">av-pill-460.png</param>
+                                <param name="checkcol">FF141414</param>
+                                <param name="shadow">00000000</param>
+                                <param name="font">font_main_bold</param>
+                                <param name="scroll">true</param>
+                            </include>
+                        </focusedlayout>
+                        <content>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S0.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S0.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=0)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S0.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S1.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S1.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=1)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S1.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S2.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S2.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=2)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S2.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S3.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S3.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=3)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S3.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S4.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S4.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=4)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S4.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S5.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S5.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=5)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S5.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S6.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S6.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=6)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S6.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S7.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S7.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=7)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S7.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S8.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S8.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=8)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S8.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S9.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S9.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=9)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S9.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S10.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S10.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=10)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S10.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S11.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S11.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=11)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S11.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S12.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S12.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=12)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S12.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S13.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S13.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=13)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S13.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S14.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S14.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=14)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S14.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S15.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S15.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=15)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S15.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S16.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S16.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=16)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S16.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S17.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S17.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=17)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S17.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S18.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S18.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=18)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S18.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S19.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S19.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=19)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S19.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S20.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S20.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=20)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S20.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S21.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S21.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=21)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S21.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S22.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S22.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=22)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S22.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S23.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S23.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=23)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S23.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S24.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S24.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=24)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S24.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S25.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S25.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=25)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S25.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S26.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S26.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=26)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S26.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S27.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S27.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=27)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S27.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S28.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S28.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=28)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S28.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S29.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S29.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=29)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S29.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S30.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S30.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=30)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S30.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S31.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S31.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=31)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S31.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S32.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S32.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=32)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S32.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S33.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S33.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=33)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S33.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S34.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S34.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=34)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S34.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S35.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S35.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=35)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S35.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S36.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S36.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=36)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S36.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S37.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S37.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=37)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S37.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S38.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S38.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=38)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S38.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S39.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S39.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=39)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S39.L))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.AV.S40.L)]</label>
+                        <label2>$INFO[Window(Home).Property(Netflix.AV.S40.C)]</label2>
+                        <onclick>RunScript(special://skin/extras/netflix_av_streams.py,sub=40)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S40.L))</visible>
+                    </item>
+                    <!-- R10.4 (av-card-design R1): Kodi's own subtitle settings (sync offset, download), the last row of the full list only -->
+                    <item>
+                        <label>Subtitle Sync</label>
+                        <onclick>CancelAlarm(osd_timeout,true)</onclick>
+                        <onclick>ActivateWindow(osdsubtitlesettings)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.AV.S.Full))</visible>
+                    </item>
+                        </content>
+                    </control>
+                </control>
+                <include content="Part_Scrollbar_Max">
+                    <param name="id">$PARAM[scrollbarid]</param>
+                    <top>100</top>
+                    <bottom>20</bottom>
+                    <onleft>$PARAM[id]</onleft>
+                    <onright>$PARAM[buttonid]</onright>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <!-- R10.4: the combined card's columns (and the Appearance pill) slide by the LONGER of the two lists, so the Audio
+         and Subtitles headers share one line (av-card-design R6: same conditions as the prototype, 7 steps). -->
+    <include name="NfAV_Slides_Shared">
+        <animation effect="slide" start="0" end="0,72" condition="[Integer.IsEqual(Container(6206).NumItems,7) + !Integer.IsGreater(Container(6207).NumItems,7)] | [Integer.IsEqual(Container(6207).NumItems,7) + !Integer.IsGreater(Container(6206).NumItems,7)]">Conditional</animation>
+        <animation effect="slide" start="0" end="0,144" condition="[Integer.IsEqual(Container(6206).NumItems,6) + !Integer.IsGreater(Container(6207).NumItems,6)] | [Integer.IsEqual(Container(6207).NumItems,6) + !Integer.IsGreater(Container(6206).NumItems,6)]">Conditional</animation>
+        <animation effect="slide" start="0" end="0,216" condition="[Integer.IsEqual(Container(6206).NumItems,5) + !Integer.IsGreater(Container(6207).NumItems,5)] | [Integer.IsEqual(Container(6207).NumItems,5) + !Integer.IsGreater(Container(6206).NumItems,5)]">Conditional</animation>
+        <animation effect="slide" start="0" end="0,288" condition="[Integer.IsEqual(Container(6206).NumItems,4) + !Integer.IsGreater(Container(6207).NumItems,4)] | [Integer.IsEqual(Container(6207).NumItems,4) + !Integer.IsGreater(Container(6206).NumItems,4)]">Conditional</animation>
+        <animation effect="slide" start="0" end="0,360" condition="[Integer.IsEqual(Container(6206).NumItems,3) + !Integer.IsGreater(Container(6207).NumItems,3)] | [Integer.IsEqual(Container(6207).NumItems,3) + !Integer.IsGreater(Container(6206).NumItems,3)]">Conditional</animation>
+        <animation effect="slide" start="0" end="0,432" condition="[Integer.IsEqual(Container(6206).NumItems,2) + !Integer.IsGreater(Container(6207).NumItems,2)] | [Integer.IsEqual(Container(6207).NumItems,2) + !Integer.IsGreater(Container(6206).NumItems,2)]">Conditional</animation>
+        <animation effect="slide" start="0" end="0,504" condition="Integer.IsLess(Container(6206).NumItems,2) + Integer.IsLess(Container(6207).NumItems,2)">Conditional</animation>
+    </include>
+
+    <!-- Clear-card backdrop (option A). Window-level, drawn under the card in 1146 / 1147; fades in with the card
+         and goes when the card has no rows. No WindowClose animation on purpose: the card
+         itself has none (it vanishes at once), and a close fade here hung the Mac copy (evidence/kodi-run1-A-dark-hang.log). The only difference between options A, B and C. -->
+    <include name="NfAV_Scrim">
+        <!-- always: false = only while the card has rows (audio/subtitles); the info window (1145) has no list and passes true -->
+        <param name="always">false</param>
+        <definition>
+            <control type="group">
+                <include>OSD_HideControls</include>
+                <visible>!Window.IsActive(DialogPlayerProcessInfo.xml) + !Window.IsVisible(DialogSlider.xml) + !Window.IsVisible(DialogSettings.xml)</visible>
+                <visible>$PARAM[always] | Integer.IsGreater(Container($PARAM[id]).NumItems,0)</visible>
+                <animation type="WindowOpen" reversible="false"><effect type="fade" start="0" end="100" time="300" delay="300" tween="cubic" easing="out"/></animation>
+                <animation type="Visible" reversible="false"><effect type="fade" start="0" end="100" time="300"/></animation>
+                <control type="image"><texture>special://skin/extras/subtitles/av-scrim-a.png</texture></control>
+            </control>
+        </definition>
+    </include>
+</includes>

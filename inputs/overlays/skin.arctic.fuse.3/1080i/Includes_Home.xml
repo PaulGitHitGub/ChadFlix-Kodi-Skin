@@ -1,0 +1,2833 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<includes>
+
+    <variable name="Label_Setting_TopMenuUpAction">
+        <value condition="Skin.String(HomeSwitcher.OnUp,options)">$LOCALIZE[33063]</value>
+        <value condition="String.IsEmpty(Skin.String(HomeSwitcher.OnUp))">$LOCALIZE[1034]</value>
+    </variable>
+
+    <variable name="Home_Icon_home">
+        <value condition="!String.IsEmpty(Skin.String(HomeSwitcher.Home.Icon))">$INFO[Skin.String(HomeSwitcher.Home.Icon)]</value>
+        <value>special://skin/extras/icons/home.png</value>
+    </variable>
+    <!-- Home is fixed in the menu; hub labels, icons and actions are generated from the hubs menu (home_hubs_variables.xml) -->
+    <variable name="Hub_Label_home">
+        <value>$INFO[Skin.String(HomeSwitcher.Home.Name)]</value>
+    </variable>
+    <!-- Home and Search keep the widget-first default focus of a hub that is not in the menu -->
+    <expression name="Exp_Hub_Enabled_Home">false</expression>
+    <expression name="Exp_Hub_Enabled_1105">false</expression>
+    <variable name="Hub_Shortcut_home">
+        <value condition="!String.IsEmpty(Skin.String(HomeSwitcher.Home.Shortcut.Target))">ActivateWindow($INFO[Skin.String(HomeSwitcher.Home.Shortcut.Target)],$INFO[Skin.String(HomeSwitcher.Home.Shortcut.Path)],return)</value>
+        <value>$INFO[Skin.String(HomeSwitcher.Home.Shortcut.Path)]</value>
+    </variable>
+
+    <include name="Home_ControlList_Item">
+        <property name="enabled">true</property>
+        <definition>
+            <item>
+                <label>$PARAM[label]</label>
+                <icon>$PARAM[icon]</icon>
+                <property name="action">$PARAM[action]</property>
+                <visible>$PARAM[enabled]</visible>
+                <visible>$PARAM[mod][$PARAM[visible]]</visible>
+            </item>
+        </definition>
+    </include>
+
+    <include name="Home_ControlList_Item_1105">
+        <include content="Home_ControlList_Item">
+            <param name="label">Search</param>
+            <param name="icon">special://skin/extras/icons/search.png</param>
+            <param name="action">ReplaceWindow(1105)</param>
+            <param name="enabled">[!Skin.HasSetting(HomeSwitcher.DisableSearch)]</param>
+            <param name="visible">Window.IsVisible(1105)</param>
+            <param name="mod">$PARAM[mod]</param>
+        </include>
+    </include>
+
+    <include name="Home_ControlList_Item_Home">
+        <include content="Home_ControlList_Item">
+            <param name="label">$VAR[Hub_Label_home]</param>
+            <param name="icon">$VAR[Home_Icon_home]</param>
+            <param name="action">ReplaceWindow(Home)</param>
+            <param name="enabled">true</param>
+            <param name="visible">Window.IsVisible(1105) | Window.IsVisible(Home)</param>
+            <param name="mod">$PARAM[mod]</param>
+        </include>
+    </include>
+
+    <include name="Home_ControlList_Items">
+        <definition>
+            <include content="Home_ControlList_Item_1105">
+                <param name="mod">$PARAM[mod]</param>
+            </include>
+            <include content="Home_ControlList_Item_Home">
+                <param name="mod">$PARAM[mod]</param>
+            </include>
+            <include content="skinvariables-hubs-controllist">
+                <param name="mod">$PARAM[mod]</param>
+            </include>
+        </definition>
+    </include>
+
+    <include name="Home_ControlList">
+        <control type="list" id="399">
+            <top>-2000</top>
+            <height>10</height>
+            <orientation>horizontal</orientation>
+            <itemlayout width="1" />
+            <focusedlayout width="1" />
+            <content>
+                <include content="Home_ControlList_Items">
+                    <param name="mod" />
+                </include>
+
+                <item>
+                    <property name="action">ActivateWindow(1170)</property>
+                    <visible>!$EXP[Exp_Hubs_Menu_Loopback]</visible>
+                </item>
+                <item>
+                    <property name="action">noop</property>
+                    <visible>!$EXP[Exp_Hubs_Menu_Loopback]</visible>
+                </item>
+
+                <include content="Home_ControlList_Items">
+                    <param name="mod">!</param>
+                </include>
+            </content>
+        </control>
+    </include>
+
+    <include name="Home_Horz_Movement">
+        <onup>SetProperty(Bumper.Direction,Up,Home)</onup>
+        <onup condition="Skin.String(HomeSwitcher.OnUp,options)">ActivateWindow(1170)</onup>
+        <onup condition="String.IsEmpty(Skin.String(HomeSwitcher.OnUp))">ActivateWindow(1181)</onup>
+        <oninfo>ActivateWindow(1181)</oninfo>
+        <ondown>$VAR[Hub_Action_Down]</ondown>
+    </include>
+
+    <include name="Home_Vert_Movement">
+        <onleft>SetProperty(Bumper.Direction,Left,Home)</onleft>
+        <!-- <onleft>ActivateWindow(1180)</onleft> -->
+        <onleft>ActivateWindow(1181)</onleft>
+        <oninfo>ActivateWindow(1181)</oninfo>
+
+        <!-- <onright condition="![String.IsEqual(Skin.String(HomeSwitcher.$PARAM[window].Mode),Wall) | String.IsEqual(Skin.String(HomeSwitcher.$PARAM[window].Mode),Combined)]">SetFocus($INFO[Window.Property(TMDBHelper.WidgetContainer)],0,absolute)</onright>
+        <onright condition="[String.IsEqual(Skin.String(HomeSwitcher.$PARAM[window].Mode),Wall) | String.IsEqual(Skin.String(HomeSwitcher.$PARAM[window].Mode),Combined)]">400</onright> -->
+
+        <onright>400</onright>
+
+    </include>
+
+    <include name="Home_Movement">
+        <include content="Home_Horz_Movement" condition="!Skin.HasSetting(HomeSwitcher.Vertical)">
+            <param name="window">$PARAM[window]</param>
+        </include>
+        <include content="Home_Vert_Movement" condition="Skin.HasSetting(HomeSwitcher.Vertical)">
+            <param name="window">$PARAM[window]</param>
+        </include>
+
+        <onback condition="Player.HasMedia">SetProperty(FullscreenRefocus,SetFocus(300))</onback>
+        <onback condition="Player.HasMedia">309</onback>
+        <onback condition="!Player.HasMedia">303</onback>
+    </include>
+
+    <include name="Home_Control">
+        <param name="onclick_condition">true</param>
+        <param name="fade_visible">!String.IsEmpty(Window(Home).Property(HomeSwitcher.IsVisible))</param>
+        <definition>
+            <include>Home_ControlList</include>
+            <control type="button" id="300">
+                <top>-1000</top>
+                <height>10</height>
+                <texturenofocus />
+                <texturefocus />
+
+                <onleft condition="!Skin.HasSetting(HomeSwitcher.Vertical)">$INFO[Container(399).ListItem(-1).Property(action)]</onleft>
+                <onright condition="!Skin.HasSetting(HomeSwitcher.Vertical)">$INFO[Container(399).ListItem(1).Property(action)]</onright>
+                <onup condition="Skin.HasSetting(HomeSwitcher.Vertical)">$INFO[Container(399).ListItem(-1).Property(action)]</onup>
+                <ondown condition="Skin.HasSetting(HomeSwitcher.Vertical)">$INFO[Container(399).ListItem(1).Property(action)]</ondown>
+
+                <onfocus>SetProperty(HomeSwitcher.IsVisible,True,Home)</onfocus>
+                <onfocus condition="$PARAM[overlay]">SetProperty(InfoPanel.FullSwitch,Wall,Home)</onfocus>
+                <onfocus condition="![$PARAM[overlay]]">ClearProperty(InfoPanel.FullSwitch,Home)</onfocus>
+                <onfocus condition="$PARAM[overlay]">SetProperty(Background.ShowOverlay,True,Home)</onfocus>
+                <onfocus condition="![$PARAM[overlay]]">ClearProperty(Background.ShowOverlay,Home)</onfocus>
+                <include content="Hub_ClickActions" condition="!Window.IsVisible(1105)">
+                    <param name="window">$PARAM[window]</param>
+                    <param name="condition">$PARAM[onclick_condition]</param>
+                </include>
+                <onfocus condition="Window.IsActive(1105)">SetFocus(3730)</onfocus>
+                <onclick condition="Window.IsVisible(1105)">SetFocus(3001)</onclick>
+                <onclick condition="Window.IsVisible(1105)">AlarmClock(reclick,Action(Select),00:00,silent)</onclick>
+
+                <include content="Home_Movement">
+                    <param name="window">$PARAM[window]</param>
+                </include>
+
+                <nested />
+            </control>
+            <control type="image">
+                <include>Home_Fade_Animation</include>
+                <visible>$PARAM[fade_visible]</visible>
+                <visible>!Skin.HasSetting(HomeSwitcher.Vertical)</visible>
+                <texture colordiffuse="main_bg_70">special://skin/extras/backgrounds/overlay/combined_topmenu.png</texture>
+                <bottom>0</bottom>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Animation">
+        <!-- <animation effect="slide" start="0,-200" end="0" time="400" delay="100" tween="cubic" easing="out">Visible</animation>
+        <animation effect="slide" end="0,-200" start="0" time="400" tween="cubic" easing="out">Hidden</animation> -->
+        <animation effect="fade" start="0" end="100" time="400" delay="200" tween="cubic" easing="out">Visible</animation>
+        <animation effect="fade" end="0" start="100" time="200" tween="cubic" easing="out">Hidden</animation>
+    </include>
+    <include name="Home_Fade_Animation">
+        <animation effect="fade" start="0" end="100" time="400" tween="cubic" easing="out">Visible</animation>
+        <animation effect="fade" end="0" start="100" time="200" tween="cubic" easing="out">Hidden</animation>
+    </include>
+    <include name="Home_Slide_Animation">
+        <animation effect="slide" start="0,-200" end="0" time="400" tween="cubic" easing="out" reversible="false" condition="$EXP[Exp_Hubs_SlideInfo]">Conditional</animation>
+        <animation effect="slide" end="0,-200" start="0" delay="100" time="400" tween="cubic" easing="out" reversible="false" condition="!$EXP[Exp_Hubs_SlideInfo]">Conditional</animation>
+    </include>
+    <include name="Home_Info_Animation">
+        <animation effect="fade" start="0" end="100" time="400" delay="200" tween="cubic" easing="in">Visible</animation>
+        <!-- <animation effect="fade" end="0" start="100" time="200" tween="cubic" easing="in">Hidden</animation> -->
+    </include>
+
+    <include name="Home_Reposition">
+        <animation effect="slide" start="0" end="0,-70" condition="Skin.HasSetting(HomeSwitcher.DisableHeader)">Conditional</animation>
+        <animation effect="slide" start="0" end="-90" condition="Skin.HasSetting(HomeSwitcher.DisableSearch)">Conditional</animation>
+    </include>
+
+    <variable name="Home_Header_Label">
+        <value condition="Skin.HasSetting(HomeSwitcher.DisableDate)">$VAR[Label_ProfileName]</value>
+        <value>$INFO[System.Date]</value>
+    </variable>
+
+    <include name="Home_Switcher_Horz">
+        <control type="image">
+            <visible>Window.IsActive(1181)</visible>
+            <include content="Animation_Fade_In">
+                <param name="type">Visible</param>
+            </include>
+            <include content="Animation_Fade_Out">
+                <param name="type">Hidden</param>
+            </include>
+            <texture colordiffuse="shadow_back">common/white.png</texture>
+        </control>
+        <control type="group">
+            <visible>!String.IsEmpty(Window(Home).Property(HomeSwitcher.IsVisible))</visible>
+            <include content="Animation_ConditionalFade">
+                <param name="condition">Window.IsVisible(1105)</param>
+            </include>
+            <include>Home_Animation</include>
+            <include content="Furniture_Header" condition="!Skin.HasSetting(HomeSwitcher.DisableHeader)">
+                <param name="label">$VAR[Home_Header_Label]</param>
+            </include>
+            <control type="group">
+                <include>Home_Group_Definition</include>
+                <include>Home_Reposition</include>
+                <control type="group">
+                    <visible>!Skin.HasSetting(HomeSwitcher.DisableSearch)</visible>
+                    <left>-20</left>
+                    <width>80</width>
+                    <control type="image">
+                        <include>Home_Grouplist_Icon_Definition</include>
+                        <texture background="true" colordiffuse="main_fg_30">special://skin/extras/icons/search.png</texture>
+                        <visible>!Control.HasFocus(300)</visible>
+                    </control>
+                </control>
+                <control type="grouplist">
+                    <top>-100</top>
+                    <include content="Object_Left" condition="Skin.HasSetting(HomeSwitcher.EnableIcons)">
+                        <param name="left">-10</param>
+                    </include>
+                    <left>-20</left>
+                    <orientation>horizontal</orientation>
+                    <height>1080</height>
+                    <include content="Home_Object">
+                        <param name="window">home</param>
+                        <param name="id">00</param>
+                    </include>
+                    <include content="skinvariables-hubs-left">
+                        <param name="include">Home_Object</param>
+                    </include>
+                </control>
+
+                <include>Home_Switcher_Right_Buttons</include>
+            </control>
+        </control>
+    </include>
+
+    <include name="Home_Switcher_Vert">
+        <control type="image">
+            <visible>Window.IsActive(1181)</visible>
+            <include content="Animation_Fade_In">
+                <param name="type">Visible</param>
+            </include>
+            <include content="Animation_Fade_Out">
+                <param name="type">Hidden</param>
+            </include>
+            <texture colordiffuse="shadow_back">common/white.png</texture>
+        </control>
+        <control type="group">
+            <animation type="Conditional" reversible="false" condition="!String.IsEmpty(Window(Home).Property(HomeSwitcher.IsVisible))">
+                <effect type="fade" start="0" end="100" time="400" delay="200" tween="cubic" easing="out" />
+                <effect type="slide" tween="cubic" start="0" end="100" time="400" />
+            </animation>
+            <animation type="Conditional" reversible="false" condition="String.IsEmpty(Window(Home).Property(HomeSwitcher.IsVisible))">
+                <effect type="fade" end="0" start="100" time="200" tween="cubic" easing="out" />
+                <effect type="slide" tween="cubic" start="100" end="0" time="400" />
+            </animation>
+            <control type="group">
+                <control type="grouplist">
+                    <orientation>vertical</orientation>
+                    <centerleft>0</centerleft>
+                    <width>80</width>
+                    <itemgap>20</itemgap>
+                    <align>center</align>
+                    <include content="Home_Object_VertIcon" condition="!Skin.HasSetting(HomeSwitcher.DisableSearch)">
+                        <param name="icon">special://skin/extras/icons/search.png</param>
+                        <param name="window">1105</param>
+                    </include>
+                    <include content="Home_Object_VertIcon">
+                        <param name="icon">$VAR[Home_Icon_home]</param>
+                        <param name="window">home</param>
+                    </include>
+                    <include content="skinvariables-hubs-all">
+                        <param name="include">Home_Object_VertIcon</param>
+                    </include>
+                </control>
+            </control>
+        </control>
+    </include>
+
+    <include name="Home_Object_VertIcon">
+        <param name="visible">True</param>
+        <definition>
+            <control type="group">
+                <visible>$PARAM[visible]</visible>
+                <height>80</height>
+                <width>80</width>
+                <control type="group">
+                    <visible>Window.IsVisible($PARAM[window])</visible>
+                    <control type="image">
+                        <include>Texture_Menu_Highlight_H</include>
+                    </control>
+                    <control type="image">
+                        <include>Home_Grouplist_Icon_Definition</include>
+                        <texture background="true" colordiffuse="$VAR[ColorSelected]">$PARAM[icon]</texture>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>!Window.IsVisible($PARAM[window])</visible>
+                    <control type="image">
+                        <include>Home_Grouplist_Icon_Definition</include>
+                        <texture background="true" colordiffuse="main_fg_30">$PARAM[icon]</texture>
+                    </control>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Switcher_Right_Buttons">
+        <control type="grouplist">
+            <include>Home_Right_Group_Definition</include>
+            <height>80</height>
+            <centertop>50%</centertop>
+            <include content="skinvariables-hubs-right">
+                <param name="include">Home_Settings_Button</param>
+                <param name="id_prefix">31</param>
+            </include>
+            <include condition="!$EXP[Exp_Hubs_Menu_Loopback]">Home_Settings_Button</include>
+            <control type="group">
+                <width>0</width>
+            </control>
+        </control>
+    </include>
+
+    <include name="Home_Settings_Button">
+        <param name="icon">special://skin/extras/icons/settings.png</param>
+        <param name="window">1170</param>
+        <param name="id">3170</param>
+        <param name="visible">true</param>
+        <definition>
+            <control type="group">
+                <width>80</width>
+                <height>80</height>
+                <visible>$PARAM[visible]</visible>
+                <include content="Home_Grouplist_Icon">
+                    <param name="id">$PARAM[id]</param>
+                    <param name="icon">$PARAM[icon]</param>
+                    <param name="window">$PARAM[window]</param>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Submenu_Panel_VertReposition">
+        <animation effect="slide" start="0" end="0,40" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,8)">Conditional</animation>
+        <animation effect="slide" start="0" end="0,80" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,7)">Conditional</animation>
+        <animation effect="slide" start="0" end="0,120" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,6)">Conditional</animation>
+        <animation effect="slide" start="0" end="0,160" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,5)">Conditional</animation>
+        <animation effect="slide" start="0" end="0,200" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,4)">Conditional</animation>
+        <animation effect="slide" start="0" end="0,240" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,3)">Conditional</animation>
+        <animation effect="slide" start="0" end="0,280" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,2)">Conditional</animation>
+        <animation effect="slide" start="0" end="0,320" condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,1)">Conditional</animation>
+    </include>
+
+    <include name="Home_Submenu_Panel">
+        <param name="right_side">false</param>
+        <param name="left">0</param>
+        <definition>
+            <control type="group">
+                <left>$PARAM[left]</left>
+
+                <include content="Home_Submenu_Panel_VertReposition" condition="Skin.HasSetting(HomeSwitcher.Vertical)">
+                    <param name="id">$PARAM[id]</param>
+                </include>
+
+                <top>100</top>
+                <width>560</width>
+                <height>880</height>
+                <control type="group">
+                    <visible>Window.IsVisible($PARAM[window])</visible>
+                    <include>Animation_SlideIn_Dialog</include>
+                    <control type="group">
+                        <include content="Object_Top" condition="Skin.HasSetting(HomeSwitcher.Vertical)">
+                            <param name="top">40</param>
+                        </include>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsGreater(Container(80$PARAM[id]).NumItems,8)</visible>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,8)</visible>
+                            <bottom>80</bottom>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,7)</visible>
+                            <bottom>160</bottom>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,6)</visible>
+                            <bottom>240</bottom>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,5)</visible>
+                            <bottom>320</bottom>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,4)</visible>
+                            <bottom>400</bottom>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,3)</visible>
+                            <bottom>480</bottom>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,2)</visible>
+                            <bottom>560</bottom>
+                        </control>
+                        <control type="group">
+                            <include>Part_Background_Panel</include>
+                            <visible>Integer.IsEqual(Container(80$PARAM[id]).NumItems,1)</visible>
+                            <bottom>640</bottom>
+                        </control>
+                        <include content="Part_Scrollbar">
+                            <param name="id">61$PARAM[id]</param>
+                            <include content="Object_CenterRight" condition="!$PARAM[right_side]">
+                                <param name="centerright">40</param>
+                            </include>
+                            <include content="Object_CenterLeft" condition="$PARAM[right_side]">
+                                <param name="centerleft">40</param>
+                            </include>
+                            <top>60</top>
+                            <bottom>60</bottom>
+                            <onleft condition="!$PARAM[right_side]">80$PARAM[id]</onleft>
+                            <onright condition="!$PARAM[right_side]">PreviousMenu</onright>
+                            <onleft condition="$PARAM[right_side]">PreviousMenu</onleft>
+                            <onright condition="$PARAM[right_side]">80$PARAM[id]</onright>
+                        </include>
+                    </control>
+                    <include content="List_DialogSelect">
+                        <param name="id">80$PARAM[id]</param>
+                        <param name="itemlayout_include">Layout_MenuList</param>
+                        <top>100</top>
+                        <bottom>60</bottom>
+                        <left>60</left>
+                        <right>60</right>
+                        <oninfo>PreviousMenu</oninfo>
+                        <onup condition="!Skin.HasSetting(HomeSwitcher.Vertical)">PreviousMenu</onup>
+                        <ondown condition="!Skin.HasSetting(HomeSwitcher.Vertical)">noop</ondown>
+                        <onleft condition="!$PARAM[right_side]">PreviousMenu</onleft>
+                        <onright condition="!$PARAM[right_side]">61$PARAM[id]</onright>
+                        <onleft condition="$PARAM[right_side]">61$PARAM[id]</onleft>
+                        <onright condition="$PARAM[right_side]">PreviousMenu</onright>
+                        <orientation>vertical</orientation>
+                        <pagecontrol>61$PARAM[id]</pagecontrol>
+                        <content>
+                            <include>skinvariables-$PARAM[window]submenu-staticitems</include>
+                        </content>
+                    </include>
+
+                </control>
+            </control>
+            <include content="Home_Focus_Object" condition="!Skin.HasSetting(HomeSwitcher.Vertical) + !$PARAM[right_side]">
+                <param name="window">$PARAM[window]</param>
+            </include>
+        </definition>
+    </include>
+
+    <include name="Home_Object">
+        <param name="use_icons">Skin.HasSetting(HomeSwitcher.EnableIcons)</param>
+        <definition>
+            <control type="group">
+                <top>100</top>
+                <width>560</width>
+                <height>80</height>
+                <control type="group">
+                    <left>80</left>
+                    <control type="label">
+                        <font>font_main_bold</font>
+                        <textcolor>main_fg_30</textcolor>
+                        <label>$VAR[Hub_Label_$PARAM[window]]</label>
+                        <left>30</left>
+                        <visible>![$PARAM[use_icons]]</visible>
+                    </control>
+                    <control type="group">
+                        <left>10</left>
+                        <width>80</width>
+                        <visible>$PARAM[use_icons]</visible>
+                        <control type="image">
+                            <include>Home_Grouplist_Icon_Definition</include>
+                            <texture background="true" colordiffuse="main_fg_30">$VAR[Home_Icon_$PARAM[window]]</texture>
+                        </control>
+                    </control>
+                </control>
+            </control>
+            <include content="Home_Focus_Object">
+                <param name="window">$PARAM[window]</param>
+            </include>
+        </definition>
+    </include>
+
+    <include name="Home_Focus_Object">
+        <include content="Home_Focus_Faker">
+            <param name="window">$PARAM[window]</param>
+        </include>
+        <include content="Home_Spacer">
+            <param name="name">$VAR[Hub_Label_$PARAM[window]]</param>
+            <param name="icon">$VAR[Home_Icon_$PARAM[window]]</param>
+        </include>
+    </include>
+
+    <include name="Home_Focus_Faker">
+        <param name="use_icons">Skin.HasSetting(HomeSwitcher.EnableIcons)</param>
+        <definition>
+            <control type="group">
+                <left>-480</left>
+                <width>480</width>
+                <top>100</top>
+                <height>80</height>
+                <control type="group">
+                    <visible>Window.IsVisible($PARAM[window])</visible>
+                    <control type="button">
+                        <font>font_main_bold</font>
+                        <textcolor>00ffffff</textcolor>
+                        <focusedcolor>00ffffff</focusedcolor>
+                        <label>$VAR[Hub_Label_$PARAM[window]]</label>
+                        <width>auto</width>
+                        <include>Texture_Highlight_Button_FakeFocus_H</include>
+                        <visible>![$PARAM[use_icons]]</visible>
+                    </control>
+                    <control type="label">
+                        <font>font_main_bold</font>
+                        <textcolor>$VAR[ColorSelected]</textcolor>
+                        <label>$VAR[Hub_Label_$PARAM[window]]</label>
+                        <left>30</left>
+                        <visible>![$PARAM[use_icons]]</visible>
+                    </control>
+                    <control type="group">
+                        <left>10</left>
+                        <width>80</width>
+                        <visible>$PARAM[use_icons]</visible>
+                        <control type="image">
+                            <include>Texture_Menu_Highlight_H</include>
+                        </control>
+                        <control type="image">
+                            <include>Home_Grouplist_Icon_Definition</include>
+                            <texture background="true" colordiffuse="$VAR[ColorSelected]">$VAR[Home_Icon_$PARAM[window]]</texture>
+                        </control>
+                    </control>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Submenu_Start">
+        <control type="button" id="70$PARAM[id]">
+            <texturefocus />
+            <texturenofocus />
+            <onfocus condition="!Integer.IsEqual(Container(80$PARAM[id]).NumItems,0)">SetFocus(80$PARAM[id],0,absolute)</onfocus>
+            <onfocus condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,0)">PreviousMenu</onfocus>
+            <onfocus condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,0)">SetProperty(Bumper.Direction,Up,Home)</onfocus>
+            <onfocus condition="Integer.IsEqual(Container(80$PARAM[id]).NumItems,0)">ActivateWindow(1180)</onfocus>
+        </control>
+    </include>
+
+    <include name="Home_Horz_Submenu">
+        <definition>
+            <include content="Home_Submenu_Start"><param name="id">00</param></include>
+            <include content="Home_Submenu_Start"><param name="id">01</param></include>
+            <include content="Home_Submenu_Start"><param name="id">02</param></include>
+            <include content="Home_Submenu_Start"><param name="id">03</param></include>
+            <include content="Home_Submenu_Start"><param name="id">04</param></include>
+            <include content="Home_Submenu_Start"><param name="id">06</param></include>
+            <include content="Home_Submenu_Start"><param name="id">07</param></include>
+            <include content="Home_Submenu_Start"><param name="id">08</param></include>
+            <include content="Home_Submenu_Start"><param name="id">09</param></include>
+            <control type="group">
+                <include>Home_Group_Definition</include>
+                <control type="grouplist">
+                    <top>-100</top>
+                    <include>Home_Reposition</include>
+                    <include content="Object_Left" condition="Skin.HasSetting(HomeSwitcher.EnableIcons)">
+                        <param name="left">-10</param>
+                    </include>
+                    <left>-20</left>
+                    <orientation>horizontal</orientation>
+                    <height>1080</height>
+                    <include content="Home_Submenu_Panel">
+                        <param name="window">home</param>
+                        <param name="id">00</param>
+                    </include>
+                    <include content="skinvariables-hubs-left">
+                        <param name="include">Home_Submenu_Panel</param>
+                    </include>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Vert_Submenu">
+        <definition>
+            <include content="Home_Submenu_Start"><param name="id">00</param></include>
+            <include content="Home_Submenu_Start"><param name="id">01</param></include>
+            <include content="Home_Submenu_Start"><param name="id">02</param></include>
+            <include content="Home_Submenu_Start"><param name="id">03</param></include>
+            <include content="Home_Submenu_Start"><param name="id">04</param></include>
+            <include content="Home_Submenu_Start"><param name="id">06</param></include>
+            <include content="Home_Submenu_Start"><param name="id">07</param></include>
+            <include content="Home_Submenu_Start"><param name="id">08</param></include>
+            <include content="Home_Submenu_Start"><param name="id">09</param></include>
+            <control type="group">
+                <top>-20</top>
+                <left>120</left>
+                <include content="Home_Submenu_Panel">
+                    <param name="window">home</param>
+                    <param name="id">00</param>
+                </include>
+                <include content="skinvariables-hubs-all">
+                    <param name="include">Home_Submenu_Panel</param>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Group_Definition">
+        <left>view_pad</left>
+        <right>view_pad</right>
+        <centertop>170</centertop>
+        <height>80</height>
+    </include>
+
+    <include name="Home_Grouplist_Definition">
+        <left>-20</left>
+        <height>160</height>
+        <centertop>50%</centertop>
+        <orientation>horizontal</orientation>
+        <include content="Object_ItemGap" condition="Skin.HasSetting(HomeSwitcher.EnableIcons)">
+            <param name="itemgap">20</param>
+        </include>
+        <itemgap>0</itemgap>
+    </include>
+
+    <include name="Home_Grouplist_Icon">
+        <definition>
+            <control type="group">
+                <width>80</width>
+                <height>80</height>
+                <centertop>50%</centertop>
+                <control type="button" id="$PARAM[id]">
+                    <onclick condition="!Window.IsVisible($PARAM[window])">ReplaceWindow($PARAM[window])</onclick>
+                    <include content="Hub_ClickActions" condition="!String.IsEqual($PARAM[window],1170)">
+                        <param name="window">$PARAM[window]</param>
+                        <param name="condition">Window.IsVisible($PARAM[window])</param>
+                    </include>
+                    <texturenofocus />
+                </control>
+                <control type="group">
+                    <visible>![Window.IsVisible($PARAM[window]) + Integer.IsEqual(System.CurrentControlID,300)]</visible>
+                    <control type="image">
+                        <include>Home_Grouplist_Icon_Definition</include>
+                        <texture background="true" colordiffuse="main_fg_30">$PARAM[icon]</texture>
+                        <visible>!Control.HasFocus($PARAM[id])</visible>
+                    </control>
+                    <control type="image">
+                        <include>Home_Grouplist_Icon_Definition</include>
+                        <texture background="true" colordiffuse="$VAR[ColorSelected]">$PARAM[icon]</texture>
+                        <visible>Control.HasFocus($PARAM[id])</visible>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>Window.IsVisible($PARAM[window]) + Integer.IsEqual(System.CurrentControlID,300)</visible>
+                    <control type="image">
+                        <include>Texture_Menu_Highlight_H</include>
+                    </control>
+                    <control type="image">
+                        <include>Home_Grouplist_Icon_Definition</include>
+                        <texture background="true" colordiffuse="$VAR[ColorSelected]">$PARAM[icon]</texture>
+                    </control>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Spacer">
+        <param name="visible">true</param>
+        <param name="use_icons">Skin.HasSetting(HomeSwitcher.EnableIcons)</param>
+        <definition>
+            <control type="button">
+                <left>-560</left>
+                <font>font_main_bold</font>
+                <textcolor>00ffffff</textcolor>
+                <focusedcolor>00ffffff</focusedcolor>
+                <label>$PARAM[name]</label>
+                <height>80</height>
+                <include content="Object_Width" condition="$PARAM[use_icons]">
+                    <param name="width">100</param>
+                </include>
+                <width>auto</width>
+                <centertop>50%</centertop>
+                <texturenofocus />
+                <texturefocus />
+                <visible>$PARAM[visible]</visible>
+            </control>
+        </definition>
+    </include>
+
+
+    <include name="Home_Grouplist_Icon_Definition">
+        <centerleft>50%</centerleft>
+        <centertop>50%</centertop>
+        <width>40</width>
+        <height>40</height>
+        <bordersize>icon_home_bordersize</bordersize>
+    </include>
+    <include name="Home_Right_Group_Definition">
+        <param name="width">500</param>
+        <definition>
+            <include content="Object_Right" condition="Skin.HasSetting(HomeSwitcher.DisableSearch)">
+                <param name="right">-130</param>
+            </include>
+            <right>-40</right>
+            <align>right</align>
+            <width>$PARAM[width]</width>
+            <orientation>horizontal</orientation>
+            <itemgap>20</itemgap>
+        </definition>
+    </include>
+
+    <include name="Home_Right_Submenu_Item">
+        <definition>
+            <control type="group">
+                <width>80</width>
+                <height>1080</height>
+                <include content="Home_Submenu_Panel">
+                    <param name="window">$PARAM[window]</param>
+                    <param name="id">$PARAM[id]</param>
+                    <param name="right_side">true</param>
+                    <param name="left">-480</param>
+                </include>
+                <control type="group">
+                    <top>100</top>
+                    <width>80</width>
+                    <height>80</height>
+                    <visible>Window.IsVisible($PARAM[window])</visible>
+                    <include content="Home_Object_VertIcon">
+                        <param name="window">$PARAM[window]</param>
+                        <param name="icon">$VAR[Home_Icon_$PARAM[window]]</param>
+                    </include>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Home_Right_Submenu">
+        <definition>
+            <control type="group">
+                <include>Home_Group_Definition</include>
+                <include>Home_Reposition</include>
+                <control type="grouplist">
+                    <include content="Home_Right_Group_Definition">
+                        <param name="width">1060</param>
+                    </include>
+                    <top>-100</top>
+                    <height>1080</height>
+                    <include content="skinvariables-hubs-right">
+                        <param name="include">Home_Right_Submenu_Item</param>
+                    </include>
+                    <control type="group">
+                        <width>80</width>
+                        <height>1080</height>
+                        <visible>!$EXP[Exp_Hubs_Menu_Loopback]</visible>
+                    </control>
+                    <control type="group">
+                        <width>0</width>
+                    </control>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+
+    <expression name="Netflix_Tab_Auto">
+        String.IsEqual(Window(Home).Property(Netflix.TabDwellAuto),true)
+    </expression>
+
+    <expression name="Netflix_Tab_Catalog_Root">
+        Window.IsActive(Videos) + !String.Contains(Container.FolderPath,new_page=) +
+        [$EXP[Netflix_Movies_Catalog] | $EXP[Netflix_Shows_Catalog]]
+    </expression>
+
+    <expression name="Netflix_Tab_Pending">
+        !String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) |
+        !String.IsEmpty(Window(Home).Property(Netflix.TabArrival))
+    </expression>
+
+    <expression name="Netflix_Tab_Arrival_Ready">
+        !System.HasActiveModalDialog + [
+            [String.IsEqual(Window(Home).Property(Netflix.TabArrival),3730) + Window.IsActive(1105)] |
+            [String.IsEqual(Window(Home).Property(Netflix.TabArrival),3732) + $EXP[Netflix_Shows_Catalog] + [String.Contains(Container.FolderPath,action=trakt_tv_trending&amp;) | $EXP[Netflix_Shows_Swap]]] |
+            [String.IsEqual(Window(Home).Property(Netflix.TabArrival),3733) + $EXP[Netflix_Movies_Catalog]] |
+            [String.IsEqual(Window(Home).Property(Netflix.TabArrival),3734) + Window.IsActive(1165)]
+        ]
+    </expression>
+
+    <expression name="Netflix_Navigation_Tab_Focused">
+        Control.HasFocus(3730) | Control.HasFocus(3733) | Control.HasFocus(3732) | Control.HasFocus(3734) | Control.HasFocus(3735) | Control.HasFocus(3736)
+    </expression>
+
+    <include name="Netflix_Navigation_Width">
+        <definition>
+            <width>$PARAM[width]</width>
+        </definition>
+    </include>
+
+    <include name="Netflix_Top_Navigation">
+        <param name="active">Movies</param>
+        <param name="reference">false</param>
+        <param name="search_selected">Window.IsActive(1105)</param>
+        <param name="search_open">ActivateWindow(1105)</param>
+        <param name="shows_selected">false</param>
+        <param name="movies_selected">false</param>
+        <param name="my_list_selected">Window.IsActive(1165)</param>
+        <param name="my_list_opened">Window.IsActive(1165)</param>
+        <param name="my_list_open">ActivateWindow(1165)</param>
+        <param name="body">$VAR[Hub_Action_Down]</param>
+        <!-- One genre menu (button 3736 + drawer 3750-3760) per window; pass false for a second header in the same window. -->
+        <param name="genre_menu">true</param>
+        <definition>
+            <control type="group" id="3700">
+                <height>88</height>
+                <control type="image">
+                    <height>88</height>
+                    <texture colordiffuse="FF080808">common/white.png</texture>
+                    <visible>!$PARAM[reference]</visible>
+                </control>
+                <!-- Relay for Back on a header tab over a genre grid (staged/genre-over-root, Netflix_Grid_Over_Back): Kodi will
+                     not take a Back target equal to the focused tab itself, so Back goes here and comes straight back
+                     to the tab the grid belonged to (Netflix.Tab was set by that same Back). Never visible as such. -->
+                <control type="button" id="3762">
+                    <left>0</left><top>0</top><width>1</width><height>1</height>
+                    <texturefocus /><texturenofocus /><label />
+                    <onfocus condition="String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">SetFocus(3732)</onfocus>
+                    <onfocus condition="!String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">SetFocus(3733)</onfocus>
+                    <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright>
+                    <onback condition="String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">3732</onback>
+                    <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">3733</onback>
+                </control>
+                <!-- Back relays at the Movies/Shows root (cleanup step 2): Back on Options (3735) or the genre button (3736)
+                     targets its relay, which hands focus straight back, so Back there does nothing (Kodi refuses a Back
+                     target equal to the focused control and would run its window default instead). Never visible. -->
+                <control type="button" id="3763">
+                    <left>0</left><top>0</top><width>1</width><height>1</height>
+                    <texturefocus /><texturenofocus /><label />
+                    <onfocus>SetFocus(3735)</onfocus>
+                    <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright><onback>3735</onback>
+                </control>
+                <control type="button" id="3764">
+                    <left>0</left><top>0</top><width>1</width><height>1</height>
+                    <texturefocus /><texturenofocus /><label />
+                    <onfocus>SetFocus(3736)</onfocus>
+                    <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright><onback>3736</onback>
+                </control>
+
+                <control type="group">
+                    <centerleft>50%</centerleft>
+                    <!-- With the genre menu the strip is 68 (button) + 24 (pill gap) wider, so it stays centered. -->
+                    <include content="Netflix_Navigation_Width" condition="$PARAM[reference] + ![$PARAM[genre_menu]]">
+                        <param name="width">728</param>
+                    </include>
+                    <include content="Netflix_Navigation_Width" condition="![$PARAM[reference]] + ![$PARAM[genre_menu]]">
+                        <param name="width">748</param>
+                    </include>
+                    <include content="Netflix_Navigation_Width" condition="$PARAM[reference] + $PARAM[genre_menu]">
+                        <param name="width">820</param>
+                    </include>
+                    <include content="Netflix_Navigation_Width" condition="![$PARAM[reference]] + $PARAM[genre_menu]">
+                        <param name="width">840</param>
+                    </include>
+                    <height>88</height>
+                    <include content="Netflix_Navigation_Tab">
+                        <param name="id">3730</param>
+                        <param name="reference">$PARAM[reference]</param>
+                        <param name="reference_left">35</param>
+                        <param name="reference_search">true</param>
+                        <param name="reference_width">74</param>
+                        <param name="left">0</param>
+                        <param name="width">164</param>
+                        <param name="label">Search</param>
+                        <param name="selected">$PARAM[search_selected]</param>
+                        <param name="opened">$PARAM[search_selected]</param>
+                        <param name="next">3733</param>
+                        <param name="previous">3730</param>
+                        <param name="right_dwell">![$PARAM[genre_menu]]</param>
+                        <param name="right_target">3736</param>
+                        <param name="body">$PARAM[body]</param>
+                        <onclick condition="[Window.IsActive(1105)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[search_selected]]]">$PARAM[body]</onclick>
+                        <onclick condition="[Window.IsActive(1162) | Window.IsActive(1163) | Window.IsActive(1165)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[search_selected]]]">ReplaceWindow(1105)</onclick>
+                        <!-- R10.2: the opened window keeps its last focus (e.g. the tab it was left by): put it on this tab now. -->
+                        <onclick condition="[Window.IsActive(1162) | Window.IsActive(1163) | Window.IsActive(1165)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[search_selected]]]">SetFocus(3730)</onclick>
+                        <onclick condition="[!Window.IsActive(1105) + !Window.IsActive(1162) + !Window.IsActive(1163) + !Window.IsActive(1165)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[search_selected]]]">$PARAM[search_open]</onclick>
+                        <onclick condition="[!Window.IsActive(1105) + !Window.IsActive(1162) + !Window.IsActive(1163) + !Window.IsActive(1165)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[search_selected]]]">SetFocus(3730)</onclick>
+                    </include>
+                    <include content="Netflix_Genre_Menu_Button" condition="$PARAM[genre_menu]">
+                        <param name="reference">$PARAM[reference]</param>
+                        <param name="body">$PARAM[body]</param>
+                        <param name="shows_selected">$PARAM[shows_selected]</param>
+                    </include>
+                    <control type="group">
+                    <include condition="$PARAM[genre_menu]">Netflix_Genre_Menu_Shift</include>
+                    <height>88</height>
+                    <include content="Netflix_Navigation_Tab">
+                        <param name="id">3733</param>
+                        <param name="reference">$PARAM[reference]</param>
+                        <param name="reference_left">133</param>
+                        <param name="reference_width">168</param>
+                        <param name="left">188</param>
+                        <param name="width">168</param>
+                        <param name="label">Movies</param>
+                        <param name="selected">Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog] | $PARAM[movies_selected]</param>
+                        <param name="opened">Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]</param>
+                        <param name="next">3732</param>
+                        <param name="previous">3730</param>
+                        <param name="left_dwell">![$PARAM[genre_menu]]</param>
+                        <param name="left_target">3736</param>
+                        <param name="body">$PARAM[body]</param>
+                        <!-- Tab swap: on the Movies Trending root, Right shows the Shows tab at once (no dwell, no add-on call). -->
+                        <param name="swap">$EXP[Netflix_Tab_Swap_Root]</param>
+                        <param name="swap_right">$EXP[Netflix_Tab_Swap_Root]</param>
+                        <param name="swap_right_tab">shows</param>
+                        <onclick condition="[$EXP[Netflix_Movies_Catalog]] + [!$EXP[Netflix_Tab_Auto] | ![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]]">$PARAM[body]</onclick>
+                        <onclick condition="[!$EXP[Netflix_Movies_Catalog]] + [!$EXP[Netflix_Tab_Auto] | ![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]]">SetProperty(Netflix.Tab,movies,Home)</onclick>
+                        <!-- The Movies page itself: over a genre grid that is closing the grid; from Search / My Lists the
+                             tab opens the Movies root as before, without bringing an old grid back over it. -->
+                        <onclick condition="[!$EXP[Netflix_Movies_Catalog]] + [!$EXP[Netflix_Tab_Auto] | ![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]]">ClearProperty(Netflix.Grid.Shell,Home)</onclick>
+                        <onclick condition="[!$EXP[Netflix_Movies_Catalog]] + [!$EXP[Netflix_Tab_Auto] | ![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]] + Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_Root]">Container.Update("plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                        <onclick condition="[!$EXP[Netflix_Movies_Catalog]] + [!$EXP[Netflix_Tab_Auto] | ![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]] + !Window.IsActive(Videos) + !String.IsEqual(Window(Home).Property(Netflix.Videos.Root),movies)">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                        <!-- Review F3: Videos already holds this root (Search / My Lists opened over it): reopen it without a path,
+                             so Kodi does not force a refresh of the same folder. Netflix.Videos.Root comes from the row observer. -->
+                        <onclick condition="[!$EXP[Netflix_Movies_Catalog]] + [!$EXP[Netflix_Tab_Auto] | ![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]] + !Window.IsActive(Videos) + String.IsEqual(Window(Home).Property(Netflix.Videos.Root),movies)">ActivateWindow(Videos)</onclick>
+                        <!-- R10.2: Videos comes back focusing its hidden or empty view list 591 ("asked to focus, but it can't"): focus this tab now. -->
+                        <onclick condition="[!$EXP[Netflix_Movies_Catalog]] + [!$EXP[Netflix_Tab_Auto] | ![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]] + !Window.IsActive(Videos)">SetFocus(3733)</onclick>
+                    </include>
+                    <include content="Netflix_Navigation_Tab">
+                        <param name="id">3732</param>
+                        <param name="reference">$PARAM[reference]</param>
+                        <param name="reference_left">325</param>
+                        <param name="reference_width">160</param>
+                        <param name="left">380</param>
+                        <param name="width">160</param>
+                        <param name="label">Shows</param>
+                        <param name="selected">$EXP[Netflix_Shows_Catalog] | $PARAM[shows_selected]</param>
+                        <param name="opened">$EXP[Netflix_Shows_Catalog]</param>
+                        <param name="next">3734</param>
+                        <param name="previous">3733</param>
+                        <param name="body">$PARAM[body]</param>
+                        <!-- Tab swap: on the Movies Trending root, Left shows the Movies tab at once. From anywhere else
+                             with the swap on, Shows means "Movies Trending root + Netflix.Tab=shows" (one route, as before). -->
+                        <param name="swap">$EXP[Netflix_Tab_Swap_Root]</param>
+                        <param name="swap_left">$EXP[Netflix_Tab_Swap_Root]</param>
+                        <param name="swap_left_tab">movies</param>
+                        <onclick condition="$EXP[Netflix_Shows_Catalog] + !$EXP[Netflix_Tab_Auto]">$PARAM[body]</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog]">SetProperty(Netflix.Tab,shows,Home)</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog]">ClearProperty(Netflix.Grid.Shell,Home)</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog] + Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On]">Container.Update("plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog] + Window.IsActive(Videos) + $EXP[Netflix_Tab_Swap_On] + !$EXP[Netflix_Tab_Swap_Root]">Container.Update("plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog] + !Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + !String.IsEqual(Window(Home).Property(Netflix.Videos.Root),shows)">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog] + !Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + String.IsEqual(Window(Home).Property(Netflix.Videos.Root),shows)">ActivateWindow(Videos)</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog] + !Window.IsActive(Videos) + $EXP[Netflix_Tab_Swap_On] + !String.IsEqual(Window(Home).Property(Netflix.Videos.Root),movies)">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog] + !Window.IsActive(Videos) + $EXP[Netflix_Tab_Swap_On] + String.IsEqual(Window(Home).Property(Netflix.Videos.Root),movies)">ActivateWindow(Videos)</onclick>
+                        <!-- R10.2: Videos comes back focusing its view list 591, hidden under the swapped-in Shows tab ("asked to focus, but it can't"): focus this tab now. -->
+                        <onclick condition="!$EXP[Netflix_Shows_Catalog] + !Window.IsActive(Videos)">SetFocus(3732)</onclick>
+                    </include>
+                    <include content="Netflix_Navigation_Tab">
+                        <param name="id">3734</param>
+                        <param name="reference">$PARAM[reference]</param>
+                        <param name="reference_left">509</param>
+                        <param name="reference_width">184</param>
+                        <param name="left">564</param>
+                        <param name="width">184</param>
+                        <param name="label">My Lists</param>
+                        <param name="selected">$PARAM[my_list_selected]</param>
+                        <param name="opened">$PARAM[my_list_opened]</param>
+                        <param name="next">3735</param>
+                        <param name="previous">3732</param>
+                        <param name="body">$PARAM[body]</param>
+                        <onclick condition="[Window.IsActive(1165)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[my_list_opened]]]">$PARAM[body]</onclick>
+                        <onclick condition="[Window.IsActive(1162) | Window.IsActive(1163) | Window.IsActive(1105)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[my_list_opened]]]">ReplaceWindow(1165)</onclick>
+                        <!-- R10.2: the opened window keeps its last focus (e.g. the tab it was left by): put it on this tab now. -->
+                        <onclick condition="[Window.IsActive(1162) | Window.IsActive(1163) | Window.IsActive(1105)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[my_list_opened]]]">SetFocus(3734)</onclick>
+                        <onclick condition="[!Window.IsActive(1165) + !Window.IsActive(1162) + !Window.IsActive(1163) + !Window.IsActive(1105)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[my_list_opened]]]">$PARAM[my_list_open]</onclick>
+                        <onclick condition="[!Window.IsActive(1165) + !Window.IsActive(1162) + !Window.IsActive(1163) + !Window.IsActive(1105)] + [!$EXP[Netflix_Tab_Auto] | ![$PARAM[my_list_opened]]]">SetFocus(3734)</onclick>
+                    </include>
+                    </control>
+                </control>
+                <control type="button" id="3735">
+                    <description>Options</description>
+                    <include content="Netflix_Options_Placement" condition="$PARAM[reference]">
+                        <param name="right">56</param>
+                        <param name="top">31</param>
+                    </include>
+                    <include content="Netflix_Options_Placement" condition="!$PARAM[reference]">
+                        <param name="right">80</param>
+                        <param name="top">10</param>
+                    </include>
+                    <width>74</width>
+                    <height>68</height>
+                    <label />
+                    <texturefocus border="34,0,34,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texturefocus>
+                    <texturenofocus />
+                    <onup>noop</onup>
+                    <ondown>ClearProperty(Netflix.TabDwellTarget,Home)</ondown>
+                    <ondown>ClearProperty(Netflix.TabArrival,Home)</ondown>
+                    <ondown>$PARAM[body]</ondown>
+                    <onleft>ClearProperty(Netflix.TabArrival,Home)</onleft>
+                    <onleft>SetFocus(3734)</onleft>
+                    <onleft>SetProperty(Netflix.TabDwellTarget,3734,Home)</onleft>
+                    <onleft>SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onleft>
+                    <onleft>Skin.TimerStart(netflix_tab_dwell)</onleft>
+                    <onright>noop</onright>
+                    <include content="Netflix_Grid_Over_Back">
+                    <!-- Passed explicitly: inside an include with its own params Kodi resolves $PARAM against the
+                         outer include, so the inner default would be lost (seen on the Mac 10:32, tab Back fell
+                         through to Kodi's own Back). -->
+                    <param name="when">$EXP[Netflix_Grid_Over]</param>
+                </include>
+                    <!-- Back at the Movies/Shows root (cleanup step 2, staged/back-cleanup): nothing happens; the relay 3763 hands focus straight back to Options. Back is no longer
+                         intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
+                         window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
+                         hence the relay. -->
+                    <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
+                    <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3763</onback>
+                    <onback condition="Window.IsActive(Home) + Player.HasMedia">3740</onback>
+                    <onback condition="Window.IsActive(Home) + !Player.HasMedia">3733</onback>
+                    <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.TabArrival,Home)</onclick>
+                    <onclick>ActivateWindow(1170)</onclick>
+                </control>
+                <control type="image">
+                    <include content="Netflix_Options_Placement" condition="$PARAM[reference]">
+                        <param name="right">65</param>
+                        <param name="top">37</param>
+                    </include>
+                    <include content="Netflix_Options_Placement" condition="!$PARAM[reference]">
+                        <param name="right">89</param>
+                        <param name="top">16</param>
+                    </include>
+                    <width>56</width>
+                    <height>56</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFF2F2F2">special://skin/extras/icons/settings.png</texture>
+                    <visible>!Control.HasFocus(3735)</visible>
+                </control>
+                <control type="image">
+                    <include content="Netflix_Options_Placement" condition="$PARAM[reference]">
+                        <param name="right">65</param>
+                        <param name="top">37</param>
+                    </include>
+                    <include content="Netflix_Options_Placement" condition="!$PARAM[reference]">
+                        <param name="right">89</param>
+                        <param name="top">16</param>
+                    </include>
+                    <width>56</width>
+                    <height>56</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FF080808">special://skin/extras/icons/settings.png</texture>
+                    <visible>Control.HasFocus(3735)</visible>
+                </control>
+            </control>
+            <include content="Netflix_Genre_Menu_Drawer" condition="$PARAM[genre_menu]">
+                <param name="reference">$PARAM[reference]</param>
+            </include>
+        </definition>
+    </include>
+
+    <!-- Genre menu: drawer state lives on Home and is changed only by these builtins and two skin timers. -->
+    <expression name="Netflix_GenreMenu_Open">
+        String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) +
+        String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window))
+    </expression>
+
+    <expression name="Netflix_GenreMenu_Shows">
+        String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Type),shows)
+    </expression>
+
+    <!-- Glass look (option A): the chosen switch side is focused glass; slightly brighter while 3750 has focus. -->
+    <!-- Switch Select: one unconditional SetProperty, so no condition in that list reads the Type it writes. -->
+    <variable name="Netflix_GenreMenu_Type_Toggled">
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">movies</value>
+        <value>shows</value>
+    </variable>
+
+    <variable name="Netflix_GenreMenu_Chosen_Text">
+        <value condition="Control.HasFocus(3750)">FFFFFFFF</value>
+        <value>FFF5F5F5</value>
+    </variable>
+
+    <variable name="Netflix_GenreMenu_Chosen_Glass">
+        <value condition="Control.HasFocus(3750)">FFFFFFFF</value>
+        <value>CCFFFFFF</value>
+    </variable>
+
+    <include name="Netflix_Genre_Menu_Glyph">
+        <definition>
+            <control type="image">
+                <left>18</left><top>18</top><width>32</width><height>32</height>
+                <texture colordiffuse="$PARAM[color]">special://skin/extras/icons/netflix-genres-tiles.png</texture>
+            </control>
+        </definition>
+    </include>
+
+    <!-- In the centered tab strip: Search ends at 109 (reference) / 164, then the 24 pill gap.
+         The drawer's open-state copy is outside the strip and passes absolute values:
+         strip left (1920-820)/2 = 550 + 133 = 683; (1920-840)/2 = 540 + 188 = 728. -->
+    <include name="Netflix_Genre_Menu_Shift">
+        <left>92</left>
+    </include>
+
+    <include name="Netflix_Genre_Menu_Placement">
+        <param name="ref_left">133</param>
+        <param name="left">188</param>
+        <definition>
+            <include content="Netflix_Tab_Placement" condition="$PARAM[reference]">
+                <param name="left">$PARAM[ref_left]</param>
+                <param name="top">31</param>
+                <param name="width">68</param>
+                <param name="height">68</param>
+            </include>
+            <include content="Netflix_Tab_Placement" condition="!$PARAM[reference]">
+                <param name="left">$PARAM[left]</param>
+                <param name="top">10</param>
+                <param name="width">68</param>
+                <param name="height">68</param>
+            </include>
+        </definition>
+    </include>
+
+    <include name="Netflix_Genre_Menu_Button">
+        <param name="reference">false</param>
+        <param name="shows_selected">false</param>
+        <definition>
+            <control type="button" id="3736">
+                <description>Genres</description>
+                <include content="Netflix_Genre_Menu_Placement">
+                    <param name="reference">$PARAM[reference]</param>
+                </include>
+                <label />
+                <texturefocus border="34,0,34,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texturefocus>
+                <texturenofocus />
+                <onup>noop</onup>
+                <ondown>ClearProperty(Netflix.TabDwellTarget,Home)</ondown>
+                <ondown>ClearProperty(Netflix.TabArrival,Home)</ondown>
+                <ondown>$PARAM[body]</ondown>
+                <!-- Same dwell moves the tabs use: Left lands on Search, Right lands on Movies. -->
+                <onleft>ClearProperty(Netflix.TabArrival,Home)</onleft>
+                <onleft>SetFocus(3730)</onleft>
+                <onleft>SetProperty(Netflix.TabDwellTarget,3730,Home)</onleft>
+                <onleft>SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onleft>
+                <onleft>Skin.TimerStart(netflix_tab_dwell)</onleft>
+                <onright>ClearProperty(Netflix.TabArrival,Home)</onright>
+                <onright>SetFocus(3733)</onright>
+                <onright>SetProperty(Netflix.TabDwellTarget,3733,Home)</onright>
+                <onright>SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onright>
+                <onright>Skin.TimerStart(netflix_tab_dwell)</onright>
+                <!-- Parked state (grid Back reopened the drawer, focus still here): Back also closes the drawer. -->
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true)">ClearProperty(Netflix.GenreMenu.Open,Home)</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true)">ClearProperty(Netflix.GenreMenu.Window,Home)</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true)">ClearProperty(Netflix.GenreMenu.Origin,Home)</onback>
+                <include>Netflix_Genre_Menu_Grid_Back</include>
+                <include content="Netflix_Grid_Over_Back">
+                    <param name="when">$EXP[Netflix_Grid_Over] + !$EXP[Netflix_GenreMenu_Layout]</param>
+                </include>
+                <!-- Back at the Movies/Shows root (cleanup step 2, staged/back-cleanup): nothing happens; the relay 3764 hands focus straight back to this button. Back is no longer
+                     intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
+                     window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
+                     hence the relay. -->
+                <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
+                <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3764</onback>
+                <!-- Home only: same result as hidden 3740 (Movies tab, then the playing video) without a Home-only id. -->
+                <onback condition="Window.IsActive(Home) + Player.HasMedia">ActivateWindow(fullscreenvideo)</onback>
+                <onback condition="Window.IsActive(Home)">3733</onback>
+                <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
+                <onclick>ClearProperty(Netflix.TabArrival,Home)</onclick>
+                <onclick condition="$EXP[Netflix_Shows_Catalog] | $PARAM[shows_selected]">SetProperty(Netflix.GenreMenu.Type,shows,Home)</onclick>
+                <onclick condition="![$EXP[Netflix_Shows_Catalog] | $PARAM[shows_selected]]">SetProperty(Netflix.GenreMenu.Type,movies,Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.Window,$INFO[System.CurrentWindow],Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Origin,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Views,Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.Open,true,Home)</onclick>
+                <!-- Drawer children carry no visible condition, so this focus lands before the drawer group's next visibility pass. -->
+                <onclick>SetFocus(3750)</onclick>
+            </control>
+            <control type="group">
+                <include content="Netflix_Genre_Menu_Placement">
+                    <param name="reference">$PARAM[reference]</param>
+                </include>
+                <visible>!Control.HasFocus(3736)</visible>
+                <include content="Netflix_Genre_Menu_Glyph">
+                    <param name="color">FFF2F2F2</param>
+                </include>
+            </control>
+            <control type="group">
+                <include content="Netflix_Genre_Menu_Placement">
+                    <param name="reference">$PARAM[reference]</param>
+                </include>
+                <visible>Control.HasFocus(3736)</visible>
+                <include content="Netflix_Genre_Menu_Glyph">
+                    <param name="color">FF080808</param>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <!-- Drawer Back. Opened from the button: close, focus 3736. Opened over the grid (Origin=grid): close and
+         leave the grid for that tab's shelves, like the grid Back on 3736. 3736 is the unconditional last target
+         so focus can never be left nowhere and Kodi's default Back never runs.
+         Rule (live capture on v6): Kodi evaluates every action's condition before running any of them, and the numeric
+         target uses that pre-run value. A numeric condition may therefore read only state that this list does not
+         change. Here that is Netflix_GenreMenu_From_Grid (Origin + Layout) and Netflix_GenreMenu_Layout / _Layout_Shows (tokens, pending tokens and the path; the
+         Container.Update below is asynchronous).
+         So this list must not clear Origin: it stays "grid" but is inert once Open is cleared (every reader
+         also needs Open), and the next open (3736 Select / grid Back), a row Select or the guard resets it. -->
+    <include name="Netflix_Genre_Menu_Close">
+        <onback>ClearProperty(Netflix.GenreMenu.Open,Home)</onback>
+        <onback>ClearProperty(Netflix.GenreMenu.Window,Home)</onback>
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid]">ClearProperty(Netflix.TabArrival,Home)</onback>
+        <!-- Grid over the root (staged/genre-over-root): the Movies/Shows page never left, so closing the grid is a
+             property: no add-on call, no Container.Update, no tab arrival. A shows grid shows the Shows tab. -->
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid] + $EXP[Netflix_GenreMenu_Layout_Shows]">SetProperty(Netflix.Tab,shows,Home)</onback>
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid] + !$EXP[Netflix_GenreMenu_Layout_Shows]">SetProperty(Netflix.Tab,movies,Home)</onback>
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid]">ClearProperty(Netflix.Grid.Shell,Home)</onback>
+        <!-- Tab swap off only: the grid's type is not the root page under it. -->
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid] + $EXP[Netflix_GenreMenu_Layout_Shows] + !$EXP[Netflix_Tab_Swap_On] + !$EXP[Netflix_Shows_Root_Path]">Container.Update("plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458",replace)</onback>
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid] + !$EXP[Netflix_GenreMenu_Layout_Shows] + !$EXP[Netflix_Movies_Root_Path]">Container.Update("plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458",replace)</onback>
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid] + $EXP[Netflix_GenreMenu_Layout_Shows]">3732</onback>
+        <onback condition="$EXP[Netflix_GenreMenu_From_Grid] + !$EXP[Netflix_GenreMenu_Layout_Shows]">3733</onback>
+        <onback>3736</onback>
+    </include>
+
+    <!-- Same page-1 routes as the Movies/Shows genre shelves, without the shelf-only netflix_row_retry token, plus
+         accumulate_to=3 (POV load-more-in-place: pages 1..3 in one directory, ~60 titles). Grid matching keys on the
+         genre_id/action tokens only, so the later accumulate_to=4.. paths keep the grid layout.
+         netflix_grid_shell=1 (staged/genre-grid): POV returns this window directory empty and the static
+         list 593 loads the titles, so more can be added in place without rebuilding the page. -->
+    <include name="Netflix_Genre_Menu_Row">
+        <param name="down">noop</param>
+        <definition>
+            <control type="button" id="$PARAM[id]">
+                <left>0</left><top>$PARAM[top]</top><width>396</width><height>64</height>
+                <font>font_main</font><textcolor>FFD8D8D8</textcolor><focusedcolor>00FFFFFF</focusedcolor>
+                <align>left</align><aligny>center</aligny><textoffsetx>32</textoffsetx>
+                <label>$PARAM[label]</label>
+                <texturenofocus />
+                <texturefocus border="24">special://skin/extras/netflix-glass-button-focus.png</texturefocus>
+                <onup>$PARAM[up]</onup>
+                <ondown>$PARAM[down]</ondown>
+                <onleft>noop</onleft>
+                <!-- R10.15a: Right opens the views column for this genre (pure skin: five properties and one focus move). ViewGenre is the id the
+                     R10.11a routes take for this tab (TMDb id / company-41077 on Movies, Trakt slug on Shows). -->
+                <onright condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.ViewGenre,$PARAM[show_id],Home)</onright>
+                <onright condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.ViewGenre,$PARAM[movie_id],Home)</onright>
+                <onright>SetProperty(Netflix.GenreMenu.ViewTitle,$PARAM[label],Home)</onright>
+                <onright>SetProperty(Netflix.GenreMenu.Genre,$PARAM[id],Home)</onright>
+                <onright>SetProperty(Netflix.GenreMenu.Views,true,Home)</onright>
+                <onright>SetFocus(3771)</onright>
+                <include>Netflix_Genre_Menu_Close</include>
+                <onclick>SetProperty(Netflix.GenreMenu.Genre,$PARAM[id],Home)</onclick>
+                <!-- staged/genre-over-root: the grid opens over the Movies/Shows root. The page is a Home property
+                     (Netflix.Grid.Shell, same path as the old shell directory), so the menu-grid tokens are set at
+                     once instead of being adopted by the arrival timer once a directory had loaded. -->
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingToken,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingAction,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingGrid,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingTitle,Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.Title,$PARAM[label],Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,shows,Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Token,genre_id=$PARAM[show_id]&amp;,Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Action,action=netflix_tv_genres&amp;,Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,movies,Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Token,genre_id=$PARAM[movie_id]&amp;,Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Action,action=tmdb_movies_genres&amp;,Home)</onclick>
+                <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
+                <onclick>ClearProperty(Netflix.TabArrival,Home)</onclick>
+                <onclick>ClearProperty(Netflix.Grid.Row,Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,shows,Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,movies,Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=netflix_tv_genres&amp;genre_id=$PARAM[show_id]&amp;name=$PARAM[label]&amp;netflix_tab_genre=shows&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_genres&amp;genre_id=$PARAM[movie_id]&amp;name=$PARAM[label]&amp;netflix_tab_genre=movies&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
+                <onclick>SetFocus(3736)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Open,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Window,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Origin,Home)</onclick>
+                <!-- From another window (Home, Search, My Lists): open the Movies/Shows root under the grid. -->
+                <onclick condition="!Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                <onclick condition="!Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+                <!-- In Videos but not on the root the grid belongs over (a watchlist, page 2, seasons; or, with the tab
+                     swap off, the other type's root): go there first. From the Movies/Shows root nothing loads. -->
+                <onclick condition="Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]] + ![$EXP[Netflix_Movies_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                <onclick condition="Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows] + ![$EXP[Netflix_Shows_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+            </control>
+            <control type="label">
+                <left>32</left><top>$PARAM[top]</top><width>332</width><height>64</height>
+                <align>left</align><aligny>center</aligny>
+                <font>font_main_bold</font><textcolor>FFF5F5F5</textcolor>
+                <label>$PARAM[label]</label>
+                <visible>Control.HasFocus($PARAM[id])</visible>
+            </control>
+            <!-- R10.15a (F3): while the views column is open, the genre it belongs to is a grey filled pill with bold text (focus is in the column). The pill is
+                 opaque, so it covers the row's regular label; the bold label is drawn over it. The drawer's normal focus look is untouched. -->
+            <control type="group">
+                <visible>!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),$PARAM[id]) + !Control.HasFocus($PARAM[id])</visible>
+                <control type="image">
+                    <left>0</left><top>$PARAM[top]</top><width>396</width><height>64</height>
+                    <texture border="18" colordiffuse="FF2A2A2A">common/box.png</texture>
+                </control>
+                <control type="label">
+                    <left>32</left><top>$PARAM[top]</top><width>312</width><height>64</height>
+                    <align>left</align><aligny>center</aligny>
+                    <font>font_main_bold</font><textcolor>FFF5F5F5</textcolor>
+                    <label>$PARAM[label]</label>
+                </control>
+            </control>
+            <control type="image">
+                <left>352</left><top>$PARAM[top]</top><width>32</width><height>64</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FFA8A8A8">special://skin/extras/icons/angle-right.png</texture>
+            </control>
+        </definition>
+    </include>
+
+    <!-- R10.15a: one view button of the genre drawer's views column. Left / Back close the column (focus back on the genre row); OK opens the grid for
+         that genre and view and closes the drawer. It sets only the grid page and the menu-grid tokens, exactly as a genre row does: never a row's
+         view, Default or check mark. Genre id and title are Home properties set by Right on the row (Netflix.GenreMenu.ViewGenre / ViewTitle). -->
+    <include name="Netflix_Genre_Views_Item">
+        <definition>
+            <control type="button" id="$PARAM[id]">
+                <left>20</left><top>$PARAM[top]</top><width>460</width><height>64</height>
+                <!-- owner-approved D5 look: the focused view is a white rounded pill with dark text (the drawer's own genre rows keep their glass focus) -->
+                <font>font_main</font><textcolor>FFD8D8D8</textcolor><focusedcolor>FF080808</focusedcolor>
+                <align>left</align><aligny>center</aligny><textoffsetx>32</textoffsetx>
+                <label>$PARAM[label]</label>
+                <texturenofocus />
+                <texturefocus border="18" colordiffuse="FFF5F5F5">common/box.png</texturefocus>
+                <onup>$PARAM[up]</onup>
+                <ondown>$PARAM[down]</ondown>
+                <onright>noop</onright>
+                <onleft>ClearProperty(Netflix.GenreMenu.Views,Home)</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3751)">3751</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3752)">3752</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3753)">3753</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3754)">3754</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3755)">3755</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3756)">3756</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3757)">3757</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3758)">3758</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3759)">3759</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3760)">3760</onleft>
+                <onleft condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3765)">3765</onleft>
+                <onleft>3750</onleft>
+                <onback>ClearProperty(Netflix.GenreMenu.Views,Home)</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3751)">3751</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3752)">3752</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3753)">3753</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3754)">3754</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3755)">3755</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3756)">3756</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3757)">3757</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3758)">3758</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3759)">3759</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3760)">3760</onback>
+                <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),3765)">3765</onback>
+                <onback>3750</onback>
+                <onclick>SetProperty(Netflix.GenreMenu.ViewFocus,$PARAM[id],Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.GridGenre,$INFO[Window(Home).Property(Netflix.GenreMenu.Genre)],Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.GridViewGenre,$INFO[Window(Home).Property(Netflix.GenreMenu.ViewGenre)],Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.GridViewTitle,$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)],Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Views,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingToken,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingAction,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingGrid,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.PendingTitle,Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.Title,$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)],Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,shows,Home)</onclick>
+                <onclick>SetProperty(Netflix.GenreMenu.Token,genre_id=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewGenre)]&amp;,Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Action,action=netflix_tv_views&amp;,Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,movies,Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Action,action=netflix_movie_views&amp;,Home)</onclick>
+                <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
+                <onclick>ClearProperty(Netflix.TabArrival,Home)</onclick>
+                <onclick>ClearProperty(Netflix.Grid.Row,Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,shows,Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,movies,Home)</onclick>
+                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=netflix_tv_views&amp;view=$PARAM[view_show]&amp;genre_id=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewGenre)]&amp;name=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)]&amp;netflix_tab_genre=shows&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
+                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=netflix_movie_views&amp;view=$PARAM[view_movie]&amp;genre_id=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewGenre)]&amp;name=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)]&amp;netflix_tab_genre=movies&amp;accumulate_to=3&amp;netflix_grid_shell=1&amp;y=$INFO[System.Date(yyyy)]",Home)</onclick>
+                <onclick>SetFocus(3736)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Open,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Window,Home)</onclick>
+                <onclick>ClearProperty(Netflix.GenreMenu.Origin,Home)</onclick>
+                <onclick condition="!Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                <onclick condition="!Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+                <onclick condition="Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]] + ![$EXP[Netflix_Movies_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                <onclick condition="Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows] + ![$EXP[Netflix_Shows_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+            </control>
+        </definition>
+    </include>
+
+    <!-- One source of truth for the drawer's absolute left: the menu button's left edge on 1920.
+         Strip left (1920-820)/2 = 550 + 133 = 683 (compact); (1920-840)/2 = 540 + 188 = 728 (standard). -->
+    <include name="Netflix_Genre_Menu_Left">
+        <definition>
+            <left>$PARAM[value]</left>
+        </definition>
+    </include>
+
+    <include name="Netflix_Menu_Glass_Background">
+        <!-- Inset the dark backing so its tighter corners stay inside the glass outline. -->
+        <control type="image">
+            <left>3</left><top>3</top><right>3</right><bottom>3</bottom>
+            <texture border="24" colordiffuse="C70A0B0D">common/box.png</texture>
+        </control>
+        <control type="image">
+            <texture border="24">special://skin/extras/netflix-glass-button.png</texture>
+        </control>
+    </include>
+
+    <include name="Netflix_Genre_Menu_Drawer">
+        <param name="reference">false</param>
+        <param name="ref_left">683</param>
+        <param name="left">728</param>
+        <definition>
+            <!-- Focus relay for grid Back (590 -> 3761): always visible so OnMove can focus it, 1x1 and blank.
+                 Its onfocus actions are queued (thread messages) and run in the next frame's Process(): park focus on
+                 3736, then try the remembered row at once. If that first hop does not land, the timers
+                 netflix_genre_menu_hop / _park (Timers.xml) retry it after the drawer's visibility pass and keep the
+                 guard from closing the drawer for up to 3 seconds. Nothing else targets 3761. -->
+            <control type="button" id="3761">
+                <description>Genre menu focus relay</description>
+                <left>0</left><top>0</top><width>1</width><height>1</height>
+                <label /><texturefocus /><texturenofocus />
+                <onfocus>SetFocus(3736)</onfocus>
+                <onfocus condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Genre)) + [String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) | String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.ViewFocus))]">SetFocus($INFO[Window(Home).Property(Netflix.GenreMenu.Genre)])</onfocus>
+                <onfocus condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.ViewFocus))">SetFocus($INFO[Window(Home).Property(Netflix.GenreMenu.ViewFocus)])</onfocus>
+                <onfocus condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Genre))">SetFocus(3750)</onfocus>
+                <onup>3736</onup><ondown>3736</ondown><onleft>3736</onleft><onright>3736</onright><onback>3736</onback>
+            </control>
+            <control type="group">
+                <visible>$EXP[Netflix_GenreMenu_Open]</visible>
+                <control type="image">
+                    <left>0</left><top>0</top><width>1920</width><height>1080</height>
+                    <texture colordiffuse="73000000">common/white.png</texture>
+                </control>
+                <!-- Open state of 3736, redrawn above the scrim (absolute position of the in-strip button). -->
+                <control type="group">
+                    <include content="Netflix_Genre_Menu_Placement">
+                        <param name="reference">$PARAM[reference]</param>
+                        <param name="ref_left">$PARAM[ref_left]</param>
+                        <param name="left">$PARAM[left]</param>
+                    </include>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>68</width><height>68</height>
+                        <texture border="34,0,34,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texture>
+                    </control>
+                    <include content="Netflix_Genre_Menu_Glyph">
+                        <param name="color">FF080808</param>
+                    </include>
+                </control>
+                <!-- Drop-down anchored under the menu button: same left edge, top 124, 436 wide (right edge 1119 / 1164). -->
+                <control type="group">
+                    <include content="Netflix_Genre_Menu_Left" condition="$PARAM[reference]">
+                        <param name="value">$PARAM[ref_left]</param>
+                    </include>
+                    <include content="Netflix_Genre_Menu_Left" condition="![$PARAM[reference]]">
+                        <param name="value">$PARAM[left]</param>
+                    </include>
+                    <top>124</top><width>436</width><height>904</height>
+                    <include>Netflix_Menu_Glass_Background</include>
+                    <control type="group">
+                        <left>20</left><top>20</top><width>396</width><height>864</height>
+                        <!-- Movies | Shows switch: Left/Right pick, Select toggles. Glass look: chosen side only. -->
+                        <control type="image">
+                            <left>0</left><top>0</top><width>198</width><height>64</height>
+                            <texture border="24" colordiffuse="$VAR[Netflix_GenreMenu_Chosen_Glass]">special://skin/extras/netflix-glass-button-focus.png</texture>
+                            <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
+                        </control>
+                        <control type="image">
+                            <left>198</left><top>0</top><width>198</width><height>64</height>
+                            <texture border="24" colordiffuse="$VAR[Netflix_GenreMenu_Chosen_Glass]">special://skin/extras/netflix-glass-button-focus.png</texture>
+                            <visible>$EXP[Netflix_GenreMenu_Shows]</visible>
+                        </control>
+                        <control type="label">
+                            <left>0</left><top>0</top><width>198</width><height>64</height>
+                            <align>center</align><aligny>center</aligny>
+                            <font>font_main_bold</font><textcolor>$VAR[Netflix_GenreMenu_Chosen_Text]</textcolor>
+                            <label>Movies</label>
+                            <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
+                        </control>
+                        <control type="label">
+                            <left>0</left><top>0</top><width>198</width><height>64</height>
+                            <align>center</align><aligny>center</aligny>
+                            <font>font_main</font><textcolor>FFD8D8D8</textcolor>
+                            <label>Movies</label>
+                            <visible>$EXP[Netflix_GenreMenu_Shows]</visible>
+                        </control>
+                        <control type="label">
+                            <left>198</left><top>0</top><width>198</width><height>64</height>
+                            <align>center</align><aligny>center</aligny>
+                            <font>font_main_bold</font><textcolor>$VAR[Netflix_GenreMenu_Chosen_Text]</textcolor>
+                            <label>Shows</label>
+                            <visible>$EXP[Netflix_GenreMenu_Shows]</visible>
+                        </control>
+                        <control type="label">
+                            <left>198</left><top>0</top><width>198</width><height>64</height>
+                            <align>center</align><aligny>center</aligny>
+                            <font>font_main</font><textcolor>FFD8D8D8</textcolor>
+                            <label>Shows</label>
+                            <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
+                        </control>
+                        <control type="button" id="3750">
+                            <description>Genre type</description>
+                            <left>0</left><top>0</top><width>396</width><height>64</height>
+                            <label />
+                            <texturefocus />
+                            <texturenofocus />
+                            <onleft>SetProperty(Netflix.GenreMenu.Type,movies,Home)</onleft>
+                            <onright>SetProperty(Netflix.GenreMenu.Type,shows,Home)</onright>
+                            <onup>noop</onup>
+                            <ondown>3751</ondown>
+                            <include>Netflix_Genre_Menu_Close</include>
+                            <onclick>SetProperty(Netflix.GenreMenu.Type,$VAR[Netflix_GenreMenu_Type_Toggled],Home)</onclick>
+                        </control>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3751</param><param name="top">80</param><param name="label">Action</param>
+                            <param name="movie_id">28</param><param name="show_id">action</param>
+                            <param name="up">3750</param><param name="down">3752</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3752</param><param name="top">152</param><param name="label">Animation</param>
+                            <param name="movie_id">16</param><param name="show_id">animation</param>
+                            <param name="up">3751</param><param name="down">3753</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3753</param><param name="top">224</param><param name="label">Comedy</param>
+                            <param name="movie_id">35</param><param name="show_id">comedy</param>
+                            <param name="up">3752</param><param name="down">3754</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3754</param><param name="top">296</param><param name="label">Documentary</param>
+                            <param name="movie_id">99</param><param name="show_id">documentary</param>
+                            <param name="up">3753</param><param name="down">3755</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3755</param><param name="top">368</param><param name="label">Drama</param>
+                            <param name="movie_id">18</param><param name="show_id">drama</param>
+                            <param name="up">3754</param><param name="down">3756</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3756</param><param name="top">440</param><param name="label">Horror</param>
+                            <param name="movie_id">27</param><param name="show_id">horror</param>
+                            <param name="up">3755</param><param name="down">3757</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3757</param><param name="top">512</param><param name="label">Mystery</param>
+                            <param name="movie_id">9648</param><param name="show_id">mystery</param>
+                            <param name="up">3756</param><param name="down">3758</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3758</param><param name="top">584</param><param name="label">Romance</param>
+                            <param name="movie_id">10749</param><param name="show_id">romance</param>
+                            <param name="up">3757</param><param name="down">3759</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3759</param><param name="top">656</param><param name="label">Sci-Fi</param>
+                            <param name="movie_id">878</param><param name="show_id">science-fiction</param>
+                            <param name="up">3758</param><param name="down">3760</param>
+                        </include>
+                        <include content="Netflix_Genre_Menu_Row">
+                            <param name="id">3760</param><param name="top">728</param><param name="label">Thriller</param>
+                            <param name="movie_id">53</param><param name="show_id">thriller</param>
+                            <param name="up">3759</param><param name="down">$VAR[Netflix_GenreMenu_Last_Down]</param>
+                        </include>
+                        <!-- R10.10: A24 (movies only): TMDb discover by company 41077, through the genre route (genre_id=company-41077), so the grid, the row cache
+                             and Back behave like a genre. Shown only while the drawer lists Movies. -->
+                        <control type="group">
+                            <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
+                            <include content="Netflix_Genre_Menu_Row">
+                                <param name="id">3765</param><param name="top">800</param><param name="label">A24</param>
+                                <param name="movie_id">company-41077</param><param name="show_id">none</param>
+                                <param name="up">3760</param>
+                            </include>
+                        </control>
+                    </control>
+                    <!-- R10.15a: the views column, right of the drawer panel, sized to its five items (header 20 + 50, five rows at the drawer's 72 px pitch, 20 below).
+                         Right on a genre row opens it (Netflix.GenreMenu.Views); the buttons carry no visible condition of their own, so the focus move in the same key
+                         press lands before this group's next visibility pass (the drawer rows work the same way). Pure skin: no script, no add-on call. -->
+                    <control type="group">
+                        <left>454</left><top>0</top><width>500</width><height>450</height>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views))</visible>
+                        <include>Netflix_Menu_Glass_Background</include>
+                        <control type="label">
+                            <left>52</left><top>20</top><width>420</width><height>44</height>
+                            <align>left</align><aligny>center</aligny>
+                            <font>font_mini</font><textcolor>FF9C9C9C</textcolor>
+                            <label>[UPPERCASE]$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)] $VAR[Netflix_GenreMenu_Views_Media][/UPPERCASE]</label>
+                        </control>
+                        <include content="Netflix_Genre_Views_Item">
+                            <param name="id">3771</param><param name="top">70</param><param name="label">Trending</param>
+                            <param name="view_movie">trending</param><param name="view_show">trending</param>
+                            <param name="up">noop</param><param name="down">3772</param>
+                        </include>
+                        <include content="Netflix_Genre_Views_Item">
+                            <param name="id">3772</param><param name="top">142</param><param name="label">$VAR[Netflix_GenreMenu_View_2]</param>
+                            <param name="view_movie">new_releases</param><param name="view_show">new_series</param>
+                            <param name="up">3771</param><param name="down">3773</param>
+                        </include>
+                        <include content="Netflix_Genre_Views_Item">
+                            <param name="id">3773</param><param name="top">214</param><param name="label">$VAR[Netflix_GenreMenu_View_3]</param>
+                            <param name="view_movie">blockbusters</param><param name="view_show">most_watched</param>
+                            <param name="up">3772</param><param name="down">3774</param>
+                        </include>
+                        <include content="Netflix_Genre_Views_Item">
+                            <param name="id">3774</param><param name="top">286</param><param name="label">$VAR[Netflix_GenreMenu_View_4]</param>
+                            <param name="view_movie">most_watched</param><param name="view_show">top_rated</param>
+                            <param name="up">3773</param><param name="down">3775</param>
+                        </include>
+                        <include content="Netflix_Genre_Views_Item">
+                            <param name="id">3775</param><param name="top">358</param><param name="label">$VAR[Netflix_GenreMenu_View_5]</param>
+                            <param name="view_movie">top_rated</param><param name="view_show">complete_series</param>
+                            <param name="up">3774</param><param name="down">noop</param>
+                        </include>
+                    </control>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <!-- R10.15a: the views column's labels (Movies and Shows differ in slots 2 to 5) and its header word. -->
+    <variable name="Netflix_GenreMenu_View_2">
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">New Series</value>
+        <value>New Releases</value>
+    </variable>
+    <variable name="Netflix_GenreMenu_View_3">
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Most Watched</value>
+        <value>Blockbusters</value>
+    </variable>
+    <variable name="Netflix_GenreMenu_View_4">
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Top Rated</value>
+        <value>Most Watched</value>
+    </variable>
+    <variable name="Netflix_GenreMenu_View_5">
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Complete Series</value>
+        <value>Top Rated</value>
+    </variable>
+    <variable name="Netflix_GenreMenu_Views_Media">
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Shows</value>
+        <value>Movies</value>
+    </variable>
+
+    <!-- R10.10: Down from Thriller, the last genre: A24 while the drawer lists Movies, else nothing. -->
+    <variable name="Netflix_GenreMenu_Last_Down">
+        <value condition="!$EXP[Netflix_GenreMenu_Shows]">SetFocus(3765)</value>
+        <value>noop</value>
+    </variable>
+
+    <include name="Netflix_Options_Placement">
+        <definition>
+            <right>$PARAM[right]</right>
+            <top>$PARAM[top]</top>
+        </definition>
+    </include>
+
+    <include name="Netflix_Tab_Label">
+        <definition>
+            <label>$PARAM[label]</label>
+        </definition>
+    </include>
+
+    <include name="Netflix_Reference_Tab_Padding">
+        <textoffsetx>0</textoffsetx>
+    </include>
+
+    <include name="Netflix_Tab_Placement">
+        <definition>
+            <left>$PARAM[left]</left>
+            <top>$PARAM[top]</top>
+            <width>$PARAM[width]</width>
+            <height>$PARAM[height]</height>
+        </definition>
+    </include>
+
+    <!-- Plain header move onto the genre menu button: no dwell, no dwell target, numeric focus. -->
+    <include name="Netflix_Tab_Plain_Left">
+        <definition>
+            <onleft>ClearProperty(Netflix.TabArrival,Home)</onleft>
+            <onleft>ClearProperty(Netflix.TabDwellTarget,Home)</onleft>
+            <onleft>$PARAM[target]</onleft>
+        </definition>
+    </include>
+
+    <include name="Netflix_Tab_Plain_Right">
+        <definition>
+            <onright>ClearProperty(Netflix.TabArrival,Home)</onright>
+            <onright>ClearProperty(Netflix.TabDwellTarget,Home)</onright>
+            <onright>$PARAM[target]</onright>
+        </definition>
+    </include>
+
+    <include name="Netflix_Navigation_Tab">
+        <param name="selected">false</param>
+        <param name="opened">false</param>
+        <param name="reference">false</param>
+        <param name="reference_left">0</param>
+        <param name="reference_width">0</param>
+        <param name="reference_search">false</param>
+        <param name="plain_label">false</param>
+        <param name="left_dwell">true</param>
+        <param name="right_dwell">true</param>
+        <!-- Tab swap (staged/tabs-no-reload): swap_left / swap_right are conditions under which that move
+             is a property-driven tab switch (no dwell, no Select, no add-on call); swap is the condition
+             under which a Select must not arm the tab-arrival handoff. All false for other tabs. -->
+        <param name="swap">false</param>
+        <param name="swap_left">false</param>
+        <param name="swap_right">false</param>
+        <param name="swap_left_tab">movies</param>
+        <param name="swap_right_tab">shows</param>
+        <definition>
+            <control type="image">
+                <include content="Netflix_Tab_Placement" condition="$PARAM[reference]">
+                    <param name="left">$PARAM[reference_left]</param>
+                    <param name="top">31</param>
+                    <param name="width">$PARAM[reference_width]</param>
+                    <param name="height">68</param>
+                </include>
+                <include content="Netflix_Tab_Placement" condition="!$PARAM[reference]">
+                    <param name="left">$PARAM[left]</param>
+                    <param name="top">10</param>
+                    <param name="width">$PARAM[width]</param>
+                    <param name="height">68</param>
+                </include>
+                <!-- Standing pill (no tab has focus). "selected" can contain "|", so it must be bracketed: unbracketed,
+                     "A | B + !Focused" kept the old tab's pill lit while focus was already on another tab.
+                     While a tab change is in flight (Netflix.TabArrival = target tab id) the pill belongs to the
+                     target, not to the page that is still on screen. While the dwell (1158) or arrival (1168)
+                     dialog is up, Control.HasFocus is false for every tab although the focused tab still draws
+                     its own pill, so the standing pill must stay hidden then. -->
+                <visible>[[[$PARAM[selected]] + String.IsEmpty(Window(Home).Property(Netflix.TabArrival))] | String.IsEqual(Window(Home).Property(Netflix.TabArrival),$PARAM[id])] + !$EXP[Netflix_Navigation_Tab_Focused] + !Window.IsVisible(1158) + !Window.IsVisible(1168)</visible>
+                <texture border="34,0,34,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texture>
+            </control>
+            <control type="button" id="$PARAM[id]">
+                <include content="Netflix_Tab_Placement" condition="$PARAM[reference]">
+                    <param name="left">$PARAM[reference_left]</param>
+                    <param name="top">31</param>
+                    <param name="width">$PARAM[reference_width]</param>
+                    <param name="height">68</param>
+                </include>
+                <include content="Netflix_Tab_Placement" condition="!$PARAM[reference]">
+                    <param name="left">$PARAM[left]</param>
+                    <param name="top">10</param>
+                    <param name="width">$PARAM[width]</param>
+                    <param name="height">68</param>
+                </include>
+                <align>center</align>
+                <aligny>center</aligny>
+                <font>font_main</font>
+                <description>$PARAM[label]</description>
+                <include condition="$PARAM[reference] | $PARAM[plain_label]">Netflix_Reference_Tab_Padding</include>
+                <include content="Netflix_Tab_Label" condition="![$PARAM[reference] + $PARAM[reference_search]]">
+                    <param name="label">$PARAM[label]</param>
+                </include>
+                <textcolor>00FFFFFF</textcolor>
+                <focusedcolor>00FFFFFF</focusedcolor>
+                <texturefocus border="34,0,34,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texturefocus>
+                <texturenofocus />
+                <onup>noop</onup>
+                <ondown>ClearProperty(Netflix.TabDwellTarget,Home)</ondown>
+                <ondown>ClearProperty(Netflix.TabArrival,Home)</ondown>
+                <ondown>$PARAM[body]</ondown>
+                <onleft condition="$PARAM[left_dwell]">ClearProperty(Netflix.TabArrival,Home)</onleft>
+                <onleft condition="$PARAM[left_dwell]">SetFocus($PARAM[previous])</onleft>
+                <onleft condition="$PARAM[left_dwell] + ![$PARAM[swap_left]]">SetProperty(Netflix.TabDwellTarget,$PARAM[previous],Home)</onleft>
+                <onleft condition="$PARAM[left_dwell] + ![$PARAM[swap_left]]">SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onleft>
+                <onleft condition="$PARAM[left_dwell] + ![$PARAM[swap_left]]">Skin.TimerStart(netflix_tab_dwell)</onleft>
+                <onleft condition="$PARAM[left_dwell] + $PARAM[swap_left]">ClearProperty(Netflix.TabDwellTarget,Home)</onleft>
+                <onleft condition="$PARAM[left_dwell] + $PARAM[swap_left]">SetProperty(Netflix.Tab,$PARAM[swap_left_tab],Home)</onleft>
+                <!-- A tab move over a genre grid also closes the grid (staged/genre-over-root): the other tab shows at once. -->
+                <onleft condition="$PARAM[left_dwell] + $PARAM[swap_left]">ClearProperty(Netflix.Grid.Shell,Home)</onleft>
+                <onright condition="$PARAM[right_dwell]">ClearProperty(Netflix.TabArrival,Home)</onright>
+                <onright condition="$PARAM[right_dwell]">SetFocus($PARAM[next])</onright>
+                <onright condition="$PARAM[right_dwell] + ![$PARAM[swap_right]]">SetProperty(Netflix.TabDwellTarget,$PARAM[next],Home)</onright>
+                <onright condition="$PARAM[right_dwell] + ![$PARAM[swap_right]]">SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onright>
+                <onright condition="$PARAM[right_dwell] + ![$PARAM[swap_right]]">Skin.TimerStart(netflix_tab_dwell)</onright>
+                <onright condition="$PARAM[right_dwell] + $PARAM[swap_right]">ClearProperty(Netflix.TabDwellTarget,Home)</onright>
+                <onright condition="$PARAM[right_dwell] + $PARAM[swap_right]">SetProperty(Netflix.Tab,$PARAM[swap_right_tab],Home)</onright>
+                <onright condition="$PARAM[right_dwell] + $PARAM[swap_right]">ClearProperty(Netflix.Grid.Shell,Home)</onright>
+                <include content="Netflix_Tab_Plain_Left" condition="![$PARAM[left_dwell]]">
+                    <param name="target">$PARAM[left_target]</param>
+                </include>
+                <include content="Netflix_Tab_Plain_Right" condition="![$PARAM[right_dwell]]">
+                    <param name="target">$PARAM[right_target]</param>
+                </include>
+                <!-- Back on a tab over a genre grid (staged/genre-over-root): close the grid; the page under it never left. -->
+                <include content="Netflix_Grid_Over_Back">
+                    <!-- Passed explicitly: inside an include with its own params Kodi resolves $PARAM against the
+                         outer include, so the inner default would be lost (seen on the Mac 10:32, tab Back fell
+                         through to Kodi's own Back). -->
+                    <param name="when">$EXP[Netflix_Grid_Over]</param>
+                </include>
+                <!-- Back at the Movies/Shows root (cleanup step 2, staged/back-cleanup): focus stays on (or returns to) the tab of the page shown, via the relay
+                     3762 (Netflix.Tab); a pending tab dwell is cancelled. Back is no longer
+                     intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
+                     window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
+                     hence the relay. -->
+                <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
+                <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3762</onback>
+                <onback condition="Window.IsActive(Home) + $EXP[Netflix_Tab_Pending]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
+                <onback condition="Window.IsActive(Home) + $EXP[Netflix_Tab_Pending]">ClearProperty(Netflix.TabArrival,Home)</onback>
+                <onback condition="Window.IsActive(Home) + Player.HasMedia">SetFocus(3740)</onback>
+                <onback condition="Window.IsActive(Home) + !Player.HasMedia">SetFocus(3733)</onback>
+                <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
+
+                <onclick condition="![$PARAM[opened]] + ![$PARAM[swap]]">SetProperty(Netflix.TabArrival,$PARAM[id],Home)</onclick>
+                <onclick condition="![$PARAM[opened]] + ![$PARAM[swap]]">Skin.TimerStart(netflix_tab_arrival)</onclick>
+                <nested />
+                <onclick>ClearProperty(Netflix.TabDwellAuto,Home)</onclick>
+            </control>
+            <control type="label">
+                <include content="Netflix_Tab_Placement" condition="$PARAM[reference]">
+                    <param name="left">$PARAM[reference_left]</param>
+                    <param name="top">31</param>
+                    <param name="width">$PARAM[reference_width]</param>
+                    <param name="height">68</param>
+                </include>
+                <include content="Netflix_Tab_Placement" condition="!$PARAM[reference]">
+                    <param name="left">$PARAM[left]</param>
+                    <param name="top">10</param>
+                    <param name="width">$PARAM[width]</param>
+                    <param name="height">68</param>
+                </include>
+                <align>center</align>
+                <aligny>center</aligny>
+                <font>font_main</font>
+                <textcolor>FFEBEBEB</textcolor>
+                <label>$PARAM[label]</label>
+                <visible>![$PARAM[reference] + $PARAM[reference_search]] + ![Control.HasFocus($PARAM[id]) | [[[[$PARAM[selected]] + String.IsEmpty(Window(Home).Property(Netflix.TabArrival))] | String.IsEqual(Window(Home).Property(Netflix.TabArrival),$PARAM[id])] + !$EXP[Netflix_Navigation_Tab_Focused] + !Window.IsVisible(1158) + !Window.IsVisible(1168)]]</visible>
+            </control>
+            <control type="label">
+                <include content="Netflix_Tab_Placement" condition="$PARAM[reference]">
+                    <param name="left">$PARAM[reference_left]</param>
+                    <param name="top">31</param>
+                    <param name="width">$PARAM[reference_width]</param>
+                    <param name="height">68</param>
+                </include>
+                <include content="Netflix_Tab_Placement" condition="!$PARAM[reference]">
+                    <param name="left">$PARAM[left]</param>
+                    <param name="top">10</param>
+                    <param name="width">$PARAM[width]</param>
+                    <param name="height">68</param>
+                </include>
+                <align>center</align>
+                <aligny>center</aligny>
+                <font>font_main</font>
+                <textcolor>FF080808</textcolor>
+                <label>$PARAM[label]</label>
+                <visible>![$PARAM[reference] + $PARAM[reference_search]] + [Control.HasFocus($PARAM[id]) | [[[[$PARAM[selected]] + String.IsEmpty(Window(Home).Property(Netflix.TabArrival))] | String.IsEqual(Window(Home).Property(Netflix.TabArrival),$PARAM[id])] + !$EXP[Netflix_Navigation_Tab_Focused] + !Window.IsVisible(1158) + !Window.IsVisible(1168)]]</visible>
+            </control>
+            <control type="image">
+                <left>44</left>
+                <top>37</top>
+                <width>56</width>
+                <height>56</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FFF2F2F2">special://skin/extras/icons/search.png</texture>
+                <visible>$PARAM[reference] + $PARAM[reference_search] + ![Control.HasFocus($PARAM[id]) | [[[[$PARAM[selected]] + String.IsEmpty(Window(Home).Property(Netflix.TabArrival))] | String.IsEqual(Window(Home).Property(Netflix.TabArrival),$PARAM[id])] + !$EXP[Netflix_Navigation_Tab_Focused] + !Window.IsVisible(1158) + !Window.IsVisible(1168)]]</visible>
+            </control>
+            <control type="image">
+                <left>44</left>
+                <top>37</top>
+                <width>56</width>
+                <height>56</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FF080808">special://skin/extras/icons/search.png</texture>
+                <visible>$PARAM[reference] + $PARAM[reference_search] + [Control.HasFocus($PARAM[id]) | [[[[$PARAM[selected]] + String.IsEmpty(Window(Home).Property(Netflix.TabArrival))] | String.IsEqual(Window(Home).Property(Netflix.TabArrival),$PARAM[id])] + !$EXP[Netflix_Navigation_Tab_Focused] + !Window.IsVisible(1158) + !Window.IsVisible(1168)]]</visible>
+            </control>
+        </definition>
+    </include>
+
+
+    <include name="Netflix_Home_Shelf">
+        <param name="visible">true</param>
+        <param name="catalog_genre">false</param>
+        <param name="media_type">movie</param>
+        <param name="backtab">3733</param>
+        <param name="backplaying">3740</param>
+        <param name="limit">24</param>
+        <param name="home_hero">false</param>
+        <param name="saved_shelf">false</param>
+        <param name="hide_compact_empty">false</param>
+        <param name="lazy_genre">false</param>
+        <param name="loading_button">false</param>
+        <param name="warm_genre">false</param>
+        <param name="next_genre">0</param>
+        <param name="up_preferred">0</param>
+        <param name="down_preferred">0</param>
+        <param name="grid_hide">false</param>
+        <param name="sortby"></param>
+        <!-- R10.15b (rows with a SHOWING / GENRE tile; the other shelves keep the defaults): first poster inset, the Left target, the header's view part
+             (accent while focused, grey otherwise), the info block's shift and the loading ring's position. -->
+        <param name="left_inset">70</param>
+        <param name="left">noop</param>
+        <param name="left_condition">false</param>
+        <param name="label_accent"></param>
+        <param name="label_dim"></param>
+        <param name="info_left">0</param>
+        <param name="ring_left">70</param>
+        <param name="ring_inner">74</param>
+        <param name="tile">0</param>
+        <definition>
+            <control type="group">
+                <visible>[$PARAM[visible]] + [![Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] | !$PARAM[hide_compact_empty] | Container($PARAM[id]).IsUpdating | Integer.IsGreater(Container($PARAM[id]).NumItems,0) | Control.HasFocus($PARAM[id])]</visible>
+                <!-- Catalog genre rows under a genre grid (staged/genre-over-root): out of sight, still "visible" to Kodi. -->
+                <animation effect="slide" end="0,3000" time="0" condition="$PARAM[grid_hide]">Conditional</animation>
+                <animation effect="fade" start="100" end="0" time="0" condition="$PARAM[grid_hide]">Conditional</animation>
+                <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="value">951</param>
+                </include>
+                <control type="label">
+                    <include content="Netflix_Shelf_Left" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">70</param>
+                    </include>
+                    <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">0</param>
+                    </include>
+                    <width>1500</width>
+                    <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">40</param>
+                    </include>
+                    <aligny>center</aligny>
+                    <font>font_midi_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <label>$PARAM[label]$PARAM[label_accent]</label>
+                    <visible>![Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] | Control.HasFocus($PARAM[id]) | Control.HasFocus($PARAM[tile])</visible>
+                </control>
+                <control type="label">
+                    <include content="Netflix_Shelf_Left" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">70</param>
+                    </include>
+                    <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">0</param>
+                    </include>
+                    <width>1500</width>
+                    <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">40</param>
+                    </include>
+                    <aligny>center</aligny>
+                    <font>font_midi_bold</font>
+                    <textcolor>FF717271</textcolor>
+                    <label>$PARAM[label]$PARAM[label_dim]</label>
+                    <visible>[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + !Control.HasFocus($PARAM[id]) + !Control.HasFocus($PARAM[tile])</visible>
+                </control>
+                <include content="Netflix_Focus_Rail">
+                    <param name="id">$PARAM[id]</param>
+                    <param name="warm_genre">$PARAM[warm_genre]</param>
+                    <param name="next_genre">$PARAM[next_genre]</param>
+                    <param name="path">$PARAM[path]</param>
+                    <param name="up">$PARAM[up]</param>
+                    <param name="down">$PARAM[down]</param>
+                    <param name="up_preferred">$PARAM[up_preferred]</param>
+                    <param name="down_preferred">$PARAM[down_preferred]</param>
+                    <param name="top">88</param>
+                    <param name="inset_outline">$PARAM[saved_shelf]</param>
+                    <param name="compact">[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]</param>
+                    <param name="feature_inside">$PARAM[catalog_genre]</param>
+                    <param name="backtab">$PARAM[backtab]</param>
+                    <param name="backplaying">$PARAM[backplaying]</param>
+                    <param name="limit">$PARAM[limit]</param>
+                    <param name="sortby">$PARAM[sortby]</param>
+                    <param name="left_inset">$PARAM[left_inset]</param>
+                    <param name="left">$PARAM[left]</param>
+                    <param name="left_condition">$PARAM[left_condition]</param>
+                </include>
+                <control type="label">
+                    <left>80</left>
+                    <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">54</param>
+                    </include>
+                    <width>900</width>
+                    <height>48</height>
+                    <font>font_main</font>
+                    <textcolor>FFC7C7C7</textcolor>
+                    <visible>![$PARAM[lazy_genre] | $PARAM[loading_button]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Container($PARAM[id]).IsUpdating + ![[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]]</visible>
+                    <label>Loading titles…</label>
+                </control>
+                <!-- R10.12: in the compact home the two "Loading titles..." waits are the shared loading look (grey poster cards + sweep); the
+                     focus stand-in button below stays (invisible while the cards show), the first card wears the focus outline then -->
+                <control type="group">
+                    <visible>[$PARAM[visible]] + ![$PARAM[grid_hide]] + ![$PARAM[lazy_genre] | $PARAM[loading_button]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Container($PARAM[id]).IsUpdating + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]</visible>
+                    <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
+                    <include content="Netflix_Loading_Poster_Row"><param name="top">62</param><param name="condition">[$PARAM[visible]] + ![$PARAM[grid_hide]] + ![$PARAM[lazy_genre] | $PARAM[loading_button]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Container($PARAM[id]).IsUpdating + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]</param></include>
+                </control>
+                <control type="group">
+                    <visible>[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Control.HasFocus(8$PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</visible>
+                    <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
+                    <include content="Netflix_Loading_Poster_Row"><param name="top">62</param><param name="ring">true</param><param name="ring_left">$PARAM[ring_left]</param><param name="ring_inner">$PARAM[ring_inner]</param><param name="condition">[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Control.HasFocus(8$PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</param></include>
+                </control>
+                <control type="button" id="8$PARAM[id]">
+                    <left>80</left>
+                    <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                        <param name="value">54</param>
+                    </include>
+                    <width>900</width>
+                    <height>48</height>
+                    <font>font_main</font>
+                    <textoffsetx>12</textoffsetx>
+                    <textcolor>FFC7C7C7</textcolor>
+                    <focusedcolor>FFFFFFFF</focusedcolor>
+                    <texturenofocus />
+                    <texturefocus border="18" colordiffuse="FF2B2B2B">common/menu.png</texturefocus>
+                    <animation effect="fade" start="100" end="0" time="0" condition="[$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Control.HasFocus(8$PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]">Conditional</animation>
+                    <visible>[[$PARAM[lazy_genre] | $PARAM[loading_button]] + [Integer.IsEqual(Container($PARAM[id]).NumItems,0) | Control.HasFocus(8$PARAM[id])]] | [![$PARAM[lazy_genre] | $PARAM[loading_button]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + !Container($PARAM[id]).IsUpdating]</visible>
+                    <label>$PARAM[empty]</label>
+                    <onclick condition="$PARAM[lazy_genre] + Integer.IsGreater(Container($PARAM[id]).NumItems,0)">SetFocus($PARAM[id])</onclick>
+                    <onup condition="Integer.IsGreater(Container($PARAM[up_preferred]).NumItems,0)">$PARAM[up_preferred]</onup>
+                    <onup>$PARAM[up]</onup>
+                    <ondown condition="Integer.IsGreater(Container($PARAM[down_preferred]).NumItems,0)">$PARAM[down_preferred]</ondown>
+                    <ondown>$PARAM[down]</ondown>
+                    <onback condition="Player.HasMedia">$PARAM[backplaying]</onback>
+                    <onback>$PARAM[backtab]</onback>
+                </control>
+                <include content="Netflix_Reference_Shelf_Information" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="id">$PARAM[id]</param>
+                    <param name="info_left">$PARAM[info_left]</param>
+                    <param name="media_type">$PARAM[media_type]</param>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Netflix_Shelf_Left">
+        <definition>
+            <left>$PARAM[value]</left>
+        </definition>
+    </include>
+
+    <include name="Netflix_Shelf_Gap">
+        <definition>
+            <itemgap>$PARAM[value]</itemgap>
+        </definition>
+    </include>
+
+    <include name="Netflix_Reference_Shelf_Information">
+        <param name="info_left">0</param>
+        <definition>
+            <control type="group">
+                <left>$PARAM[info_left]</left>
+                <visible>Control.HasFocus($PARAM[id]) + Integer.IsGreater(Container($PARAM[id]).NumItems,0) + !Container($PARAM[id]).ListItem.IsParentFolder + !String.IsEqual(Container($PARAM[id]).ListItem.Property(node.type),target_folder) + ![Container($PARAM[id]).ListItem.IsFolder + String.Contains(Container($PARAM[id]).ListItem.FolderPath,new_page=)]</visible>
+                <control type="label">
+                    <left>71</left>
+                    <top>572</top>
+                    <width>896</width>
+                    <height>33</height>
+                    <aligny>center</aligny>
+                    <font>font_mini_bold</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Container($PARAM[id]).ListItem.Genre]$INFO[Container($PARAM[id]).ListItem.Year,  •  ]$INFO[Container($PARAM[id]).ListItem.Duration,  •  ]$INFO[Container($PARAM[id]).ListItem.MPAA,  •  ]</label>
+                    <visible>!String.IsEmpty(Container($PARAM[id]).ListItem.Genre)</visible>
+                </control>
+                <control type="label">
+                    <left>71</left>
+                    <top>572</top>
+                    <width>896</width>
+                    <height>33</height>
+                    <aligny>center</aligny>
+                    <font>font_mini_bold</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Container($PARAM[id]).ListItem.Year]$INFO[Container($PARAM[id]).ListItem.Duration,  •  ]$INFO[Container($PARAM[id]).ListItem.MPAA,  •  ]</label>
+                    <visible>String.IsEmpty(Container($PARAM[id]).ListItem.Genre) + !String.IsEmpty(Container($PARAM[id]).ListItem.Year)</visible>
+                </control>
+                <control type="label">
+                    <left>71</left>
+                    <top>572</top>
+                    <width>896</width>
+                    <height>33</height>
+                    <aligny>center</aligny>
+                    <font>font_mini_bold</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Container($PARAM[id]).ListItem.Duration]$INFO[Container($PARAM[id]).ListItem.MPAA,  •  ]</label>
+                    <visible>String.IsEmpty(Container($PARAM[id]).ListItem.Genre) + String.IsEmpty(Container($PARAM[id]).ListItem.Year) + !String.IsEmpty(Container($PARAM[id]).ListItem.Duration)</visible>
+                </control>
+                <control type="label">
+                    <left>71</left>
+                    <top>572</top>
+                    <width>896</width>
+                    <height>33</height>
+                    <aligny>center</aligny>
+                    <font>font_mini_bold</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Container($PARAM[id]).ListItem.MPAA]</label>
+                    <visible>String.IsEmpty(Container($PARAM[id]).ListItem.Genre) + String.IsEmpty(Container($PARAM[id]).ListItem.Year) + String.IsEmpty(Container($PARAM[id]).ListItem.Duration) + !String.IsEmpty(Container($PARAM[id]).ListItem.MPAA)</visible>
+                </control>
+                <control type="textbox">
+                    <left>72</left>
+                    <top>615</top>
+                    <width>896</width>
+                    <height>119</height>
+                    <font>font_mini</font>
+                    <textcolor>FFBBBBBB</textcolor>
+                    <label>$INFO[Container($PARAM[id]).ListItem.Plot]</label>
+                </control>
+                <control type="group">
+                    <left>621</left>
+                    <top>483</top>
+                    <width>325</width>
+                    <height>46</height>
+                    <visible>false</visible>
+                    <control type="image">
+                        <left>215</left>
+                        <width>110</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating))</visible>
+                    </control>
+                    <control type="image">
+                        <left>203</left>
+                        <width>122</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100)</visible>
+                    </control>
+                    <control type="image">
+                        <left>219</left>
+                        <width>106</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + !String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100) + !Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>235</left>
+                        <width>90</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>231</left>
+                        <width>94</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating))</visible>
+                    </control>
+                    <control type="image">
+                        <left>101</left>
+                        <width>224</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100)</visible>
+                    </control>
+                    <control type="image">
+                        <left>117</left>
+                        <width>208</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + !String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100) + !Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>133</left>
+                        <width>192</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>129</left>
+                        <width>196</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating))</visible>
+                    </control>
+                    <control type="image">
+                        <left>117</left>
+                        <width>208</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100)</visible>
+                    </control>
+                    <control type="image">
+                        <left>133</left>
+                        <width>192</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + !String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100) + !Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>149</left>
+                        <width>176</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>15</left>
+                        <width>310</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100)</visible>
+                    </control>
+                    <control type="image">
+                        <left>31</left>
+                        <width>294</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + !String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),100) + !Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>47</left>
+                        <width>278</width>
+                        <height>46</height>
+                        <texture border="18" colordiffuse="E6101010">common/box.png</texture>
+                        <visible>!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating)) + Integer.IsLess(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating),10)</visible>
+                    </control>
+                    <control type="grouplist">
+                        <left>10</left>
+                        <top>6</top>
+                        <width>305</width>
+                        <height>33</height>
+                        <orientation>horizontal</orientation>
+                        <align>right</align>
+                        <itemgap>14</itemgap>
+                        <include content="Netflix_Shelf_Ratings">
+                            <param name="id">$PARAM[id]</param>
+                            <param name="tomatoes_width">106</param>
+                            <param name="media_type">$PARAM[media_type]</param>
+                        </include>
+                    </control>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <include name="Netflix_Shelf_Ratings">
+        <param name="tomatoes_width">91</param>
+        <definition>
+            <include content="Netflix_Focused_Rating" condition="$EXP[Exp_TMDbHelper_IsData]">
+                <param name="field">IMDb_Rating</param>
+                <param name="width">94</param>
+                <param name="current">false</param>
+                <param name="icon">imdb.png</param>
+                <param name="icon_width">42</param>
+            </include>
+            <include content="Netflix_Focused_Rating" condition="$EXP[Exp_TMDbHelper_IsData]">
+                <param name="field">RottenTomatoes_Rating</param>
+                <param name="width">$PARAM[tomatoes_width]</param>
+                <param name="current">false</param>
+                <param name="icon">$VAR[Image_ListItem_RottenTomatoes]</param>
+                <param name="suffix">%</param>
+            </include>
+            <include content="Netflix_Focused_Rating" condition="$EXP[Exp_TMDbHelper_IsData]">
+                <param name="field">Letterboxd_Rating</param>
+                <param name="width">76</param>
+                <param name="current">false</param>
+                <param name="icon">letterboxd.png</param>
+            </include>
+        </definition>
+    </include>
+
+    <include name="Netflix_Rail_Height">
+        <definition>
+            <height>$PARAM[value]</height>
+        </definition>
+    </include>
+
+    <include name="Netflix_Shelf_Top">
+        <definition>
+            <top>$PARAM[value]</top>
+        </definition>
+    </include>
+
+    <include name="Netflix_Focused_Rating">
+        <param name="icon_width">25</param>
+        <param name="suffix" value="" />
+        <definition>
+            <control type="grouplist">
+                <width>$PARAM[width]</width>
+                <height>33</height>
+                <orientation>horizontal</orientation>
+                <itemgap>6</itemgap>
+                <animation effect="fade" start="0" end="100" time="90" delay="130">Visible</animation>
+                <visible>[$PARAM[current]] + !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.$PARAM[field]))</visible>
+                <control type="image">
+                    <top>4</top>
+                    <width>$PARAM[icon_width]</width>
+                    <height>25</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFDDDDDD">flags/monochrome/ratings/$PARAM[icon]</texture>
+                </control>
+                <control type="label">
+                    <width max="74">auto</width>
+                    <height>33</height>
+                    <aligny>center</aligny>
+                    <font>font_mini_bold</font>
+                    <textcolor>FFF4F4F4</textcolor>
+                    <label>$INFO[Window(Home).Property(TMDbHelper.ListItem.$PARAM[field]),,$PARAM[suffix]]</label>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <!-- My Lists (Option 3, staged/mylists-rail): watchlists in a rail on the left, Saved Movies and Saved Shows as
+         two poster rows on the right, one info line for the focused title at the bottom. Nothing scrolls vertically;
+         the rail scrolls inside itself. List ids 531/532/533, the placeholders 8530-8533 and the three content paths
+         are unchanged, so the row coordinator (extras/netflix_browse_state.py) still loads 533, 531, 532 one at a time.
+         "New Watchlist" is the add-on's create item, now listed last (plugin.video.pov netflix_watchlists.py). -->
+    <include name="Netflix_My_Lists_Page">
+        <!-- Match the Movies and Shows pages: pure black in the compact layout. -->
+        <control type="image">
+            <texture colordiffuse="FF080808">common/white.png</texture>
+            <visible>!Skin.HasSetting(Netflix.CompactHome)</visible>
+        </control>
+        <control type="image">
+            <texture colordiffuse="FF000000">common/white.png</texture>
+            <visible>Skin.HasSetting(Netflix.CompactHome)</visible>
+        </control>
+        <control type="image">
+            <left>520</left><top>112</top><width>2</width><height>968</height>
+            <texture colordiffuse="FF161616">common/white.png</texture>
+        </control>
+        <include>Netflix_Watchlists_Rail</include>
+        <!-- Saved Movies -->
+        <control type="group">
+            <control type="label">
+                <left>560</left><top>112</top><width>1300</width><height>40</height>
+                <font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Saved Movies</label>
+            </control>
+            <include content="Netflix_My_Lists_Poster_Row">
+                <param name="id">531</param>
+                <param name="top">164</param>
+                <param name="path">$VAR[Netflix_Saved_Movies_Path]</param>
+                <param name="up">3734</param>
+                <param name="down">$VAR[Netflix_My_Lists_After_Movies]</param>
+            </include>
+            <include content="Netflix_My_Lists_Row_Placeholder">
+                <param name="id">531</param>
+                <param name="top">164</param>
+                <param name="loading">$VAR[Netflix_Saved_Movies_Status]</param>
+                <param name="hint">Movies you save will appear here.</param>
+                <param name="hint_width">454</param>
+                <param name="loading_width">346</param>
+                <param name="up">3734</param>
+                <param name="down">$VAR[Netflix_My_Lists_After_Movies]</param>
+            </include>
+            <control type="group">
+                <visible>$EXP[Netflix_My_Lists_No_Favorites]</visible>
+                <include content="Netflix_My_Lists_Hint_Box">
+                    <param name="top">164</param>
+                    <param name="label">Nothing saved yet. Use Favorite on a movie to keep it here.</param>
+                    <param name="width">1012</param>
+                </include>
+                <!-- focus: white 4 px ring around #454545, as the mockup's focused Browse button -->
+                <control type="image">
+                    <left>1300</left><top>176</top><width>260</width><height>52</height>
+                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
+                    <visible>Control.HasFocus(8530)</visible>
+                </control>
+                <control type="image">
+                    <left>1304</left><top>180</top><width>252</width><height>44</height>
+                    <texture border="20" colordiffuse="FF454545">common/box.png</texture>
+                    <visible>Control.HasFocus(8530)</visible>
+                </control>
+                <control type="button" id="8530">
+                    <left>1300</left><top>176</top><width>260</width><height>52</height>
+                    <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <texturefocus />
+                    <texturenofocus border="24" colordiffuse="FF242424">common/box.png</texturenofocus>
+                    <focusedcolor>FFFFFFFF</focusedcolor>
+                    <label>Browse Movies</label>
+                    <onup>3734</onup><ondown>8536</ondown><onright>noop</onright><onback>3734</onback>
+                    <onleft>SetProperty(Netflix.MyLists.RailFrom,8530,Home)</onleft>
+                    <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
+                    <onclick>SetProperty(Netflix.Tab,movies,Home)</onclick>
+                    <onclick>ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458",return)</onclick>
+                </control>
+            </control>
+        </control>
+        <!-- Saved Shows: moves up under the Saved Movies hint when no movies are saved. -->
+        <control type="group">
+            <animation effect="slide" end="0,-260" time="0" condition="$EXP[Netflix_My_Lists_No_Movies]">Conditional</animation>
+            <control type="label">
+                <left>560</left><top>548</top><width>1300</width><height>40</height>
+                <font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Saved Shows</label>
+            </control>
+            <include content="Netflix_My_Lists_Poster_Row">
+                <param name="id">532</param>
+                <param name="top">600</param>
+                <param name="path">$VAR[Netflix_Saved_Shows_Path]</param>
+                <param name="up">$VAR[Netflix_My_Lists_Before_Shows]</param>
+                <param name="down">noop</param>
+            </include>
+            <include content="Netflix_My_Lists_Row_Placeholder">
+                <param name="id">532</param>
+                <param name="top">600</param>
+                <param name="loading">$VAR[Netflix_Saved_Shows_Status]</param>
+                <param name="hint">Shows you save will appear here.</param>
+                <param name="hint_width">448</param>
+                <param name="loading_width">340</param>
+                <param name="up">$VAR[Netflix_My_Lists_Before_Shows]</param>
+                <param name="down">noop</param>
+            </include>
+            <control type="group">
+                <visible>$EXP[Netflix_My_Lists_No_Favorites]</visible>
+                <include content="Netflix_My_Lists_Hint_Box">
+                    <param name="top">600</param>
+                    <param name="label">Nothing saved yet. Use Favorite on a show to keep it here.</param>
+                    <param name="width">1012</param>
+                </include>
+                <!-- Same route as the Shows tab from this window (tab swap on: Movies Trending root + Netflix.Tab=shows). -->
+                <!-- focus: white 4 px ring around #454545, as the mockup's focused Browse button -->
+                <control type="image">
+                    <left>1300</left><top>612</top><width>260</width><height>52</height>
+                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
+                    <visible>Control.HasFocus(8536)</visible>
+                </control>
+                <control type="image">
+                    <left>1304</left><top>616</top><width>252</width><height>44</height>
+                    <texture border="20" colordiffuse="FF454545">common/box.png</texture>
+                    <visible>Control.HasFocus(8536)</visible>
+                </control>
+                <control type="button" id="8536">
+                    <left>1300</left><top>612</top><width>260</width><height>52</height>
+                    <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <texturefocus />
+                    <texturenofocus border="24" colordiffuse="FF242424">common/box.png</texturenofocus>
+                    <focusedcolor>FFFFFFFF</focusedcolor>
+                    <label>Browse Shows</label>
+                    <onup>8530</onup><ondown>noop</ondown><onright>noop</onright><onback>3734</onback>
+                    <onleft>SetProperty(Netflix.MyLists.RailFrom,8536,Home)</onleft>
+                    <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
+                    <onclick>SetProperty(Netflix.Tab,shows,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_Tab_Swap_On]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458",return)</onclick>
+                    <onclick condition="!$EXP[Netflix_Tab_Swap_On]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458",return)</onclick>
+                </control>
+            </control>
+        </control>
+        <include>Netflix_My_Lists_Info_Line</include>
+    </include>
+
+    <include name="Netflix_Watchlists_Rail">
+        <control type="label">
+            <left>70</left><top>112</top><width>420</width><height>40</height>
+            <font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Watchlists</label>
+        </control>
+        <!-- 10 rows and a peek of the 11th fit; a longer rail scrolls inside itself. -->
+        <control type="list" id="533">
+            <left>70</left><top>168</top><width>420</width><height>864</height>
+            <orientation>vertical</orientation>
+            <scrolltime tween="quadratic">200</scrolltime>
+            <viewtype label="Watchlists">list</viewtype>
+            <onup>3734</onup><ondown>noop</ondown><onleft>noop</onleft><onback>3734</onback>
+            <onright>$VAR[Netflix_My_Lists_From_Rail]</onright>
+            <onfocus>ClearProperty(TMDbHelper.WidgetContainer)</onfocus>
+            <onfocus>ClearProperty(InfoPanel.FullSwitch,Home)</onfocus>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),create)">RunScript(special://skin/extras/netflix_saved_lists.py,create)</onclick>
+            <onclick condition="!String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),create)">ActivateWindow(Videos,"$INFO[Container(533).ListItem.FileNameAndPath]",return)</onclick>
+            <itemlayout width="420" height="84">
+                <include content="Netflix_Watchlist_Rail_Item"><param name="focused">false</param></include>
+            </itemlayout>
+            <focusedlayout width="420" height="84" condition="Control.HasFocus(533)">
+                <include content="Netflix_Watchlist_Rail_Item"><param name="focused">true</param></include>
+            </focusedlayout>
+            <focusedlayout width="420" height="84" condition="!Control.HasFocus(533)">
+                <include content="Netflix_Watchlist_Rail_Item"><param name="focused">false</param></include>
+            </focusedlayout>
+            <include content="Object_ContentDynamic">
+                <param name="content">$VAR[Netflix_Watchlists_Path]</param>
+                <param name="target">videos</param><param name="limit">0</param><param name="browse">auto</param>
+                <param name="sortby">playlist</param>
+            </include>
+        </control>
+        <!-- Fades the peek of the next row while the rail has more below. -->
+        <control type="image">
+            <left>70</left><top>1000</top><width>420</width><height>32</height>
+            <texture colordiffuse="FF000000">common/gradient-v.png</texture>
+            <visible>Container(533).HasNext</visible>
+        </control>
+        <control type="button" id="8533">
+            <left>70</left><top>168</top><width>420</width><height>72</height>
+            <font>font_mini</font><textoffsetx>22</textoffsetx><aligny>center</aligny>
+            <textcolor>FFBBBBBB</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            <texturenofocus border="24" colordiffuse="FF161616">common/box.png</texturenofocus>
+            <texturefocus border="24" colordiffuse="FF2A2A2A">common/box.png</texturefocus>
+            <label>$VAR[Netflix_Watchlists_Status]</label><visible>Integer.IsEqual(Container(533).NumItems,0)</visible>
+            <onup>3734</onup><ondown>noop</ondown><onleft>noop</onleft><onback>3734</onback>
+            <onright>$VAR[Netflix_My_Lists_From_Rail]</onright>
+        </control>
+    </include>
+
+    <include name="Netflix_Watchlist_Rail_Item">
+        <definition>
+            <control type="group">
+                <visible>!String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                <control type="image">
+                    <width>420</width><height>72</height>
+                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
+                    <visible>$PARAM[focused]</visible>
+                </control>
+                <control type="image">
+                    <left>4</left><top>4</top><width>412</width><height>64</height>
+                    <texture border="20" colordiffuse="FF2A2A2A">common/box.png</texture>
+                    <visible>$PARAM[focused]</visible>
+                </control>
+                <control type="image">
+                    <width>420</width><height>72</height>
+                    <texture border="24" colordiffuse="FF161616">common/box.png</texture>
+                    <visible>![$PARAM[focused]]</visible>
+                </control>
+                <control type="image">
+                    <left>8</left><top>10</top><width>52</width><height>52</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFBBBBBB">special://skin/extras/icons/bookmark-regular.png</texture>
+                    <visible>![$PARAM[focused]]</visible>
+                </control>
+                <control type="image">
+                    <left>8</left><top>10</top><width>52</width><height>52</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/bookmark-regular.png</texture>
+                    <visible>$PARAM[focused]</visible>
+                </control>
+                <control type="label">
+                    <left>64</left><top>16</top><width>266</width><height>40</height>
+                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <visible>![$PARAM[focused]]</visible>
+                </control>
+                <control type="label">
+                    <left>64</left><top>16</top><width>266</width><height>40</height>
+                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
+                    <scroll>true</scroll>
+                    <label>$INFO[ListItem.Label]</label>
+                    <visible>$PARAM[focused]</visible>
+                </control>
+                <control type="label">
+                    <left>338</left><top>16</top><width>62</width><height>40</height>
+                    <font>font_mini</font><align>right</align><aligny>center</aligny>
+                    <textcolor>FFBBBBBB</textcolor>
+                    <label>$INFO[ListItem.Property(Netflix.Watchlist.Count)]</label>
+                </control>
+            </control>
+            <control type="group">
+                <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                <control type="image">
+                    <width>420</width><height>72</height>
+                    <texture>special://skin/extras/mylists/dash-420x72.png</texture>
+                    <visible>![$PARAM[focused]]</visible>
+                </control>
+                <control type="image">
+                    <width>420</width><height>72</height>
+                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
+                    <visible>$PARAM[focused]</visible>
+                </control>
+                <control type="image">
+                    <left>4</left><top>4</top><width>412</width><height>64</height>
+                    <texture border="20" colordiffuse="FF2A2A2A">common/box.png</texture>
+                    <visible>$PARAM[focused]</visible>
+                </control>
+                <control type="image">
+                    <left>8</left><top>10</top><width>52</width><height>52</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/plus.png</texture>
+                </control>
+                <control type="label">
+                    <left>64</left><top>16</top><width>336</width><height>40</height>
+                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
+                    <label>New Watchlist</label>
+                    <visible>![$PARAM[focused]]</visible>
+                </control>
+                <control type="label">
+                    <left>64</left><top>16</top><width>336</width><height>40</height>
+                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
+                    <label>New Watchlist</label>
+                    <visible>$PARAM[focused]</visible>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <!-- A saved-titles row: 220 x 330 posters, 16 apart, focus held at the left edge like the catalogue rails. -->
+    <include name="Netflix_My_Lists_Poster_Row">
+        <definition>
+            <control type="fixedlist" id="$PARAM[id]">
+                <left>560</left><top>$PARAM[top]</top><right>0</right><height>330</height>
+                <orientation>horizontal</orientation><focusposition>0</focusposition><movement>0</movement>
+                <scrolltime tween="quadratic">200</scrolltime><preloaditems>2</preloaditems>
+                <onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown><onright>noop</onright>
+                <onleft>SetProperty(Netflix.MyLists.RailFrom,$PARAM[id],Home)</onleft>
+                <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
+                <onback>3734</onback>
+                <onclick condition="String.StartsWith(Container($PARAM[id]).ListItem.FileNameAndPath,plugin://plugin.video.pov) + String.IsEqual(Container($PARAM[id]).ListItem.DBType,movie)">RunScript(special://skin/extras/netflix_movie_details.py,$PARAM[id])</onclick>
+                <onclick condition="String.StartsWith(Container($PARAM[id]).ListItem.FileNameAndPath,plugin://plugin.video.pov/) + String.IsEqual(Container($PARAM[id]).ListItem.DBType,tvshow) + [Integer.IsGreater(Container($PARAM[id]).ListItem.UniqueID(tmdb),0) | Integer.IsGreater(Container($PARAM[id]).ListItem.Property(tmdb_id),0) | String.Contains(Container($PARAM[id]).ListItem.FileNameAndPath,tmdb_id=)]">RunScript(special://skin/extras/netflix_series.py,$PARAM[id])</onclick>
+                <onfocus>SetProperty(TMDbHelper.WidgetContainer,$PARAM[id])</onfocus>
+                <onfocus>ClearProperty(HomeSwitcher.IsVisible,Home)</onfocus>
+                <onfocus>ClearProperty(InfoPanel.FullSwitch,Home)</onfocus>
+                <itemlayout width="236" height="330">
+                    <include content="Netflix_Focus_Rail_Poster">
+                        <param name="width">220</param><param name="height">330</param>
+                    </include>
+                </itemlayout>
+                <focusedlayout width="236" height="330" condition="Control.HasFocus($PARAM[id])">
+                    <control type="image">
+                        <width>220</width><height>330</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>4</left><top>4</top>
+                        <include content="Netflix_Focus_Rail_Poster">
+                            <param name="width">212</param><param name="height">322</param>
+                        </include>
+                    </control>
+                </focusedlayout>
+                <focusedlayout width="236" height="330" condition="!Control.HasFocus($PARAM[id])">
+                    <include content="Netflix_Focus_Rail_Poster">
+                        <param name="width">220</param><param name="height">330</param>
+                    </include>
+                </focusedlayout>
+                <!-- sortby playlist (R9.1-bursts): Kodi re-runs every unsorted list on playback start/stop, so the three
+                     My Lists rows started together when a title played from here and again on return. POV items share
+                     one playlist position and Kodi's sort is stable, so the order is unchanged (as the R8 genre rows). -->
+                <include content="Object_ContentDynamic">
+                    <param name="content">$PARAM[path]</param>
+                    <param name="target">videos</param><param name="limit">0</param><param name="browse">auto</param>
+                    <param name="sortby">playlist</param>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <!-- 8531/8532: focusable stand-in while a row loads (the coordinator also counts it as the row being on screen).
+         Loaded and empty while the other row has titles: a plain hint, not focusable, skipped by Up/Down/Right. -->
+    <include name="Netflix_My_Lists_Row_Placeholder">
+        <definition>
+            <control type="button" id="8$PARAM[id]">
+                <left>560</left><top>$PARAM[top]</top><width>$PARAM[loading_width]</width><height>76</height>
+                <font>font_mini</font><textoffsetx>34</textoffsetx><aligny>center</aligny>
+                <textcolor>FFBBBBBB</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+                <texturenofocus>special://skin/extras/mylists/dash-$PARAM[loading_width]x76.png</texturenofocus>
+                <texturefocus border="24" colordiffuse="FF242424">common/box.png</texturefocus>
+                <label>$PARAM[loading]</label>
+                <visible>!Integer.IsGreater(Container($PARAM[id]).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id])) | Container($PARAM[id]).IsUpdating]</visible>
+                <onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown><onright>noop</onright><onback>3734</onback>
+                <onleft>SetProperty(Netflix.MyLists.RailFrom,$PARAM[id],Home)</onleft>
+                <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
+            </control>
+            <control type="group">
+                <visible>!Integer.IsGreater(Container($PARAM[id]).NumItems,0) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id])) + !Container($PARAM[id]).IsUpdating + !$EXP[Netflix_My_Lists_No_Favorites]</visible>
+                <include content="Netflix_My_Lists_Hint_Box">
+                    <param name="top">$PARAM[top]</param>
+                    <param name="label">$PARAM[hint]</param>
+                    <param name="width">$PARAM[hint_width]</param>
+                </include>
+            </control>
+        </definition>
+    </include>
+
+    <!-- Dashed boxes hug their text: about 33 px of black between the border and the text ink on each side (text
+         advance from the Inter metrics, tools/textwidth.py, + 68, checked in captures). The two "Nothing saved yet"
+         boxes stack, so they share one width (longer text + 34 + Browse button 260 + 12). Kodi cannot stretch a dashed border without
+         stretching the dashes, so each width has its own texture (extras/mylists/dash-WIDTHx76.png). -->
+    <include name="Netflix_My_Lists_Hint_Box">
+        <definition>
+            <control type="image">
+                <left>560</left><top>$PARAM[top]</top><width>$PARAM[width]</width><height>76</height>
+                <texture>special://skin/extras/mylists/dash-$PARAM[width]x76.png</texture>
+            </control>
+            <control type="label">
+                <left>594</left><top>$PARAM[top]</top><width>700</width><height>76</height>
+                <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                <label>$PARAM[label]</label>
+            </control>
+        </definition>
+    </include>
+
+    <!-- One line at the bottom: the focused title from the focused row (no ratings on this page), or the focused
+         watchlist's name and count. Nothing for "New Watchlist", the placeholders or the tab. -->
+    <include name="Netflix_My_Lists_Info_Line">
+        <include content="Netflix_My_Lists_Info">
+            <param name="id">531</param>
+        </include>
+        <include content="Netflix_My_Lists_Info">
+            <param name="id">532</param>
+        </include>
+        <control type="grouplist">
+            <left>560</left><top>988</top><width>1300</width><height>40</height>
+            <orientation>horizontal</orientation><itemgap>0</itemgap>
+            <visible>Control.HasFocus(533) + !String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),create) + !String.IsEmpty(Container(533).ListItem.Label)</visible>
+            <control type="label">
+                <width max="900">auto</width><height>40</height>
+                <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
+                <label>$INFO[Container(533).ListItem.Label]</label>
+            </control>
+            <control type="label">
+                <width max="400">auto</width><height>40</height>
+                <font>font_main</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                <label>$INFO[Container(533).ListItem.Label2,  •  ]</label>
+            </control>
+        </control>
+    </include>
+
+    <include name="Netflix_My_Lists_Info">
+        <definition>
+            <control type="grouplist">
+                <left>560</left><top>988</top><width>1300</width><height>40</height>
+                <orientation>horizontal</orientation><itemgap>0</itemgap>
+                <visible>Control.HasFocus($PARAM[id]) + Integer.IsGreater(Container($PARAM[id]).NumItems,0) + !Container($PARAM[id]).ListItem.IsParentFolder + !String.IsEqual(Container($PARAM[id]).ListItem.Property(node.type),target_folder) + ![Container($PARAM[id]).ListItem.IsFolder + String.Contains(Container($PARAM[id]).ListItem.FolderPath,new_page=)]</visible>
+                <control type="label">
+                    <width max="700">auto</width><height>40</height>
+                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Container($PARAM[id]).ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <width max="1000">auto</width><height>40</height>
+                    <font>font_main</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                    <label>$INFO[Container($PARAM[id]).ListItem.Genre,  •  ]$INFO[Container($PARAM[id]).ListItem.Year,  •  ]$VAR[Netflix_My_Lists_Length_$PARAM[id]]$INFO[Container($PARAM[id]).ListItem.MPAA,  •  ]</label>
+                </control>
+            </control>
+        </definition>
+    </include>
+
+    <variable name="Netflix_My_Lists_Length_531">
+        <value condition="Integer.IsGreater(Container(531).ListItem.Duration(mins),59)">$INFO[Container(531).ListItem.Duration(h),  •  ,h ]$INFO[Container(531).ListItem.Duration(m),,m]</value>
+        <value>$INFO[Container(531).ListItem.Duration(mins),  •  ,m]</value>
+    </variable>
+    <variable name="Netflix_My_Lists_Length_532">
+        <value condition="Integer.IsEqual(Container(532).ListItem.Property(TotalSeasons),1)">  •  1 season</value>
+        <value>$INFO[Container(532).ListItem.Property(TotalSeasons),  •  , seasons]</value>
+    </variable>
+
+    <variable name="Netflix_Watchlists_Status">
+        <value condition="!String.IsEmpty(Window(Home).Property(Netflix.Watchlists.Error))">$INFO[Window(Home).Property(Netflix.Watchlists.Error)]</value>
+        <value>Loading Watchlists…</value>
+    </variable>
+
+    <expression name="Netflix_My_Lists_No_Favorites">
+        !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) +
+        !Integer.IsGreater(Container(531).NumItems,0) + !Integer.IsGreater(Container(532).NumItems,0) + !Container(531).IsUpdating + !Container(532).IsUpdating
+    </expression>
+    <expression name="Netflix_My_Lists_No_Movies">
+        !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) + !Integer.IsGreater(Container(531).NumItems,0) + !Container(531).IsUpdating
+    </expression>
+    <!-- Focus. Every target is a visible control with something in it; the loading stand-ins 8531/8532/8533 count
+         as their row (Timers.xml moves focus into 531/532 when titles arrive). The rail remembers where Left came
+         from in Window(Home).Property(Netflix.MyLists.RailFrom); it is only read on the next key press. -->
+    <variable name="Netflix_My_Lists_To_Rail">
+        <value condition="Integer.IsGreater(Container(533).NumItems,0)">SetFocus(533)</value>
+        <value>SetFocus(8533)</value>
+    </variable>
+    <variable name="Netflix_My_Lists_From_Rail">
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.RailFrom),532) + Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</value>
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.RailFrom),532) + Control.IsVisible(8532)">SetFocus(8532)</value>
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.RailFrom),8536) + Control.IsVisible(8536)">SetFocus(8536)</value>
+        <value condition="Integer.IsGreater(Container(531).NumItems,0)">SetFocus(531)</value>
+        <value condition="Control.IsVisible(8531)">SetFocus(8531)</value>
+        <value condition="Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</value>
+        <value condition="Control.IsVisible(8532)">SetFocus(8532)</value>
+        <value condition="Control.IsVisible(8530)">SetFocus(8530)</value>
+        <value>noop</value>
+    </variable>
+    <variable name="Netflix_My_Lists_After_Movies">
+        <value condition="Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</value>
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating">SetFocus(8532)</value>
+        <value>noop</value>
+    </variable>
+    <variable name="Netflix_My_Lists_Before_Shows">
+        <value condition="Integer.IsGreater(Container(531).NumItems,0)">SetFocus(531)</value>
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating">SetFocus(8531)</value>
+        <value>SetFocus(3734)</value>
+    </variable>
+
+    <!-- Down from the My Lists tab: Saved Movies, else Saved Shows, else the first watchlist, else "New Watchlist"
+         (the rail's first item is "New Watchlist" only when there are no watchlists). -->
+    <variable name="Netflix_My_List_Body">
+        <value condition="Integer.IsGreater(Container(531).NumItems,0)">SetFocus(531)</value>
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating">SetFocus(8531)</value>
+        <value condition="Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</value>
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating">SetFocus(8532)</value>
+        <value condition="Integer.IsGreater(Container(533).NumItems,0)">SetFocus(533,0,absolute)</value>
+        <value>SetFocus(8533)</value>
+    </variable>
+    <variable name="Netflix_Saved_Movies_Status">
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating">Loading Saved Movies…</value>
+        <value>Movies you save in POV will appear here.</value>
+    </variable>
+    <variable name="Netflix_Saved_Shows_Status">
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating">Loading Saved Shows…</value>
+        <value>Shows you save in POV will appear here.</value>
+    </variable>
+    <!-- My Lists rows load one at a time (533, 531, 532): each path is empty until the row coordinator
+         (extras/netflix_browse_state.py) enables it, so opening My Lists never starts several add-on
+         calls in the same instant. The rows then stay loaded. Each path carries a token the coordinator
+         copies from the matching revision property, one row at a time, so a changed row refetches alone.
+         Window(1165).Property(Netflix.Browse.Window) is a marker the coordinator sets on this window: it
+         survives a normal close and is lost when the skin reloads (window rebuilt empty), so a rebuilt
+         window starts with empty paths and is loaded serially again instead of all three at once. -->
+    <variable name="Netflix_Watchlists_Path">
+        <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Enabled.533))">plugin://plugin.video.pov/?mode=netflix_watchlists&amp;revision=$INFO[Window(Home).Property(Netflix.Browse.Token.533)]</value>
+    </variable>
+    <variable name="Netflix_Saved_Movies_Path">
+        <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Enabled.531))">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=favorites_movies&amp;name=342&amp;netflix_saved_revision=$INFO[Window(Home).Property(Netflix.Browse.Token.531)]</value>
+    </variable>
+    <variable name="Netflix_Saved_Shows_Path">
+        <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.SavedShowsEnabled))">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=favorites_tvshows&amp;name=20343&amp;netflix_saved_revision=$INFO[Window(Home).Property(Netflix.Browse.Token.532)]</value>
+    </variable>
+</includes>

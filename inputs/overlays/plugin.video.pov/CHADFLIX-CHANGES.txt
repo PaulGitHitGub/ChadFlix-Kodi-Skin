@@ -1,0 +1,40 @@
+plugin.video.pov 6.99.1103.2: unofficial modified build of plugin.video.pov 6.11.03
+Modified by ChadFlix, 2026-11 (unofficial modified build for Kodi 21).
+Original author and copyright: see provider-name in addon.xml. Licence: see LICENSE.txt (or the <license> tag in addon.xml).
+
+Compared with the unmodified upstream plugin.video.pov 6.11.03:
+Changed files (23):
+  resources/lib/caches/meta_cache.py
+  resources/lib/caches/watched_cache.py
+  resources/lib/indexers/metadata.py
+  resources/lib/indexers/tmdb_api.py
+  resources/lib/indexers/trakt_api.py
+  resources/lib/menus/movies.py
+  resources/lib/menus/seasons.py
+  resources/lib/menus/tvshows.py
+  resources/lib/modules/entry.py
+  resources/lib/modules/episode_tools.py
+  resources/lib/modules/kodi_utils.py
+  resources/lib/modules/player.py
+  resources/lib/modules/session.py
+  resources/lib/modules/source_utils.py
+  resources/lib/modules/sources.py
+  resources/lib/modules/strings_po.py
+  resources/lib/windows/episodes.py
+  resources/lib/windows/sources.py
+  resources/skins/Default/1080i/episodes.xml
+  resources/skins/Default/1080i/progress_media.xml
+  resources/skins/Default/1080i/sources_info.xml
+  resources/skins/Default/1080i/sources_results.xml
+  resources/skins/Default/1080i/videoplayer.xml
+Added files (8):
+  resources/lib/indexers/netflix_api.py
+  resources/lib/menus/netflix_continue.py
+  resources/lib/menus/netflix_tab_cache.py
+  resources/lib/menus/netflix_watchlists.py
+  resources/lib/modules/netflix_quality_preview.py
+  resources/lib/modules/quality_presets.py
+  resources/lib/modules/source_presentation.py
+  resources/skins/Default/media/source-pill.png
+Removed files (0):
+addon.xml: version changed to 6.99.1103.2 and this notice added to the description.

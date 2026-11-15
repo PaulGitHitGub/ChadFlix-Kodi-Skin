@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <include>Action_BuildViews</include>
+    <!-- Profiles: Netflix.Profiles.* (header avatar, menu) are published at boot and after LoadProfile by the row
+         observer, in its own interpreter (extras/netflix_browse_state.py publish_profiles). This onload used to
+         start netflix_profiles.py in the same instant as the skinvariables template job below (R9.1-bursts). -->
+    <onload>Skin.SetString(TMDbHelper.Corner.Radius,20)</onload>
+    <onload>Skin.SetString(TMDbHelper.UseLocalWindowIDs,10000|11101|11102|11103|11104|11105|11106|11107|11108|11109|11162|11163|11165)</onload>
+    <include>Action_ButtonMenu_Onload</include>
+    <include condition="!$EXP[Exp_ViewTypes_RebuildPending]">Action_BuildShortcuts_OnLoad</include>
+    <include>skinvariables-homewidgets-standard-onunload</include>
+
+    <onload condition="String.IsEmpty(Window(1198).Property(WidgetsInitialized))">SetProperty(WidgetsInitialized,True,1198)</onload>
+    <onload>ClearProperty(SplashIsVisible,1198)</onload>
+    <defaultcontrol always="false">3733</defaultcontrol>
+    <menucontrol>3733</menucontrol>
+
+    <onload condition="!Skin.HasSetting(Home.FirstRun)">Skin.SetBool(Hub.Home.DisableSubmenu)</onload>
+    <onload condition="!Skin.HasSetting(Home.FirstRun)">Skin.SetString(Shortcuts.RebuildDateTime,FirstRun)</onload>
+    <onload condition="!Skin.HasSetting(Home.FirstRun)">Skin.SetBool(Home.FirstRun)</onload>
+    <onload condition="!Skin.HasSetting(Home.FirstRun)">AlarmClock(reloadskin,ReloadSkin(),00:00,silent)</onload>
+
+    <onload condition="Skin.HasSetting(TMDbHelper.EnableData)">Skin.SetBool(TMDbHelper.Service)</onload>
+    <onload condition="!Skin.HasSetting(TMDbHelper.EnableData)">Skin.Reset(TMDbHelper.Service)</onload>
+    <onload>$VAR[Action_RatingsMonitor]</onload>
+
+    <onload condition="Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(1198).Property(FirstStart))">SetProperty(FirstStart,True,1198)</onload>
+
+    <onload condition="Skin.HasSetting(Home.FirstRun) + Skin.HasSetting(SetupWizard.Pending)">ClearProperty(SetupWizard.Page,Home)</onload>
+    <onload condition="Skin.HasSetting(Home.FirstRun) + Skin.HasSetting(SetupWizard.Pending)">SetProperty(SetupWizard.Index,0,Home)</onload>
+    <onload condition="Skin.HasSetting(Home.FirstRun) + Skin.HasSetting(SetupWizard.Pending)">AlarmClock(setupwizardopen,ActivateWindow(1130),00:01,silent)</onload>
+
+    <!-- Home properties survive skin reload; a full application exit resets the latch. -->
+    <onload condition="!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen)) + !Player.HasMedia">SetProperty(Netflix.MoviesBoot.Pending,true,Home)</onload>
+    <onload condition="!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen)) + !Player.HasMedia">AlarmClock(netflix_movies_boot_timeout,ClearProperty(Netflix.MoviesBoot.Pending,Home),00:59,silent)</onload>
+    <onload condition="!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen))">SetProperty(Netflix.MoviesBoot.SessionSeen,true,Home)</onload>
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)">SetFocus(8990)</onload>
+
+    <!-- Home remains Kodi's technical root; browse content starts in Movies. -->
+    <onload>SetProperty(Netflix.MoviesLanding.Pending,true,Home)</onload>
+    <onunload>ClearProperty(Netflix.MoviesLanding.Pending,Home)</onunload>
+
+    <controls>
+        <control type="image">
+            <texture colordiffuse="FF080808">common/white.png</texture>
+        </control>
+        <include content="Object_Hidden_Button">
+            <param name="id">3740</param>
+            <onfocus>SetFocus(3733)</onfocus>
+            <onfocus condition="Player.HasMedia">ActivateWindow(fullscreenvideo)</onfocus>
+        </include>
+        <include content="Netflix_Top_Navigation">
+            <param name="active">Movies</param>
+            <param name="reference">Skin.HasSetting(Netflix.CompactHome)</param>
+            <param name="movies_selected">true</param>
+            <param name="body">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</param>
+        </include>
+        <!-- Reuse the incumbent startup artwork without holding window1198. -->
+        <include content="Hub_Widget_Splash">
+            <param name="condition">String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) + !Player.HasMedia</param>
+            <param name="showlabel">false</param>
+        </include>
+        <control type="button" id="8990">
+            <description>Skip catalog startup wait</description>
+            <left>0</left><top>0</top><width>1</width><height>1</height>
+            <label /><texturefocus /><texturenofocus />
+            <visible>String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)</visible>
+            <onback>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onback>
+            <onback>CancelAlarm(netflix_movies_boot_timeout,true)</onback>
+            <onback>3733</onback>
+            <onclick>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onclick>
+            <onclick>CancelAlarm(netflix_movies_boot_timeout,true)</onclick>
+            <onclick>SetFocus(3733)</onclick>
+            <onup>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onup>
+            <onup>CancelAlarm(netflix_movies_boot_timeout,true)</onup>
+            <onup>3733</onup>
+            <ondown>ClearProperty(Netflix.MoviesBoot.Pending,Home)</ondown>
+            <ondown>CancelAlarm(netflix_movies_boot_timeout,true)</ondown>
+            <ondown>3733</ondown>
+            <onleft>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onleft>
+            <onleft>CancelAlarm(netflix_movies_boot_timeout,true)</onleft>
+            <onleft>3733</onleft>
+            <onright>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onright>
+            <onright>CancelAlarm(netflix_movies_boot_timeout,true)</onright>
+            <onright>3733</onright>
+        </control>
+    </controls>
+</window>

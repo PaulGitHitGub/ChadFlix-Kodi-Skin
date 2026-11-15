@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<keymap>
+    <!-- Cleanup step 2 (staged/back-cleanup): no Python on any Back press. Before this, every Back in these four
+         windows started extras/netflix_catalog_back.py, and Videos' own control <onback>s never ran at the root.
+         Every short and long Back key that the old file mapped stays mapped here, so Kodi's default long-press
+         mappings stay overridden (Videos: backspace long-press = ActivateWindow(Home); global browser_back
+         long-press = ActivateWindow(Home); Home: backspace long-press = ActivateWindow(ShutdownMenu)).
+         Videos: plain Back, so the focused control's <onback> runs (row -> its tab, grid -> close, drawer -> close).
+           At the Movies/Shows root every header control's <onback> ends on a numeric target (Includes_Home.xml),
+           so Kodi's window default (go up / previous window = Videos -> Home) never runs there.
+         Search (11105): plain Back, so the page's own <onback>s run: results -> keyboard -> Search tab, and Back on
+           the header leaves Search for the page it was opened from (Kodi's previous window). The old script did
+           nothing there, so Back could never leave Search.
+         Home: noop, as before (the old script returned without doing anything; Home is only up ~0.4 s at boot).
+         My Lists (11165): focus the My Lists tab, as the old script did (the page's own controls all do the same).
+         Remove this file and restart Kodi to undo (then Kodi's defaults apply, including the Home escape). -->
+    <Home>
+        <keyboard>
+            <backspace>noop</backspace>
+            <backspace mod="longpress">noop</backspace>
+            <browser_back>noop</browser_back>
+        </keyboard>
+        <remote><back>noop</back></remote>
+    </Home>
+    <Videos>
+        <keyboard>
+            <backspace>Back</backspace>
+            <backspace mod="longpress">Back</backspace>
+            <browser_back>Back</browser_back>
+        </keyboard>
+        <remote><back>Back</back></remote>
+    </Videos>
+    <window11105>
+        <keyboard>
+            <backspace>Back</backspace>
+            <backspace mod="longpress">Back</backspace>
+            <browser_back>Back</browser_back>
+        </keyboard>
+        <remote><back>Back</back></remote>
+    </window11105>
+    <window11165>
+        <keyboard>
+            <backspace>SetFocus(3734)</backspace>
+            <backspace mod="longpress">SetFocus(3734)</backspace>
+            <browser_back>SetFocus(3734)</browser_back>
+        </keyboard>
+        <remote><back>SetFocus(3734)</back></remote>
+    </window11165>
+</keymap>

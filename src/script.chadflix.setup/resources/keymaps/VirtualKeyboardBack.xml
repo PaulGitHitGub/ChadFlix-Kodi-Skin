@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<keymap>
+    <!-- Shield controller Back closes Kodi's text-entry keyboard instead of acting as Backspace. Long-press Back still closes; the on-screen Delete key still deletes. Remove this file and reload keymaps to undo. -->
+    <VirtualKeyboard>
+        <keyboard>
+            <browser_back>Back</browser_back>
+        </keyboard>
+    </VirtualKeyboard>
+</keymap>

@@ -1,0 +1,3 @@
+# upstream files that are not in the ChadFlix build of skin.arctic.fuse.3 (one path per line)
+1080i/Custom_1143_OSD_NextOverlay.xml
+1080i/Custom_1146_OSD_AudioStreams.xml

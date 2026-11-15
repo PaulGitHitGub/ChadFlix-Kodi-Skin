@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Netflix-style subtitle appearance picker. Opened from the subtitle menu (1147) by
+     extras/netflix_subtitle_style.py open, which reads Kodi's subtitle settings into the Netflix.Sub.* skin strings first.
+     Left/Right walk the seven pills (wraps), OK applies the focused choice (one script run), Back closes.
+     The preview line and the group labels follow focus with conditions only (no script per key press). -->
+<window type="dialog" id="1177">
+    <defaultcontrol always="true">7201</defaultcontrol>
+    <onload condition="String.IsEqual(Skin.String(Netflix.Sub.Style),box)">SetFocus(7202)</onload>
+    <onload condition="String.IsEqual(Skin.String(Netflix.Sub.Style),contrast)">SetFocus(7203)</onload>
+    <onload condition="String.IsEqual(Skin.String(Netflix.Sub.Style),reverse)">SetFocus(7204)</onload>
+    <!-- The real subtitle is hidden by the opening script (it would run under the pills) and shown again by that
+         same script when this window closes, including when playback stops or ends while it is open. -->
+    <animation effect="fade" start="0" end="100" time="200">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="160">WindowClose</animation>
+    <controls>
+        <!-- The video keeps playing; only the lower half is dimmed. -->
+        <control type="image">
+            <width>1920</width>
+            <height>1080</height>
+            <texture>special://skin/extras/subtitles/dim.png</texture>
+        </control>
+
+        <!-- Preview: drawn in Kodi's subtitle font at the size Kodi renders each preset (calibrated on the Mac). -->
+        <control type="group">
+            <include content="NfSub_Line"><param name="top">490</param><param name="visible">$EXP[Exp_NfSub_Small]</param><param name="font">font_nfsub_s</param><param name="h">36</param><param name="pad">5</param><param name="text">Your subtitles will look like this.</param></include>
+            <include content="NfSub_Line"><param name="top">486</param><param name="visible">$EXP[Exp_NfSub_Medium]</param><param name="font">font_nfsub_m</param><param name="h">45</param><param name="pad">6</param><param name="text">Your subtitles will look like this.</param></include>
+            <include content="NfSub_Line"><param name="top">478</param><param name="visible">$EXP[Exp_NfSub_Large]</param><param name="font">font_nfsub_l</param><param name="h">60</param><param name="pad">8</param><param name="text">Your subtitles will look like this.</param></include>
+        </control>
+
+        <!-- Group labels name the focused choice, otherwise the current one. -->
+        <control type="grouplist">
+            <left>404</left>
+            <top>808</top>
+            <width>436</width>
+            <height>40</height>
+            <orientation>horizontal</orientation>
+            <itemgap>10</itemgap>
+            <control type="label"><width>auto</width><height>40</height><font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Size:</label></control>
+            <control type="label"><width>auto</width><height>40</height><font>font_midi</font><textcolor>B8F5F5F5</textcolor><label>$VAR[NfSub_SizeName]</label></control>
+        </control>
+        <control type="grouplist">
+            <left>928</left>
+            <top>808</top>
+            <width>588</width>
+            <height>40</height>
+            <orientation>horizontal</orientation>
+            <itemgap>10</itemgap>
+            <control type="label"><width>auto</width><height>40</height><font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Style:</label></control>
+            <control type="label"><width>auto</width><height>40</height><font>font_midi</font><textcolor>B8F5F5F5</textcolor><label>$VAR[NfSub_StyleName]</label></control>
+        </control>
+
+        <!-- One row of seven pills. -->
+        <control type="group">
+            <top>864</top>
+                <include content="NfSub_Pill">
+                    <param name="id">7101</param><param name="x">404</param><param name="left">7204</param><param name="right">7102</param>
+                    <param name="apply">size=small</param><param name="font">font_nfsub_s</param><param name="shadow">true</param>
+                    <param name="o">2</param><param name="boxw">0</param><param name="texty">0</param>
+                    <param name="selected">String.IsEqual(Skin.String(Netflix.Sub.Size),small)</param>
+                </include>
+                <include content="NfSub_Pill">
+                    <param name="id">7102</param><param name="x">556</param><param name="left">7101</param><param name="right">7103</param>
+                    <param name="apply">size=medium</param><param name="font">font_nfsub_m</param><param name="shadow">true</param>
+                    <param name="o">2</param><param name="boxw">0</param><param name="texty">0</param>
+                    <param name="selected">String.IsEqual(Skin.String(Netflix.Sub.Size),medium)</param>
+                </include>
+                <include content="NfSub_Pill">
+                    <param name="id">7103</param><param name="x">708</param><param name="left">7102</param><param name="right">7201</param>
+                    <param name="apply">size=large</param><param name="font">font_nfsub_l</param><param name="shadow">true</param>
+                    <param name="o">2</param><param name="boxw">0</param><param name="texty">0</param>
+                    <param name="selected">String.IsEqual(Skin.String(Netflix.Sub.Size),large)</param>
+                </include>
+                <include content="NfSub_Pill">
+                    <param name="id">7201</param><param name="x">928</param><param name="left">7103</param><param name="right">7202</param>
+                    <param name="apply">style=shadow</param><param name="font">font_nfsub_m</param><param name="shadow">true</param>
+                    <param name="o">2</param><param name="textcolor">FFFFFFFF</param><param name="boxw">0</param><param name="texty">0</param>
+                    <param name="selected">String.IsEqual(Skin.String(Netflix.Sub.Style),shadow)</param>
+                </include>
+                <include content="NfSub_Pill">
+                    <param name="id">7202</param><param name="x">1080</param><param name="left">7201</param><param name="right">7203</param>
+                    <param name="apply">style=box</param><param name="font">font_nfsub_m</param><param name="shadow">false</param>
+                    <param name="o">2</param><param name="box">CC000000</param><param name="hasbox">true</param><param name="textcolor">FFFFFFFF</param><param name="boxw">64</param><param name="texty">0</param>
+                    <param name="selected">String.IsEqual(Skin.String(Netflix.Sub.Style),box)</param>
+                </include>
+                <include content="NfSub_Pill">
+                    <param name="id">7203</param><param name="x">1232</param><param name="left">7202</param><param name="right">7204</param>
+                    <param name="apply">style=contrast</param><param name="font">font_nfsub_m</param><param name="shadow">false</param>
+                    <param name="o">2</param><param name="box">FF000000</param><param name="hasbox">true</param><param name="textcolor">FFFFFF00</param><param name="boxw">64</param><param name="texty">0</param>
+                    <param name="selected">String.IsEqual(Skin.String(Netflix.Sub.Style),contrast)</param>
+                </include>
+                <include content="NfSub_Pill">
+                    <param name="id">7204</param><param name="x">1384</param><param name="left">7203</param><param name="right">7101</param>
+                    <param name="apply">style=reverse</param><param name="font">font_nfsub_m</param><param name="shadow">false</param>
+                    <param name="o">2</param><param name="box">FFFFFFFF</param><param name="hasbox">true</param><param name="textcolor">FF000000</param><param name="boxw">64</param><param name="texty">0</param>
+                    <param name="selected">String.IsEqual(Skin.String(Netflix.Sub.Style),reverse)</param>
+                </include>
+        </control>
+
+        <control type="label">
+            <bottom>40</bottom>
+            <height>40</height>
+            <align>center</align>
+            <aligny>center</aligny>
+            <font>font_main</font>
+            <textcolor>D9F5F5F5</textcolor>
+            <label>OK to choose  ·  Back to close</label>
+        </control>
+    </controls>
+</window>

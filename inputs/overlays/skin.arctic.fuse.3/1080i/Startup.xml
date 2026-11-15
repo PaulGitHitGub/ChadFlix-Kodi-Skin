@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <previouswindow>Home</previouswindow>
+    <onload condition="String.IsEmpty(Window(Home).Property(Startup.Scene))">SetProperty(Startup.Scene,$VAR[Value_StartUp_InitialScene],Home)</onload>
+    <onload>Skin.SetString(Startup.LastScene,$INFO[Window(Home).Property(Startup.Scene)])</onload>
+    <!-- R10.25 (security audit F-07): versions before R10.25 saved the playing file's path or link here; the value is now a hash
+         (no "/"). A leftover path is cleared at start. One check per Kodi start; nothing runs otherwise. -->
+    <onload condition="String.Contains(Skin.String(Netflix.Sub.RestoreFile),/)">Skin.Reset(Netflix.Sub.RestoreFile)</onload>
+    <onload condition="!String.IsEmpty(Skin.String(Startup.VideoPath))">AlarmClock(playstartup,PlayMedia($ESCINFO[Skin.String(Startup.VideoPath)],1),00:00,silent)</onload>
+    <onload condition="Skin.HasSetting(SkinUserLogin.StartupLoginScreen) + !Skin.HasSetting(SkinUserLogin.Disabled) + String.IsEmpty(Window(Home).Property(StartupReplaceWindow))">SetProperty(StartupReplaceWindow,1195,Home)</onload>
+
+    <include>Action_ButtonMenu_Onload</include>
+
+    <onload>RunScript(script.skinvariables,run_executebuiltin=special://skin/shortcuts/skinvariables-startup.json,use_rules=True,var_image_simplebackground=$VAR[Image_SimpleBackground])</onload>
+
+    <onunload>ClearProperty(StartupReplaceWindow,Home)</onunload>
+</window>

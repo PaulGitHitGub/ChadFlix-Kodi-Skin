@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <zorder>1000</zorder>
+    <controls>
+
+        <include content="Furniture_Busy">
+            <param name="hasspinner">true</param>
+            <param name="spinspinner">true</param>
+            <param name="icon">special://skin/extras/icons/kodi.png</param>
+            <param name="haslabel">false</param>
+            <!-- Owner request 2026-11-10: nothing in the bottom-right corner while Kodi is busy (was the Kodi icon box + spinner). The dialog itself stays. -->
+            <param name="visible">false</param>
+            <param name="visible_condition">!$EXP[Exp_FurnitureBusy_AnimationCond_DialogBusy]</param>
+            <param name="windowopen_condition">!$EXP[Exp_FurnitureBusy_AnimationCond_DialogBusy]</param>
+        </include>
+
+        <control type="progress" id="10">
+            <include>Object_Hidden_Button_Definition</include>
+        </control>
+
+    </controls>
+</window>

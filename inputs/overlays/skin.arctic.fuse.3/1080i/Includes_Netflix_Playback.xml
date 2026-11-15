@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- R10-playback: ONE cover layer for every hand-over between a title page and video, and the play loader
+     (owner-locked design B, the spec ribbon) that sits in it. Python side: extras/netflix_playback_cover.py
+     (hold / renew / release, loading state) and POV modules/sources.py (quiet mode, facts, phases).
+
+     Cover   Window(Home).Property(Netflix.PlaybackCover) = token of whoever holds it, with the named alarm
+             netflix_playback_cover as the fail-safe (it lapses unless the holder renews it, so a dead script costs
+             a few seconds of black at most). Drawn as the LAST control of the Videos window (MyVideoNav.xml), so it
+             is painted in the same frame as Videos and no browse frame can show; window 1169 carries the same layer
+             for pages opened from other windows. Picture: black, the title's backdrop
+             (Netflix.PlaybackCover.Image, decoded at once: it is already in the texture cache) and the page's side
+             shade, so a page closing onto it, or opening over it, changes only text.
+     Loader  Window(Home).Property(Netflix.Play.Loading) = token of the play request (POV's netflix_playback_cover
+             parameter). Drawn over the movie page, over the show page, and in the cover when no page is up (the
+             trailer start). Properties: Netflix.Play.Verb (Starting|Resuming|Trailer), Netflix.Play.Phase
+             (find|open|play), Netflix.Play.Res / SpecA / SpecB (facts, empty for the quality rows and All Sources),
+             Netflix.Play.Watched (right-hand text). The facts group has its own visible condition, so it fades in
+             when the facts arrive (an episode's arrive mid-load, from POV). -->
+<includes>
+    <expression name="Netflix_Cover_Held">System.HasAlarm(netflix_playback_cover) + !String.IsEmpty(Window(Home).Property(Netflix.PlaybackCover))</expression>
+    <expression name="Netflix_Play_Loading">!String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))</expression>
+    <expression name="Netflix_Page_Up">[Window.IsVisible(1167) | Window.IsVisible(Netflix_Series.xml)]</expression>
+
+    <variable name="Netflix_Play_Label">
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.Play.Phase),find)">FINDING THE BEST SOURCE</value>
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.Play.Verb),Resuming)">RESUMING PLAYBACK</value>
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.Play.Verb),Trailer)">STARTING TRAILER</value>
+        <value>STARTING PLAYBACK</value>
+    </variable>
+
+    <!-- Design B (staged/play-loading-design/DESIGN.md §10): page dims to 34 %, bottom third goes solid black,
+         big resolution with two spec lines, one full-width sweep (the only continuously moving layer). -->
+    <include name="Netflix_Play_Loader">
+        <control type="group">
+            <visible>$EXP[Netflix_Play_Loading]</visible>
+            <animation effect="fade" start="0" end="100" time="300" tween="sine">Visible</animation>
+            <control type="image">
+                <width>1920</width><height>1080</height>
+                <texture colordiffuse="57000000">common/white.png</texture>
+            </control>
+            <control type="image">
+                <left>0</left><top>560</top><width>1920</width><height>520</height>
+                <texture>special://skin/extras/play-loading/ribbon-fade.png</texture>
+            </control>
+            <control type="label">
+                <left>96</left><top>698</top><width>900</width><height>28</height>
+                <font>font_tiny_bold</font>
+                <textcolor>A8F5F5F5</textcolor>
+                <label>$VAR[Netflix_Play_Label]</label>
+            </control>
+            <control type="label">
+                <left>96</left><top>698</top><width>1728</width><height>28</height>
+                <align>right</align>
+                <font>font_tiny</font>
+                <textcolor>C8F5F5F5</textcolor>
+                <label>$INFO[Window(Home).Property(Netflix.Play.Watched)]</label>
+            </control>
+            <control type="group">
+                <left>96</left><top>744</top>
+                <visible>!String.IsEmpty(Window(Home).Property(Netflix.Play.Res))</visible>
+                <animation type="Visible">
+                    <effect type="fade" start="0" end="100" time="400" tween="sine"/>
+                    <effect type="slide" start="0,18" end="0,0" time="400" tween="quadratic" easing="out"/>
+                </animation>
+                <!-- Flows left to right: "4K" and "1080p" differ in width, the divider and lines follow the number. -->
+                <control type="grouplist">
+                    <left>0</left><top>0</top><width>1728</width><height>112</height>
+                    <orientation>horizontal</orientation>
+                    <itemgap>0</itemgap>
+                    <usecontrolcoords>true</usecontrolcoords>
+                    <control type="label">
+                        <width min="40" max="420">auto</width><height>112</height>
+                        <aligny>center</aligny>
+                        <font>font_title_huge</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <label>$INFO[Window(Home).Property(Netflix.Play.Res)]</label>
+                    </control>
+                    <control type="image">
+                        <left>36</left><top>14</top><width>2</width><height>86</height>
+                        <texture colordiffuse="48F5F5F5">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>20</left><width>1200</width><height>112</height>
+                        <control type="label">
+                            <left>0</left><top>10</top><width>1200</width><height>44</height>
+                            <aligny>center</aligny>
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[Window(Home).Property(Netflix.Play.SpecA)]</label>
+                        </control>
+                        <control type="label">
+                            <left>0</left><top>58</top><width>1200</width><height>44</height>
+                            <aligny>center</aligny>
+                            <font>font_main</font>
+                            <textcolor>D6F5F5F5</textcolor>
+                            <label>$INFO[Window(Home).Property(Netflix.Play.SpecB)]</label>
+                        </control>
+                    </control>
+                </control>
+            </control>
+            <control type="image">
+                <left>96</left><top>1000</top><width>1728</width><height>3</height>
+                <texture border="1" colordiffuse="29F5F5F5">common/box.png</texture>
+            </control>
+            <control type="image">
+                <left>96</left><top>1000</top><width>520</width><height>3</height>
+                <texture border="1" colordiffuse="FFF5F5F5">common/box.png</texture>
+                <visible>!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)</visible>
+                <animation effect="slide" start="0,0" end="1208,0" time="950" tween="sine" easing="inout" pulse="true" condition="true">Conditional</animation>
+            </control>
+            <!-- Phase "play": POV has the stream and is starting the player; Back no longer cancels. The sweep stops and
+                 the track fills, so the loader shows it is committed. -->
+            <control type="image">
+                <left>96</left><top>1000</top><width>1728</width><height>3</height>
+                <texture border="1" colordiffuse="FFF5F5F5">common/box.png</texture>
+                <visible>String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)</visible>
+                <animation effect="fade" start="0" end="100" time="250">Visible</animation>
+            </control>
+        </control>
+    </include>
+
+    <!-- The cover itself. Same backdrop geometry as both title pages (full width, aligned right, scaled), and the
+         movie page's side shade, shown only while no page is up (a page draws its own). -->
+    <include name="Netflix_Transition_Cover">
+        <control type="group">
+            <visible>$PARAM[condition]</visible>
+            <control type="image">
+                <width>1920</width><height>1080</height>
+                <texture colordiffuse="FF080808">common/white.png</texture>
+            </control>
+            <control type="image">
+                <left>0</left><top>0</top><width>1920</width><height>1080</height>
+                <aspectratio align="right">scale</aspectratio>
+                <texture background="false">$INFO[Window(Home).Property(Netflix.PlaybackCover.Image)]</texture>
+                <visible>!String.IsEmpty(Window(Home).Property(Netflix.PlaybackCover.Image))</visible>
+            </control>
+            <control type="image">
+                <left>0</left><width>1500</width><height>1080</height>
+                <texture colordiffuse="B0080808">special://skin/extras/backgrounds/overlay/combined_sidemenu.png</texture>
+                <visible>!String.IsEmpty(Window(Home).Property(Netflix.PlaybackCover.Image)) + !$EXP[Netflix_Page_Up]</visible>
+            </control>
+            <control type="group">
+                <visible>!$EXP[Netflix_Page_Up]</visible>
+                <include>Netflix_Play_Loader</include>
+            </control>
+        </control>
+    </include>
+</includes>

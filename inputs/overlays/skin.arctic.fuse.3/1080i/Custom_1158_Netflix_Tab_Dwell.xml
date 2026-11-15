@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog" id="1158">
+    <!-- Per-frame tab dwell. Skin timers only tick every ~500 ms, so the netflix_tab_dwell
+         timer opened a tab 0.1-0.6 s after the key press. This modeless dialog reads the same
+         timer's live elapsed time each GUI frame and opens the tab 100 ms after the last
+         Left/Right. The timer in Timers.xml stays as the fallback: once this dialog clears
+         Netflix.TabDwellTarget the timer's own Select is skipped.
+         No Control.* conditions here: they would resolve against this dialog, not Videos. -->
+    <visible>
+        !String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) +
+        !String.IsEqual(Window(Home).Property(Netflix.TabDwellTarget),3735) +
+        String.IsEqual(System.CurrentControlID,Window(Home).Property(Netflix.TabDwellTarget)) +
+        String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.TabDwellWindow)) +
+        !System.HasActiveModalDialog +
+        !String.StartsWith(Skin.TimerElapsedSecs(netflix_tab_dwell),0.0)
+    </visible>
+    <onload>SetProperty(Netflix.TabDwellAuto,true,Home)</onload>
+    <onload>Action(Select)</onload>
+    <onload>ClearProperty(Netflix.TabDwellTarget,Home)</onload>
+    <controls />
+</window>

@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<timers>
+    <!-- R9.6 one way to know the page (Timers.xml cannot use $EXP, so the POV routes used to be pasted into ten
+         conditions below). These two timers do nothing: each one RUNS exactly while its page test is true, and the
+         timers below ask Skin.TimerIsRunning(...) instead of repeating the routes. A POV route rename is now one
+         edit here (start and stop must stay the same test) plus the two root expressions in Includes_Search.xml
+         (Netflix_Movies_Root_Path, Netflix_Shows_Root_Path).
+         The names matter: Kodi ticks timers in name order, so "netflix_a_..." is settled before netflix_browse_*
+         and netflix_genre_menu_guard read it in the same pass (same frame, no lag). Keep the prefix.
+         Which TAB is shown is not a folder test: Movies/Shows is Window(Home).Property(Netflix.Tab) on the root,
+         My Lists and Search are windows. -->
+    <timer>
+        <name>netflix_a_page_browse</name>
+        <description>Runs while the row observer's pages are shown: the Movies/Shows root in Videos, or My Lists.</description>
+        <start>[[Window.IsActive(Videos) + String.StartsWith(Container.FolderPath,plugin://plugin.video.pov/) + [[String.Contains(Container.FolderPath,mode=build_movie_list&amp;) + String.Contains(Container.FolderPath,action=trakt_movies_trending&amp;)] | [String.Contains(Container.FolderPath,mode=build_tvshow_list&amp;) + [String.Contains(Container.FolderPath,action=trakt_tv_trending&amp;) | String.Contains(Container.FolderPath,action=tmdb_tv_premieres&amp;)]]]] | Window.IsActive(1165)]</start>
+        <stop>![[Window.IsActive(Videos) + String.StartsWith(Container.FolderPath,plugin://plugin.video.pov/) + [[String.Contains(Container.FolderPath,mode=build_movie_list&amp;) + String.Contains(Container.FolderPath,action=trakt_movies_trending&amp;)] | [String.Contains(Container.FolderPath,mode=build_tvshow_list&amp;) + [String.Contains(Container.FolderPath,action=trakt_tv_trending&amp;) | String.Contains(Container.FolderPath,action=tmdb_tv_premieres&amp;)]]]] | Window.IsActive(1165)]</stop>
+    </timer>
+    <timer>
+        <name>netflix_a_page_tab</name>
+        <description>Runs while Videos is on a tab page (Movies/Shows root, a watchlist, Saved) or on a genre page other than the genre menu's.</description>
+        <start>Window.IsActive(Videos) + [String.Contains(Container.FolderPath,action=trakt_movies_trending&amp;) | String.Contains(Container.FolderPath,action=trakt_tv_trending&amp;) | String.Contains(Container.FolderPath,action=tmdb_tv_premieres&amp;) | String.Contains(Container.FolderPath,mode=netflix_watchlist&amp;) | String.Contains(Container.FolderPath,action=favorites_movies&amp;) | String.Contains(Container.FolderPath,action=favorites_tvshows&amp;) | [String.Contains(Container.FolderPath,genre_id=) + ![String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.Token)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.Action))]]]</start>
+        <stop>![Window.IsActive(Videos) + [String.Contains(Container.FolderPath,action=trakt_movies_trending&amp;) | String.Contains(Container.FolderPath,action=trakt_tv_trending&amp;) | String.Contains(Container.FolderPath,action=tmdb_tv_premieres&amp;) | String.Contains(Container.FolderPath,mode=netflix_watchlist&amp;) | String.Contains(Container.FolderPath,action=favorites_movies&amp;) | String.Contains(Container.FolderPath,action=favorites_tvshows&amp;) | [String.Contains(Container.FolderPath,genre_id=) + ![String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.Token)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.Action))]]]]</stop>
+    </timer>
+    <timer>
+        <name>netflix_movies_landing</name>
+        <description>Enter Movies once the technical Home window is ready, without loading Home shelves.</description>
+        <start reset="true">
+            Window.IsActive(Home) +
+            String.IsEqual(Window(Home).Property(Netflix.MoviesLanding.Pending),true) +
+            Skin.HasSetting(Home.FirstRun) + !Skin.HasSetting(SetupWizard.Pending) +
+            !Player.HasMedia + !System.HasActiveModalDialog + !Window.IsVisible(1198)
+        </start>
+        <stop>true</stop>
+        <onstart>ClearProperty(Netflix.MoviesLanding.Pending,Home)</onstart>
+        <onstart>ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onstart>
+    </timer>
+    <timer>
+        <name>splashtest_autotime</name>
+        <description>Advance the splash preview by one hour every three seconds.</description>
+        <!-- Timers are loaded directly, without the includes expression expansion pass. -->
+        <start reset="true">Window.IsVisible(1191) + String.IsEqual(Window(1191).Property(SplashTest.AutoTime),true)</start>
+        <stop>!Window.IsVisible(1191) | !String.IsEqual(Window(1191).Property(SplashTest.AutoTime),true) | Integer.IsGreaterOrEqual(Skin.TimerElapsedSecs(splashtest_autotime),3)</stop>
+        <onstop condition="Window.IsVisible(1191) + String.IsEqual(Window(1191).Property(SplashTest.AutoTime),true)">SetProperty(SplashTest.Hour,$VAR[Value_StartUp_Test_NextHour],1191)</onstop>
+    </timer>
+    <timer>
+        <name>netflix_search_grid_reset</name>
+        <description>Search grid focused, its results finished loading for a query other than the one its cursor belongs to: back to item 1.</description>
+        <start reset="true">Window.IsActive(11105) + Control.HasFocus(501) + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery))</start>
+        <stop>true</stop>
+        <onstart>SetProperty(Netflix.SearchGridQuery,$INFO[Container(310).ListItem.Label],Home)</onstart>
+        <onstart>SetFocus(501,0,absolute)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_search_kb_reset</name>
+        <description>Search results finished loading for a new query while focus is on the keyboard side: reset the hidden grid cursor to item 1 (focus goes to the grid and straight back, in one action list). Waits 100 ms of stable state first so it cannot act on the old list.</description>
+        <start reset="true">Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery))</start>
+        <stop>![Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery))] | !String.StartsWith(Skin.TimerElapsedSecs(netflix_search_kb_reset),0.0)</stop>
+        <onstop condition="Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery))">SetProperty(Netflix.SearchGridQuery,$INFO[Container(310).ListItem.Label],Home)</onstop>
+        <onstop condition="Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery))">SetFocus(501,0,absolute)</onstop>
+        <onstop condition="Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery)) + Control.HasFocus(3000)">SetFocus(3000)</onstop>
+        <onstop condition="Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery)) + Control.HasFocus(3002)">SetFocus(3002)</onstop>
+        <onstop condition="Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery)) + Control.HasFocus(3060)">SetFocus(3060)</onstop>
+        <onstop condition="Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery)) + Control.HasFocus(3061)">SetFocus(3061)</onstop>
+        <onstop condition="Window.IsActive(11105) + !Control.HasFocus(501) + [Control.HasFocus(3000) | Control.HasFocus(3002) | Control.HasFocus(3060) | Control.HasFocus(3061) | Control.HasFocus(3062)] + !Container(501).IsUpdating + !Container(310).IsUpdating + Integer.IsGreater(Container(501).NumItems,0) + !String.IsEqual(Container(310).ListItem.Label,Window(Home).Property(Netflix.SearchGridQuery)) + Control.HasFocus(3062)">SetFocus(3062)</onstop>
+    </timer>
+    <timer>
+        <name>netflix_refocus</name>
+        <description>R10.2: the Videos window's delayed refocus after load (was two AlarmClock SetFocus calls), done only if the viewer is not on the top bar, in the genre list, in a tab arrival or a tab dwell by now (the Shows refocus also only while focus is still nowhere or on the hidden 591: the row observer may have placed it already); dropped otherwise.</description>
+        <start reset="true">false</start>
+        <stop>true</stop>
+        <onstop condition="String.IsEqual(Window(Home).Property(Netflix.Refocus),view) + Window.IsActive(Videos) + !System.HasActiveModalDialog + !Control.HasFocus(3730) + !Control.HasFocus(3732) + !Control.HasFocus(3733) + !Control.HasFocus(3734) + !Control.HasFocus(3735) + !Control.HasFocus(3736) + !Control.HasFocus(3761) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Open)) + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget))">SetFocus(500)</onstop>
+        <onstop condition="String.IsEqual(Window(Home).Property(Netflix.Refocus),shows) + String.IsEqual(Window(Home).Property(Netflix.Tab),shows) + Integer.IsGreater(Container(592).NumItems,0) + [Integer.IsEqual(System.CurrentControlID,0) | Control.HasFocus(591)] + Window.IsActive(Videos) + !System.HasActiveModalDialog + !Control.HasFocus(3730) + !Control.HasFocus(3732) + !Control.HasFocus(3733) + !Control.HasFocus(3734) + !Control.HasFocus(3735) + !Control.HasFocus(3736) + !Control.HasFocus(3761) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Open)) + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget))">SetFocus(592)</onstop>
+        <onstop condition="String.IsEqual(Window(Home).Property(Netflix.Refocus),shows) + String.IsEqual(Window(Home).Property(Netflix.Tab),shows) + !Integer.IsGreater(Container(592).NumItems,0) + [Integer.IsEqual(System.CurrentControlID,0) | Control.HasFocus(591)] + Window.IsActive(Videos) + !System.HasActiveModalDialog + !Control.HasFocus(3730) + !Control.HasFocus(3732) + !Control.HasFocus(3733) + !Control.HasFocus(3734) + !Control.HasFocus(3735) + !Control.HasFocus(3736) + !Control.HasFocus(3761) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Open)) + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget))">SetFocus(3732)</onstop>
+        <onstop>ClearProperty(Netflix.Refocus,Home)</onstop>
+    </timer>
+    <timer>
+        <name>netflix_tab_dwell</name>
+        <description>Fallback only (R10.2): dialog 1158 opens the dwelled tab after 100 ms; this opens it if 1158 has not after 1 s, and drops a dwell whose tab lost focus.</description>
+        <start reset="true">false</start>
+        <stop>![!String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(System.CurrentControlID,Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.TabDwellWindow)) + Control.IsVisible(3700) + !Control.HasFocus(3735) + !System.HasActiveModalDialog] | Integer.IsGreaterOrEqual(Skin.TimerElapsedSecs(netflix_tab_dwell),1)</stop>
+        <onstop condition="!String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(System.CurrentControlID,Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.TabDwellWindow)) + Control.IsVisible(3700) + !Control.HasFocus(3735) + !System.HasActiveModalDialog">SetProperty(Netflix.TabDwellAuto,true,Home)</onstop>
+        <onstop condition="!String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(System.CurrentControlID,Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.TabDwellWindow)) + Control.IsVisible(3700) + !Control.HasFocus(3735) + !System.HasActiveModalDialog">Action(Select)</onstop>
+        <onstop>ClearProperty(Netflix.TabDwellTarget,Home)</onstop>
+    </timer>
+    <timer>
+        <name>netflix_tab_arrival</name>
+        <description>Expire a cancelled header handoff.</description>
+        <start reset="true">false</start>
+        <stop>
+            String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) |
+            [System.HasActiveModalDialog + ![Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)]] |
+            Integer.IsGreaterOrEqual(Skin.TimerElapsedSecs(netflix_tab_arrival),3)
+        </stop>
+        <onstop>ClearProperty(Netflix.TabArrival,Home)</onstop>
+    </timer>
+    <timer>
+        <name>netflix_saved_shelf_focus</name>
+        <description>Move from a focused loading placeholder into its populated shelf.</description>
+        <start reset="true">Window.IsActive(1165) + !System.HasActiveModalDialog + [[Control.HasFocus(8531) + Integer.IsGreater(Container(531).NumItems,0)] | [Control.HasFocus(8532) + Integer.IsGreater(Container(532).NumItems,0)] | [Control.HasFocus(8533) + Integer.IsGreater(Container(533).NumItems,0)]]</start>
+        <stop>!Window.IsActive(1165) | System.HasActiveModalDialog | ![[Control.HasFocus(8531) + Integer.IsGreater(Container(531).NumItems,0)] | [Control.HasFocus(8532) + Integer.IsGreater(Container(532).NumItems,0)] | [Control.HasFocus(8533) + Integer.IsGreater(Container(533).NumItems,0)]]</stop>
+        <onstart condition="Control.HasFocus(8531) + Integer.IsGreater(Container(531).NumItems,0)">SetFocus(531)</onstart>
+        <onstart condition="Control.HasFocus(8532) + Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</onstart>
+        <onstart condition="Control.HasFocus(8533) + Integer.IsGreater(Container(533).NumItems,0)">SetFocus(533)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_continue_gone</name>
+        <description>R10.5: focus on an emptied Continue Watching row (594 Movies, 595 Shows) moves to Trending, else the tab.</description>
+        <start reset="true">Window.IsActive(Videos) + !System.HasActiveModalDialog + [[Control.HasFocus(594) + !Integer.IsGreater(Container(594).NumItems,0) + !Container(594).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.594))] | [Control.HasFocus(595) + !Integer.IsGreater(Container(595).NumItems,0) + !Container(595).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.595))]]</start>
+        <stop>true</stop>
+        <onstart condition="Control.HasFocus(594) + Integer.IsGreater(Container(591).NumItems,0)">SetFocus(591)</onstart>
+        <onstart condition="Control.HasFocus(594) + !Integer.IsGreater(Container(591).NumItems,0)">SetFocus(3733)</onstart>
+        <onstart condition="Control.HasFocus(595) + Integer.IsGreater(Container(592).NumItems,0) + Control.IsVisible(592)">SetFocus(592)</onstart>
+        <onstart condition="Control.HasFocus(595) + ![Integer.IsGreater(Container(592).NumItems,0) + Control.IsVisible(592)]">SetFocus(3732)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_cw_remember_594</name>
+        <description>R10.12: Continue Watching row 594 has titles: remember it, so the next load shows grey cards (Netflix.CW.WasFull.594).</description>
+        <start reset="true">Window.IsActive(Videos) + Integer.IsGreater(Container(594).NumItems,0) + !Skin.HasSetting(Netflix.CW.WasFull.594)</start>
+        <stop>true</stop>
+        <onstart>Skin.SetBool(Netflix.CW.WasFull.594)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_cw_forget_594</name>
+        <description>R10.12: row 594 finished loading and is empty: forget it (no grey cards next time).</description>
+        <start reset="true">Window.IsActive(Videos) + Skin.HasSetting(Netflix.CW.WasFull.594) + !Integer.IsGreater(Container(594).NumItems,0) + !Container(594).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.EmptyConfirmed.594))</start>
+        <stop>true</stop>
+        <onstart>Skin.Reset(Netflix.CW.WasFull.594)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_cw_remember_595</name>
+        <description>R10.12: Continue Watching row 595 has titles: remember it, so the next load shows grey cards (Netflix.CW.WasFull.595).</description>
+        <start reset="true">Window.IsActive(Videos) + Integer.IsGreater(Container(595).NumItems,0) + !Skin.HasSetting(Netflix.CW.WasFull.595)</start>
+        <stop>true</stop>
+        <onstart>Skin.SetBool(Netflix.CW.WasFull.595)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_cw_forget_595</name>
+        <description>R10.12: row 595 finished loading and is empty: forget it (no grey cards next time).</description>
+        <start reset="true">Window.IsActive(Videos) + Skin.HasSetting(Netflix.CW.WasFull.595) + !Integer.IsGreater(Container(595).NumItems,0) + !Container(595).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.EmptyConfirmed.595))</start>
+        <stop>true</stop>
+        <onstart>Skin.Reset(Netflix.CW.WasFull.595)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_catalog_genre_focus</name>
+        <description>Transfer focus only while the loaded genre placeholder still has focus.</description>
+        <start reset="true">Window.IsActive(Videos) + !System.HasActiveModalDialog + [[Control.HasFocus(8541) + Integer.IsGreater(Container(541).NumItems,0)] | [Control.HasFocus(8542) + Integer.IsGreater(Container(542).NumItems,0)] | [Control.HasFocus(8543) + Integer.IsGreater(Container(543).NumItems,0)] | [Control.HasFocus(8544) + Integer.IsGreater(Container(544).NumItems,0)] | [Control.HasFocus(8545) + Integer.IsGreater(Container(545).NumItems,0)] | [Control.HasFocus(8546) + Integer.IsGreater(Container(546).NumItems,0)] | [Control.HasFocus(8641) + Integer.IsGreater(Container(641).NumItems,0)] | [Control.HasFocus(8643) + Integer.IsGreater(Container(643).NumItems,0)] | [Control.HasFocus(8647) + Integer.IsGreater(Container(647).NumItems,0)] | [Control.HasFocus(8648) + Integer.IsGreater(Container(648).NumItems,0)] | [Control.HasFocus(8649) + Integer.IsGreater(Container(649).NumItems,0)] | [Control.HasFocus(8561) + Integer.IsGreater(Container(561).NumItems,0)] | [Control.HasFocus(8562) + Integer.IsGreater(Container(562).NumItems,0)] | [Control.HasFocus(8563) + Integer.IsGreater(Container(563).NumItems,0)] | [Control.HasFocus(8564) + Integer.IsGreater(Container(564).NumItems,0)] | [Control.HasFocus(8565) + Integer.IsGreater(Container(565).NumItems,0)] | [Control.HasFocus(8566) + Integer.IsGreater(Container(566).NumItems,0)] | [Control.HasFocus(8567) + Integer.IsGreater(Container(567).NumItems,0)] | [Control.HasFocus(8568) + Integer.IsGreater(Container(568).NumItems,0)] | [Control.HasFocus(8569) + Integer.IsGreater(Container(569).NumItems,0)] | [Control.HasFocus(8570) + Integer.IsGreater(Container(570).NumItems,0)]]</start>
+        <stop>true</stop>
+        <onstart>$VAR[Netflix_Catalog_Genre_Focus]</onstart>
+    </timer>
+    <timer>
+        <name>netflix_browse_start</name>
+        <description>Start the row observer on its pages (netflix_a_page_browse, top of this file) when it is not running.</description>
+        <start reset="true">Skin.TimerIsRunning(netflix_a_page_browse) + String.IsEmpty(Window(Home).Property(Netflix.Browse.Running)) + !System.HasActiveModalDialog</start>
+        <stop>true</stop>
+        <onstart>SetProperty(Netflix.Browse.Running,true,Home)</onstart>
+        <onstart>RunScript(special://skin/extras/netflix_browse_state.py,start)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_browse_watchdog</name>
+        <description>Healthy heartbeats update properties; launch Python only after five unchanged seconds.</description>
+        <start reset="true">Skin.TimerIsRunning(netflix_a_page_browse) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Running))</start>
+        <onstart>SetProperty(Netflix.Browse.HeartbeatSeen,$INFO[Window(Home).Property(Netflix.Browse.Heartbeat)],Home)</onstart>
+        <stop>!String.IsEqual(Window(Home).Property(Netflix.Browse.Heartbeat),Window(Home).Property(Netflix.Browse.HeartbeatSeen)) | Integer.IsGreaterOrEqual(Skin.TimerElapsedSecs(netflix_browse_watchdog),5) | String.IsEmpty(Window(Home).Property(Netflix.Browse.Running))</stop>
+        <onstop condition="Skin.TimerIsRunning(netflix_a_page_browse) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Running)) + String.IsEqual(Window(Home).Property(Netflix.Browse.Heartbeat),Window(Home).Property(Netflix.Browse.HeartbeatSeen)) + Integer.IsGreaterOrEqual(Skin.TimerElapsedSecs(netflix_browse_watchdog),5)">RunScript(special://skin/extras/netflix_browse_state.py,start)</onstop>
+        <onstop>SetProperty(Netflix.Browse.HeartbeatSeen,$INFO[Window(Home).Property(Netflix.Browse.Heartbeat)],Home)</onstop>
+    </timer>
+    <timer>
+        <name>netflix_genre_menu_arrival</name>
+        <description>Adopt a genre-menu route once Videos shows it; drop an unanswered request after 45 seconds.</description>
+        <!-- Literal conditions: Timers does not expand include expressions. Started only by a genre-menu row. -->
+        <start reset="true">false</start>
+        <stop>String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) | [Window.IsActive(Videos) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingAction)) + String.Contains(Container.FolderPath,netflix_tab_genre=) + !String.Contains(Container.FolderPath,netflix_tab_genre=home) + !String.Contains(Container.FolderPath,new_page=)] | Integer.IsGreaterOrEqual(Skin.TimerElapsedSecs(netflix_genre_menu_arrival),45)</stop>
+        <onstop condition="Window.IsActive(Videos) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingAction)) + String.Contains(Container.FolderPath,netflix_tab_genre=) + !String.Contains(Container.FolderPath,netflix_tab_genre=home) + !String.Contains(Container.FolderPath,new_page=)">SetProperty(Netflix.GenreMenu.Token,$INFO[Window(Home).Property(Netflix.GenreMenu.PendingToken)],Home)</onstop>
+        <onstop condition="Window.IsActive(Videos) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingAction)) + String.Contains(Container.FolderPath,netflix_tab_genre=) + !String.Contains(Container.FolderPath,netflix_tab_genre=home) + !String.Contains(Container.FolderPath,new_page=)">SetProperty(Netflix.GenreMenu.Action,$INFO[Window(Home).Property(Netflix.GenreMenu.PendingAction)],Home)</onstop>
+        <onstop condition="Window.IsActive(Videos) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingAction)) + String.Contains(Container.FolderPath,netflix_tab_genre=) + !String.Contains(Container.FolderPath,netflix_tab_genre=home) + !String.Contains(Container.FolderPath,new_page=)">SetProperty(Netflix.GenreMenu.Grid,$INFO[Window(Home).Property(Netflix.GenreMenu.PendingGrid)],Home)</onstop>
+        <onstop condition="Window.IsActive(Videos) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.Contains(Container.FolderPath,Window(Home).Property(Netflix.GenreMenu.PendingAction)) + String.Contains(Container.FolderPath,netflix_tab_genre=) + !String.Contains(Container.FolderPath,netflix_tab_genre=home) + !String.Contains(Container.FolderPath,new_page=)">SetProperty(Netflix.GenreMenu.Title,$INFO[Window(Home).Property(Netflix.GenreMenu.PendingTitle)],Home)</onstop>
+        <!-- The arrival used to move focus from the menu button to the window list 590 here. Genre-menu pages
+             are grid pages now: 590 is empty and the row observer moves focus to list 593 when it has loaded. -->
+        <onstop>ClearProperty(Netflix.GenreMenu.PendingToken,Home)</onstop>
+        <onstop>ClearProperty(Netflix.GenreMenu.PendingAction,Home)</onstop>
+        <onstop>ClearProperty(Netflix.GenreMenu.PendingGrid,Home)</onstop>
+        <onstop>ClearProperty(Netflix.GenreMenu.PendingTitle,Home)</onstop>
+    </timer>
+    <timer>
+        <name>netflix_genre_menu_guard</name>
+        <description>Close a drawer whose window or focus is gone; drop menu-grid state once a tab page replaces it.</description>
+        <!-- staged/genre-over-root: the grid is shown over the Movies/Shows root (Netflix.Grid.Shell), so the root path alone no
+             longer means the grid has gone: the menu-grid tokens are dropped only once that property is empty too. -->
+        <start reset="true">[String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !System.HasActiveModalDialog + [!String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) | ![Control.HasFocus(3750) | Control.HasFocus(3751) | Control.HasFocus(3752) | Control.HasFocus(3753) | Control.HasFocus(3754) | Control.HasFocus(3755) | Control.HasFocus(3756) | Control.HasFocus(3757) | Control.HasFocus(3758) | Control.HasFocus(3759) | Control.HasFocus(3760) | Control.HasFocus(3765) | Control.HasFocus(3771) | Control.HasFocus(3772) | Control.HasFocus(3773) | Control.HasFocus(3774) | Control.HasFocus(3775)]] + ![String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + [!Skin.TimerIsRunning(netflix_genre_menu_park) | Integer.IsLess(Skin.TimerElapsedSecs(netflix_genre_menu_park),3)]]] | [!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Token)) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.IsEmpty(Window(Home).Property(Netflix.Grid.Shell)) + Window.IsActive(Videos) + !System.HasActiveModalDialog + Skin.TimerIsRunning(netflix_a_page_tab)] | [!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + !Skin.TimerIsRunning(netflix_genre_menu_arrival)]</start>
+        <stop>true</stop>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !System.HasActiveModalDialog + [!String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) | ![Control.HasFocus(3750) | Control.HasFocus(3751) | Control.HasFocus(3752) | Control.HasFocus(3753) | Control.HasFocus(3754) | Control.HasFocus(3755) | Control.HasFocus(3756) | Control.HasFocus(3757) | Control.HasFocus(3758) | Control.HasFocus(3759) | Control.HasFocus(3760) | Control.HasFocus(3765) | Control.HasFocus(3771) | Control.HasFocus(3772) | Control.HasFocus(3773) | Control.HasFocus(3774) | Control.HasFocus(3775)]] + ![String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + [!Skin.TimerIsRunning(netflix_genre_menu_park) | Integer.IsLess(Skin.TimerElapsedSecs(netflix_genre_menu_park),3)]] + Control.HasFocus(3761)">SetFocus(3736)</onstart>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !System.HasActiveModalDialog + [!String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) | ![Control.HasFocus(3750) | Control.HasFocus(3751) | Control.HasFocus(3752) | Control.HasFocus(3753) | Control.HasFocus(3754) | Control.HasFocus(3755) | Control.HasFocus(3756) | Control.HasFocus(3757) | Control.HasFocus(3758) | Control.HasFocus(3759) | Control.HasFocus(3760) | Control.HasFocus(3765) | Control.HasFocus(3771) | Control.HasFocus(3772) | Control.HasFocus(3773) | Control.HasFocus(3774) | Control.HasFocus(3775)]] + ![String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + [!Skin.TimerIsRunning(netflix_genre_menu_park) | Integer.IsLess(Skin.TimerElapsedSecs(netflix_genre_menu_park),3)]]">ClearProperty(Netflix.GenreMenu.Open,Home)</onstart>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !System.HasActiveModalDialog + [!String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) | ![Control.HasFocus(3750) | Control.HasFocus(3751) | Control.HasFocus(3752) | Control.HasFocus(3753) | Control.HasFocus(3754) | Control.HasFocus(3755) | Control.HasFocus(3756) | Control.HasFocus(3757) | Control.HasFocus(3758) | Control.HasFocus(3759) | Control.HasFocus(3760) | Control.HasFocus(3765) | Control.HasFocus(3771) | Control.HasFocus(3772) | Control.HasFocus(3773) | Control.HasFocus(3774) | Control.HasFocus(3775)]] + ![String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + [!Skin.TimerIsRunning(netflix_genre_menu_park) | Integer.IsLess(Skin.TimerElapsedSecs(netflix_genre_menu_park),3)]]">ClearProperty(Netflix.GenreMenu.Window,Home)</onstart>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !System.HasActiveModalDialog + [!String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) | ![Control.HasFocus(3750) | Control.HasFocus(3751) | Control.HasFocus(3752) | Control.HasFocus(3753) | Control.HasFocus(3754) | Control.HasFocus(3755) | Control.HasFocus(3756) | Control.HasFocus(3757) | Control.HasFocus(3758) | Control.HasFocus(3759) | Control.HasFocus(3760) | Control.HasFocus(3765) | Control.HasFocus(3771) | Control.HasFocus(3772) | Control.HasFocus(3773) | Control.HasFocus(3774) | Control.HasFocus(3775)]] + ![String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + [!Skin.TimerIsRunning(netflix_genre_menu_park) | Integer.IsLess(Skin.TimerElapsedSecs(netflix_genre_menu_park),3)]]">ClearProperty(Netflix.GenreMenu.Views,Home)</onstart>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + !System.HasActiveModalDialog + [!String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) | ![Control.HasFocus(3750) | Control.HasFocus(3751) | Control.HasFocus(3752) | Control.HasFocus(3753) | Control.HasFocus(3754) | Control.HasFocus(3755) | Control.HasFocus(3756) | Control.HasFocus(3757) | Control.HasFocus(3758) | Control.HasFocus(3759) | Control.HasFocus(3760) | Control.HasFocus(3765) | Control.HasFocus(3771) | Control.HasFocus(3772) | Control.HasFocus(3773) | Control.HasFocus(3774) | Control.HasFocus(3775)]] + ![String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + [!Skin.TimerIsRunning(netflix_genre_menu_park) | Integer.IsLess(Skin.TimerElapsedSecs(netflix_genre_menu_park),3)]]">ClearProperty(Netflix.GenreMenu.Origin,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Token)) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.IsEmpty(Window(Home).Property(Netflix.Grid.Shell)) + Window.IsActive(Videos) + !System.HasActiveModalDialog + Skin.TimerIsRunning(netflix_a_page_tab)">ClearProperty(Netflix.GenreMenu.Token,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Token)) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.IsEmpty(Window(Home).Property(Netflix.Grid.Shell)) + Window.IsActive(Videos) + !System.HasActiveModalDialog + Skin.TimerIsRunning(netflix_a_page_tab)">ClearProperty(Netflix.GenreMenu.Action,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Token)) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.IsEmpty(Window(Home).Property(Netflix.Grid.Shell)) + Window.IsActive(Videos) + !System.HasActiveModalDialog + Skin.TimerIsRunning(netflix_a_page_tab)">ClearProperty(Netflix.GenreMenu.Grid,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Token)) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.IsEmpty(Window(Home).Property(Netflix.Grid.Shell)) + Window.IsActive(Videos) + !System.HasActiveModalDialog + Skin.TimerIsRunning(netflix_a_page_tab)">ClearProperty(Netflix.GenreMenu.Title,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Token)) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.IsEmpty(Window(Home).Property(Netflix.Grid.Shell)) + Window.IsActive(Videos) + !System.HasActiveModalDialog + Skin.TimerIsRunning(netflix_a_page_tab)">ClearProperty(Netflix.GenreMenu.Genre,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Token)) + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + String.IsEmpty(Window(Home).Property(Netflix.Grid.Shell)) + Window.IsActive(Videos) + !System.HasActiveModalDialog + Skin.TimerIsRunning(netflix_a_page_tab)">ClearProperty(Netflix.GenreMenu.Origin,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + !Skin.TimerIsRunning(netflix_genre_menu_arrival)">ClearProperty(Netflix.GenreMenu.PendingToken,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + !Skin.TimerIsRunning(netflix_genre_menu_arrival)">ClearProperty(Netflix.GenreMenu.PendingAction,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + !Skin.TimerIsRunning(netflix_genre_menu_arrival)">ClearProperty(Netflix.GenreMenu.PendingGrid,Home)</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.PendingToken)) + !Skin.TimerIsRunning(netflix_genre_menu_arrival)">ClearProperty(Netflix.GenreMenu.PendingTitle,Home)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_genre_menu_hop</name>
+        <description>Grid Back parks focus on 3736 and reopens the drawer; once the drawer has had a visibility pass, move focus to the remembered genre row.</description>
+        <!-- Name order matters: timers tick alphabetically (std::map), so guard, then hop, then park.
+             Requiring park to be running delays the first hop to the tick after parking was seen (>= 500 ms, many frames). -->
+        <start reset="true">String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + Skin.TimerIsRunning(netflix_genre_menu_park)</start>
+        <stop>true</stop>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Genre)) + [String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) | String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.ViewFocus))]">SetFocus($INFO[Window(Home).Property(Netflix.GenreMenu.Genre)])</onstart>
+        <onstart condition="!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) + !String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.ViewFocus))">SetFocus($INFO[Window(Home).Property(Netflix.GenreMenu.ViewFocus)])</onstart>
+        <onstart condition="String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Genre))">SetFocus(3750)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_genre_menu_park</name>
+        <description>Grace clock for a parked grid-Back drawer: 3 seconds for the hop to land, then close it with focus on the visible menu button.</description>
+        <start reset="true">String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)]</start>
+        <stop>![String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)]] | Integer.IsGreaterOrEqual(Skin.TimerElapsedSecs(netflix_genre_menu_park),3)</stop>
+        <onstop condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)] + Control.HasFocus(3761)">SetFocus(3736)</onstop>
+        <onstop condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)]">ClearProperty(Netflix.GenreMenu.Open,Home)</onstop>
+        <onstop condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)]">ClearProperty(Netflix.GenreMenu.Window,Home)</onstop>
+        <onstop condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)]">ClearProperty(Netflix.GenreMenu.Origin,Home)</onstop>
+    </timer>
+</timers>

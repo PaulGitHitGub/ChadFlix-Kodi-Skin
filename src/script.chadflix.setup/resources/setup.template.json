@@ -1,0 +1,79 @@
+{
+ "skin": "skin.arctic.fuse.3",
+ "requires": "(filled by tools/build_release.py from config/release.lock.json)",
+ "keymaps": [
+  "NetflixRootBack.xml",
+  "NetflixMovieDetails.xml",
+  "VirtualKeyboardBack.xml",
+  "NetflixExitConfirm.xml"
+ ],
+ "keymaps_previous": {
+  "NetflixRootBack.xml": [
+   "81cf4a0409e8927237bf2a2efea7f99f91ce4ba5376294ebe7fd61c592470275"
+  ],
+  "NetflixMovieDetails.xml": [
+   "74252d9867884bced67dff81c7868a10752d67ab8b219903fb329c88a04b4e20"
+  ]
+ },
+ "skin_bools": [
+  "Home.FirstRun",
+  "Hub.Home.DisableSubmenu",
+  "InfoTags.DisableStarRating",
+  "Netflix.CompactHome",
+  "Options.DisableBottomTray",
+  "TMDbHelper.EnableBlur",
+  "TMDbHelper.EnableCrop",
+  "TMDbHelper.EnableData",
+  "TMDbHelper.Service",
+  "Netflix.TabSwap",
+  "DefaultConfig.InitDone"
+ ],
+ "skin_strings": {
+  "Background.DialogImage": "Adaptive",
+  "Background.Image": "special://skin/extras/backgrounds/blur/purple_blur.jpg",
+  "CustomRating.Movies.Item01": "IMDb",
+  "CustomRating.Movies.Item02": "RottenTomatoesCritic",
+  "CustomRating.Movies.Item03": "Letterboxd",
+  "CustomRating.TVShows.Item01": "IMDb",
+  "CustomRating.TVShows.Item02": "RottenTomatoesCritic",
+  "CustomRating.TVShows.Item03": "Letterboxd",
+  "HomeSwitcher.1101.Mode": "Standard",
+  "HomeSwitcher.1101.Type": "Custom",
+  "HomeSwitcher.1101.UpNextMode": "library_nextaired",
+  "HomeSwitcher.1102.Mode": "Standard",
+  "HomeSwitcher.1102.Type": "Custom",
+  "HomeSwitcher.1103.Mode": "Standard",
+  "HomeSwitcher.1103.Type": "Custom",
+  "HomeSwitcher.1104.Mode": "Standard",
+  "HomeSwitcher.1104.Type": "Custom",
+  "HomeSwitcher.1106.Mode": "Standard",
+  "HomeSwitcher.1106.Type": "NextAired",
+  "HomeSwitcher.1107.Mode": "Wall",
+  "HomeSwitcher.1107.Type": "LiveTV",
+  "HomeSwitcher.1107.UpNextMode": "library_nextaired",
+  "HomeSwitcher.1108.Mode": "Wall",
+  "HomeSwitcher.1108.Type": "Addons",
+  "HomeSwitcher.1109.Mode": "Standard",
+  "HomeSwitcher.1109.Type": "Custom",
+  "HomeSwitcher.Home.Mode": "Standard",
+  "HomeSwitcher.Home.Name": "Home",
+  "HomeSwitcher.Home.Shortcut.Path": "ActivateWindow(1181)",
+  "HomeSwitcher.Home.Spotlight.Target": "videos",
+  "HomeSwitcher.Search.Mode": "Combined",
+  "HomeSwitcher.home.Mode": "Standard",
+  "HomeSwitcher.home.Spotlight.Label": "Trending Movies",
+  "HomeSwitcher.home.Type": "Custom",
+  "Navigation.OnBack": "Parent",
+  "OptionsTiles.01.Include": "NowPlaying",
+  "OptionsTiles.02.Include": "Settings",
+  "OptionsTiles.03.Include": "Weather",
+  "OptionsTiles.04.Include": "SystemInfo",
+  "OptionsTiles.Layout": "3",
+  "SetupWizard.WidgetGroup": "library",
+  "Shortcuts.RebuildDateTime": "2026-11-05_23-38-51",
+  "Startup.LastScene": "countryside",
+  "TMDbHelper.Corner.Radius": "20",
+  "TMDbHelper.UseLocalWindowIDs": "10000|11101|11102|11103|11104|11105|11106|11107|11108|11109|11162|11163|11165",
+  "VideoOSD.PersonCredits.CastCrew": "crew"
+ }
+}

@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='utf-8'?>
+<window>
+    <controls>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <texture>black.png</texture>
+        </control>
+        <control type="label">
+            <left>192</left>
+            <top>64</top>
+            <width>1536</width>
+            <height>64</height>
+            <font>font45</font>
+            <textcolor>FFF5F5F5</textcolor>
+            <label>Release Details</label>
+        </control>
+        <control type="label">
+            <left>192</left>
+            <top>188</top>
+            <width>1536</width>
+            <height>40</height>
+            <font>font12</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <label>Full Release Filename</label>
+        </control>
+        <control type="textbox">
+            <left>192</left>
+            <top>248</top>
+            <width>1536</width>
+            <height>168</height>
+            <font>font13</font>
+            <textcolor>FFF5F5F5</textcolor>
+            <label>$INFO[Window.Property(tikiskins.results.info.name)]</label>
+        </control>
+        <control type="label">
+            <left>192</left>
+            <top>468</top>
+            <width>1536</width>
+            <height>40</height>
+            <font>font12</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <label>Formats</label>
+        </control>
+        <control type="textbox">
+            <left>192</left>
+            <top>528</top>
+            <width>1536</width>
+            <height>132</height>
+            <font>font13</font>
+            <textcolor>FFF5F5F5</textcolor>
+            <label>$INFO[Window.Property(tikiskins.results.info.extra_info)]</label>
+        </control>
+        <control type="label">
+            <left>192</left>
+            <top>716</top>
+            <width>1536</width>
+            <height>56</height>
+            <font>font14</font>
+            <textcolor>FFF5F5F5</textcolor>
+            <label>$INFO[Window.Property(tikiskins.results.info.size_label)]</label>
+        </control>
+        <control type="label">
+            <left>192</left>
+            <top>988</top>
+            <width>1536</width>
+            <height>40</height>
+            <font>font10</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <label>Press Back to return to sources</label>
+        </control>
+    </controls>
+</window>

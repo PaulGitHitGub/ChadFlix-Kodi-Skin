@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- R10.8-gear-sheet: the header gear (button 3735) opens this modal window (id 1170). Design option A of staged/gear-panel-redesign:
+     a right-side sheet "Settings" with three groups (Home / Accounts / System), one help line per row, the white focus pill of the
+     audio / subtitle cards (av-pill-480.png, live since R8.1). Replaces R10.6 / R10.6.1's tile + list (the include Netflix_Options_Tiles / Netflix_Options_Items in
+     Dialog_DialogView.xml is now unused by 1170 and left alone; window 1171 and the stock DialogView still use that file).
+     R10.10 Customize Home: the home-on variant. Row 7001 (Customize Home, opens window 1179) is always visible and takes focus first;
+     the skin string Netflix.CustomizeHome.Ready is no longer read anywhere.
+     Rows (ids): 7001 Customize Home,
+     7002 Real-Debrid, 7003 Ratings &amp; Artwork, 7004 MDbList Key, 7005 Advanced Settings. Up / Down move to the nearest visible row and wrap;
+     Left and Back close (PreviousMenu, focus returns to the gear); Right does nothing. Every action is the one the previous panel ran.
+     The add-on rows keep their old visible conditions (POV / TMDb Helper enabled). Nothing here runs until a row is clicked. -->
+<window type="dialog" id="1170">
+    <defaultcontrol always="true">7001</defaultcontrol>
+    <onload>SetProperty(TMDbHelper.ServicePause,True)</onload>
+    <zorder>1100</zorder>
+    <controls>
+        <include>Part_Dim_Overlay</include>
+        <control type="group">
+            <left>1200</left><top>40</top><width>680</width><height>1000</height>
+            <include>Animation_Right_Delay</include>
+            <control type="image"><width>680</width><height>1000</height><texture border="24" colordiffuse="FA08090B">common/box.png</texture></control>
+            <include>Netflix_Menu_Glass_Background</include>
+            <control type="label"><left>52</left><top>36</top><width>500</width><height>64</height><aligny>center</aligny><font>font_head_bold</font><textcolor>FFF5F5F5</textcolor><label>Settings</label></control>
+            <control type="grouplist">
+                <left>0</left><top>140</top><width>680</width><height>780</height>
+                <orientation>vertical</orientation><itemgap>0</itemgap><usecontrolcoords>false</usecontrolcoords>
+                <control type="group">
+                    <height>40</height>
+                    <control type="label"><left>52</left><top>0</top><width>500</width><height>32</height><aligny>center</aligny><font>font_mini_bold</font><textcolor>FF8E8E98</textcolor><label>Home</label></control>
+                </control>
+                <control type="group">
+                    <height>108</height>
+                    <control type="image"><left>20</left><top>0</top><width>640</width><height>100</height><texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture><visible>Control.HasFocus(7001)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FFB4B4BA">special://skin/extras/icons/list-check.png</texture><visible>!Control.HasFocus(7001)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FF101012">special://skin/extras/icons/list-check.png</texture><visible>Control.HasFocus(7001)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi</font><textcolor>FFB4B4BA</textcolor><label>Customize Home</label><visible>!Control.HasFocus(7001)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi_bold</font><textcolor>FF101012</textcolor><label>Customize Home</label><visible>Control.HasFocus(7001)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF9C9CA6</textcolor><label>Choose and Reorder Your Genre Rows</label><visible>!Control.HasFocus(7001)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF4A4A52</textcolor><label>Choose and Reorder Your Genre Rows</label><visible>Control.HasFocus(7001)</visible></control>
+                    <control type="button" id="7001">
+                        <left>20</left><top>0</top><width>640</width><height>100</height>
+                        <texturefocus /><texturenofocus />
+                        <onup>7005</onup>
+                        <ondown condition="System.AddonIsEnabled(plugin.video.pov)">7002</ondown>
+                        <ondown condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7003</ondown>
+                        <ondown condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7004</ondown>
+                        <ondown>7005</ondown>
+                        <onleft>PreviousMenu</onleft><onright>noop</onright><onback>PreviousMenu</onback>
+                        <onclick>Close</onclick>
+                        <onclick>ActivateWindow(1179)</onclick>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>System.AddonIsEnabled(plugin.video.pov) | System.AddonIsEnabled(plugin.video.themoviedb.helper)</visible>
+                    <height>82</height>
+                    <control type="label"><left>52</left><top>42</top><width>500</width><height>32</height><aligny>center</aligny><font>font_mini_bold</font><textcolor>FF8E8E98</textcolor><label>Accounts</label></control>
+                </control>
+                <control type="group">
+                    <visible>System.AddonIsEnabled(plugin.video.pov)</visible>
+                    <height>108</height>
+                    <control type="image"><left>20</left><top>0</top><width>640</width><height>100</height><texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture><visible>Control.HasFocus(7002)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FFB4B4BA">special://skin/extras/icons/key.png</texture><visible>!Control.HasFocus(7002)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FF101012">special://skin/extras/icons/key.png</texture><visible>Control.HasFocus(7002)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi</font><textcolor>FFB4B4BA</textcolor><label>Real-Debrid</label><visible>!Control.HasFocus(7002)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi_bold</font><textcolor>FF101012</textcolor><label>Real-Debrid</label><visible>Control.HasFocus(7002)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF9C9CA6</textcolor><label>Sign in or check your account</label><visible>!Control.HasFocus(7002)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF4A4A52</textcolor><label>Sign in or check your account</label><visible>Control.HasFocus(7002)</visible></control>
+                    <control type="button" id="7002">
+                        <left>20</left><top>0</top><width>640</width><height>100</height>
+                        <texturefocus /><texturenofocus />
+                        <onup>7001</onup>
+                        <ondown condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7003</ondown>
+                        <ondown condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7004</ondown>
+                        <ondown>7005</ondown>
+                        <onleft>PreviousMenu</onleft><onright>noop</onright><onback>PreviousMenu</onback>
+                        <onclick>Close</onclick>
+                        <onclick>RunPlugin(plugin://plugin.video.pov/?mode=myservices)</onclick>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>System.AddonIsEnabled(plugin.video.themoviedb.helper)</visible>
+                    <height>108</height>
+                    <control type="image"><left>20</left><top>0</top><width>640</width><height>100</height><texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture><visible>Control.HasFocus(7003)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FFB4B4BA">special://skin/extras/icons/ranking-star.png</texture><visible>!Control.HasFocus(7003)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FF101012">special://skin/extras/icons/ranking-star.png</texture><visible>Control.HasFocus(7003)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi</font><textcolor>FFB4B4BA</textcolor><label>Ratings &amp; Artwork</label><visible>!Control.HasFocus(7003)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi_bold</font><textcolor>FF101012</textcolor><label>Ratings &amp; Artwork</label><visible>Control.HasFocus(7003)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF9C9CA6</textcolor><label>IMDb, Rotten Tomatoes, Letterboxd</label><visible>!Control.HasFocus(7003)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF4A4A52</textcolor><label>IMDb, Rotten Tomatoes, Letterboxd</label><visible>Control.HasFocus(7003)</visible></control>
+                    <control type="button" id="7003">
+                        <left>20</left><top>0</top><width>640</width><height>100</height>
+                        <texturefocus /><texturenofocus />
+                        <onup condition="System.AddonIsEnabled(plugin.video.pov)">7002</onup>
+                        <onup>7001</onup>
+                        <ondown condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7004</ondown>
+                        <ondown>7005</ondown>
+                        <onleft>PreviousMenu</onleft><onright>noop</onright><onback>PreviousMenu</onback>
+                        <onclick>Close</onclick>
+                        <onclick>Addon.OpenSettings(plugin.video.themoviedb.helper)</onclick>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>System.AddonIsEnabled(plugin.video.themoviedb.helper)</visible>
+                    <height>108</height>
+                    <control type="image"><left>20</left><top>0</top><width>640</width><height>100</height><texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture><visible>Control.HasFocus(7004)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FFB4B4BA">special://skin/extras/icons/key.png</texture><visible>!Control.HasFocus(7004)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FF101012">special://skin/extras/icons/key.png</texture><visible>Control.HasFocus(7004)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi</font><textcolor>FFB4B4BA</textcolor><label>MDbList Key</label><visible>!Control.HasFocus(7004)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi_bold</font><textcolor>FF101012</textcolor><label>MDbList Key</label><visible>Control.HasFocus(7004)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF9C9CA6</textcolor><label>The key that powers those ratings</label><visible>!Control.HasFocus(7004)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF4A4A52</textcolor><label>The key that powers those ratings</label><visible>Control.HasFocus(7004)</visible></control>
+                    <control type="button" id="7004">
+                        <left>20</left><top>0</top><width>640</width><height>100</height>
+                        <texturefocus /><texturenofocus />
+                        <onup condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7003</onup>
+                        <onup condition="System.AddonIsEnabled(plugin.video.pov)">7002</onup>
+                        <onup>7001</onup>
+                        <ondown>7005</ondown>
+                        <onleft>PreviousMenu</onleft><onright>noop</onright><onback>PreviousMenu</onback>
+                        <onclick>Close</onclick>
+                        <onclick>RunScript(plugin.video.themoviedb.helper,open_sync_provider_settings,addon_id=script.module.tmdbhelper.sync.mdblist)</onclick>
+                    </control>
+                </control>
+                <control type="group">
+                    <height>80</height>
+                    <control type="label"><left>52</left><top>40</top><width>500</width><height>32</height><aligny>center</aligny><font>font_mini_bold</font><textcolor>FF8E8E98</textcolor><label>System</label></control>
+                </control>
+                <control type="group">
+                    <height>108</height>
+                    <control type="image"><left>20</left><top>0</top><width>640</width><height>100</height><texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture><visible>Control.HasFocus(7005)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FFB4B4BA">special://skin/extras/icons/settings.png</texture><visible>!Control.HasFocus(7005)</visible></control>
+                    <control type="image"><left>40</left><top>18</top><width>64</width><height>64</height><aspectratio>keep</aspectratio><texture colordiffuse="FF101012">special://skin/extras/icons/settings.png</texture><visible>Control.HasFocus(7005)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi</font><textcolor>FFB4B4BA</textcolor><label>Advanced Settings</label><visible>!Control.HasFocus(7005)</visible></control>
+                    <control type="label"><left>112</left><top>10</top><width>540</width><height>44</height><aligny>center</aligny><font>font_midi_bold</font><textcolor>FF101012</textcolor><label>Advanced Settings</label><visible>Control.HasFocus(7005)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF9C9CA6</textcolor><label>Kodi's own settings</label><visible>!Control.HasFocus(7005)</visible></control>
+                    <control type="label"><left>112</left><top>54</top><width>540</width><height>34</height><aligny>center</aligny><font>font_mini</font><textcolor>FF4A4A52</textcolor><label>Kodi's own settings</label><visible>Control.HasFocus(7005)</visible></control>
+                    <control type="button" id="7005">
+                        <left>20</left><top>0</top><width>640</width><height>100</height>
+                        <texturefocus /><texturenofocus />
+                        <onup condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7004</onup>
+                        <onup condition="System.AddonIsEnabled(plugin.video.themoviedb.helper)">7003</onup>
+                        <onup condition="System.AddonIsEnabled(plugin.video.pov)">7002</onup>
+                        <onup>7001</onup>
+                        <ondown>7001</ondown>
+                        <onleft>PreviousMenu</onleft><onright>noop</onright><onback>PreviousMenu</onback>
+                        <onclick>Action(Back)</onclick>
+                        <onclick>ActivateWindow(settings)</onclick>
+                    </control>
+                </control>
+            </control>
+            <control type="label"><left>0</left><top>930</top><width>680</width><height>40</height><align>center</align><aligny>center</aligny><font>font_mini</font><textcolor>FFB4B4BA</textcolor><label>OK to open   ·   Back to close</label></control>
+        </control>
+    </controls>
+</window>

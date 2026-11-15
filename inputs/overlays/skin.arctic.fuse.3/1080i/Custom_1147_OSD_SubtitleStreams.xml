@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- R10.4 (owner, 13 Nov; staged/av-card-design L1): ONE combined Audio & Subtitles card for the one play-bar button 6007.
+     Two columns: Audio (6206) on the left, Subtitles (6207) over the button, the Appearance pill (6217) in the Subtitles
+     header. Both columns slide by the longer list, so the two headers share one line. Every entry into a list lands on
+     the checked row: SetFocus(list, Netflix.AV.<A|S>.Cur, absolute). Up or OK on the button goes into Subtitles.
+     The id stays 1147: the exit prompt (1178), netflix_subtitle_style.py and netflix_av_streams.py know it. -->
+<window type="dialog" id="1147">
+
+    <defaultcontrol always="true">6007</defaultcontrol>
+    <!-- fill the rows each time the card pops up (cheap), so a subtitle added mid-play or streams found late show up -->
+    <onload>RunScript(special://skin/extras/netflix_av_streams.py,populate)</onload>
+
+    <controls>
+
+        <!-- R10.4 (design R5): the dim stays while either column has rows (a title without subtitles still has audio) -->
+        <include content="NfAV_Scrim">
+            <param name="id">6207</param>
+            <param name="always">Integer.IsGreater(Container(6206).NumItems,0)</param>
+        </include>
+
+        <control type="group">
+            <include>OSD_HideControls</include>
+            <left>view_pad</left>
+            <right>view_pad</right>
+
+            <visible>!Window.IsActive(DialogPlayerProcessInfo.xml)</visible>
+            <visible>!Window.IsVisible(DialogSlider.xml)</visible>
+
+            <!-- Audio: the left column (right edge at the Subtitles column's left edge). Width 340, owner's pick B from
+                 evidence/spacing-options (13 Nov): less dead space beside the short list; longer labels end in "..." when
+                 not focused and scroll when focused. -->
+            <control type="group">
+                <include content="NfAV_Card_A">
+                    <param name="id">6206</param>
+                    <param name="buttonid">6007</param>
+                    <param name="scrollbarid">6306</param>
+                    <param name="header">Audio</param>
+                    <param name="width">340</param>
+                    <param name="right">590</param>
+                    <param name="onup">noop</param>
+                    <param name="onleft">noop</param>
+                    <param name="onright">SetFocus(6207,$INFO[Window(Home).Property(Netflix.AV.S.Cur)],absolute)</param>
+                    <param name="onright_if">Integer.IsGreater(Container(6207).NumItems,0)</param>
+                    <param name="ondown">6007</param>
+                </include>
+            </control>
+
+            <!-- Subtitles: the right column, over the button (the one slot left of the info button) -->
+            <control type="group">
+                <include content="NfAV_Card_S">
+                    <param name="id">6207</param>
+                    <param name="buttonid">6007</param>
+                    <param name="scrollbarid">6307</param>
+                    <param name="header">Subtitles</param>
+                    <param name="width">480</param>
+                    <param name="right">110</param>
+                    <param name="onup">6217</param>
+                    <param name="onleft">SetFocus(6206,$INFO[Window(Home).Property(Netflix.AV.A.Cur)],absolute)</param>
+                    <param name="onleft_if">Integer.IsGreater(Container(6206).NumItems,0)</param>
+                    <param name="onright">noop</param>
+                    <param name="ondown">6007</param>
+                </include>
+            </control>
+
+            <!-- Netflix-style subtitle appearance: a pill in the Subtitles header, Up from the first subtitle.
+                 Placed and slid exactly like the Subtitles column so it stays in the shared header row. -->
+            <control type="group">
+                <visible>!Window.IsVisible(DialogSettings.xml)</visible>
+                <include content="Animation_SlideIn_Dialog">
+                    <param name="posy">48</param>
+                </include>
+                <animation effect="fade" start="100" end="0" condition="Integer.IsEqual(Container(6207).NumItems,0)">Conditional</animation>
+                <right>110</right>
+                <width>480</width>
+                <bottom>220</bottom>
+                <height>688</height>
+                <control type="group">
+                    <include>NfAV_Slides_Shared</include>
+                    <control type="group">
+                        <top>20</top>
+                        <right>20</right>
+                        <width>220</width>
+                        <height>64</height>
+                        <control type="image">
+                            <texture>special://skin/extras/subtitles/av-pill-220.png</texture>
+                            <visible>Control.HasFocus(6217)</visible>
+                        </control>
+                        <control type="button" id="6217">
+                            <left>0</left>
+                            <top>0</top>
+                            <width>220</width>
+                            <height>64</height>
+                            <textoffsetx>0</textoffsetx>
+                            <textoffsety>0</textoffsety>
+                            <texturefocus />
+                            <texturenofocus />
+                            <font>font_main_bold</font>
+                            <textcolor>FFC4C4C8</textcolor>
+                            <focusedcolor>FF141414</focusedcolor>
+                            <shadowcolor>C0000000</shadowcolor>
+                            <align>center</align>
+                            <aligny>center</aligny>
+                            <label>Appearance</label>
+                            <onup>noop</onup>
+                            <onleft condition="Integer.IsGreater(Container(6206).NumItems,0)">SetFocus(6206,$INFO[Window(Home).Property(Netflix.AV.A.Cur)],absolute)</onleft>
+                            <onright>noop</onright>
+                            <ondown>SetFocus(6207,$INFO[Window(Home).Property(Netflix.AV.S.Cur)],absolute)</ondown>
+                            <!-- as Back on a short list: to the button -->
+                            <onback>SetFocus(6007)</onback>
+                            <onclick>CancelAlarm(osd_timeout,true)</onclick>
+                            <onclick>RunScript(special://skin/extras/netflix_subtitle_style.py,open)</onclick>
+                        </control>
+                    </control>
+                </control>
+            </control>
+
+            <!-- "into the card": one invisible relay, so a title without subtitles goes to Audio instead of an empty
+                 list (focus would be lost). Used by Up / OK on the button (the column jumps use conditions). Its conditions are all
+                 read before any action runs, and they exclude each other. -->
+            <control type="button" id="6299">
+                <left>0</left>
+                <top>0</top>
+                <width>1</width>
+                <height>1</height>
+                <label />
+                <font />
+                <texturefocus />
+                <texturenofocus />
+                <onfocus condition="Integer.IsGreater(Container(6207).NumItems,0)">SetFocus(6207,$INFO[Window(Home).Property(Netflix.AV.S.Cur)],absolute)</onfocus>
+                <onfocus condition="!Integer.IsGreater(Container(6207).NumItems,0) + Integer.IsGreater(Container(6206).NumItems,0)">SetFocus(6206,$INFO[Window(Home).Property(Netflix.AV.A.Cur)],absolute)</onfocus>
+                <onfocus condition="!Integer.IsGreater(Container(6207).NumItems,0) + !Integer.IsGreater(Container(6206).NumItems,0)">SetFocus(6007)</onfocus>
+            </control>
+
+            <!-- the card's own copy of the play-bar button: focus stays here when the card pops up; Up or OK goes into
+                 Subtitles on the checked row (Kodi's own audio / subtitle settings are the last row of each "More" list) -->
+            <include content="OSD_CustomDialog_GroupList">
+                <param name="onclick">SetFocus(6299)</param>
+                <param name="onup">6299</param>
+                <param name="icon">special://skin/extras/icons/osd/osd-audio-subtitles.png</param>
+                <param name="button_7">true</param>
+            </include>
+        </control>
+
+    </controls>
+</window>

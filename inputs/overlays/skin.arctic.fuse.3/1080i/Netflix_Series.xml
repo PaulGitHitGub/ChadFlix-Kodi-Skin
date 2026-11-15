@@ -1,0 +1,1074 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">10</defaultcontrol>
+    <controls>
+        <!-- R10-playback: no opaque base while the transition cover is up under this page (see Custom_1167). -->
+        <control type="image">
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="FF080808">common/white.png</texture>
+            <visible>!$EXP[Netflix_Cover_Held]</visible>
+        </control>
+        <!-- Placeholder: the browse-size backdrop the row already loaded, under the full-size one while that downloads. -->
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <visible>!String.IsEmpty(Window.Property(Series.BackdropQuick))</visible>
+            <aspectratio align="right">scale</aspectratio>
+            <texture background="true">$INFO[Window.Property(Series.BackdropQuick)]</texture>
+        </control>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <visible>!String.IsEmpty(Window.Property(Series.Backdrop))</visible>
+            <aspectratio align="right">scale</aspectratio>
+            <texture background="true">$INFO[Window.Property(Series.Backdrop)]</texture>
+        </control>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1530</width>
+            <height>1080</height>
+            <texture colordiffuse="FF080808">special://skin/extras/backgrounds/overlay/combined_sidemenu.png</texture>
+        </control>
+        <control type="image">
+            <width>1920</width>
+            <height>1080</height>
+            <visible>!String.IsEqual(Window.Property(Series.Page),episodes) + !String.IsEqual(Window.Property(Series.Page),related)</visible>
+            <texture colordiffuse="30000000">common/white.png</texture>
+        </control>
+        <control type="group">
+            <visible>!String.IsEqual(Window.Property(Series.Page),episodes) + !String.IsEqual(Window.Property(Series.Page),related)</visible>
+            <!-- Layout (owner request: same spacing on every show, no added delay; plain XML, nothing measured
+                 at run time). Two stacks meet at one fixed line, y 560:
+                 * this text stack ends just above that line and grows UPWARD (align bottom): a longer description
+                   lifts the logo instead of pushing the buttons down;
+                 * the actions stack (29: icons, Play, Restart, More Episodes, More Like This) starts on that line,
+                   so the icons and Play sit in the same place on every show (and as on the movie page).
+                 Hidden blocks collapse together with their gap. Each gap is its block's own top offset
+                 (usecontrolcoords). Visible gaps (lowest pixel of one block to highest pixel of the next, measured
+                 at 1920x1080 against a Shield capture with real ratings): logo ~20, year line 16 ratings 28 episode
+                 title 16 description 40 icons; year line or ratings to the next text 28, with or without the
+                 episode title. -->
+            <control type="grouplist">
+                <left>80</left>
+                <top>24</top>
+                <width>800</width>
+                <height>520</height>
+                <orientation>vertical</orientation>
+                <align>bottom</align>
+                <usecontrolcoords>true</usecontrolcoords>
+                <itemgap>0</itemgap>
+                <control type="image">
+                    <width>620</width>
+                    <height>166</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.Logo))</visible>
+                    <aspectratio align="left" aligny="bottom">keep</aspectratio>
+                    <texture background="true">$INFO[Window.Property(Series.Logo)]</texture>
+                </control>
+                <control type="textbox">
+                    <font>font_title_midi</font>
+                    <textcolor>FFD9D9D9</textcolor>
+                    <autoscroll>false</autoscroll>
+                    <label>$INFO[Window.Property(Series.Title)]</label>
+                    <width>720</width>
+                    <!-- 1 or 2 lines -->
+                    <height min="94" max="180">auto</height>
+                    <visible>String.IsEmpty(Window.Property(Series.Logo))</visible>
+                </control>
+                <!-- A text title carries more space under its last line than a logo; pull the meta line up to match. -->
+                <control type="image">
+                    <top>-16</top>
+                    <width>1</width>
+                    <height>1</height>
+                    <texture />
+                    <visible>String.IsEmpty(Window.Property(Series.Logo))</visible>
+                </control>
+                <control type="label">
+                    <font>font_mini_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <label>$INFO[Window.Property(Series.Meta)]</label>
+                    <left>1</left>
+                    <top>11</top>
+                    <width>750</width>
+                    <height>36</height>
+                </control>
+                <!-- The age-rating badge is left off this page (owner request); ratings start at the text edge. -->
+                <control type="grouplist">
+                    <top>4</top>
+                    <width>700</width>
+                    <height>36</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.IMDb)) | !String.IsEmpty(Window.Property(Series.RottenTomatoes)) | !String.IsEmpty(Window.Property(Series.Letterboxd))</visible>
+                    <orientation>horizontal</orientation>
+                    <usecontrolcoords>false</usecontrolcoords>
+                    <itemgap>20</itemgap>
+                    <control type="group">
+                        <width>102</width>
+                        <height>30</height>
+                        <visible>!String.IsEmpty(Window.Property(Series.IMDb))</visible>
+                        <control type="image">
+                            <top>3</top>
+                            <width>40</width>
+                            <height>24</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture background="true" colordiffuse="FFDDDDDD">flags/monochrome/ratings/imdb.png</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[Window.Property(Series.IMDb)]</label>
+                            <left>47</left>
+                            <height>30</height>
+                            <right>0</right>
+                        </control>
+                    </control>
+                    <control type="group">
+                        <width>108</width>
+                        <height>30</height>
+                        <visible>!String.IsEmpty(Window.Property(Series.RottenTomatoes))</visible>
+                        <control type="image">
+                            <top>3</top>
+                            <width>25</width>
+                            <height>24</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture background="true" colordiffuse="FFDDDDDD">flags/monochrome/ratings/rtfresh.png</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[Window.Property(Series.RottenTomatoes)]</label>
+                            <left>32</left>
+                            <height>30</height>
+                            <right>0</right>
+                        </control>
+                    </control>
+                    <control type="group">
+                        <width>84</width>
+                        <height>30</height>
+                        <visible>!String.IsEmpty(Window.Property(Series.Letterboxd))</visible>
+                        <control type="image">
+                            <top>3</top>
+                            <width>25</width>
+                            <height>24</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture background="true" colordiffuse="FFDDDDDD">flags/monochrome/ratings/letterboxd.png</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[Window.Property(Series.Letterboxd)]</label>
+                            <left>32</left>
+                            <height>30</height>
+                            <right>0</right>
+                        </control>
+                    </control>
+                </control>
+                <!-- Only for the R2 script, which blanks the description while the first episode loads: hold
+                     roughly the space a typical episode title + description takes, so the logo barely moves when
+                     they arrive. Draws nothing. With staged/show-page-load the page is ready from its first frame
+                     (ActionsReady=1), so this never shows. -->
+                <control type="image">
+                    <width>1</width>
+                    <height>143</height>
+                    <texture />
+                    <visible>!String.IsEqual(Window.Property(Series.ActionsReady),1)</visible>
+                </control>
+                <!-- No episode title (a show not yet started shows its own description; or "Choose an episode to
+                     play."): this spacer plus the description's own offset equals the episode title's offset, so
+                     the header-to-text gap is the same with or without the episode title. -->
+                <control type="image">
+                    <width>1</width>
+                    <height>13</height>
+                    <texture />
+                    <visible>String.IsEmpty(Window.Property(Series.EpisodeTitle)) + !String.IsEmpty(Window.Property(Series.Plot))</visible>
+                </control>
+                <control type="textbox">
+                    <font>font_main_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <autoscroll>false</autoscroll>
+                    <label>$INFO[Window.Property(Series.EpisodeTitle)]</label>
+                    <top>9</top>
+                    <width>760</width>
+                    <!-- 1 or 2 lines -->
+                    <height min="42" max="76">auto</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.EpisodeTitle))</visible>
+                </control>
+                <!-- Long description: two identical boxes share this slot (same text, size and position, so layout cannot change).
+                         Quiet box (this one): shown while a key was pressed in the last second or focus is off the buttons.
+                         Scrolling box (next): shown when the page is still and focus is on the buttons; autoscroll starts delay ms
+                         after it appears, moves one line per time ms, holds repeat ms at the end, fades and returns to the top.
+                         Hiding a textbox resets its scroll position, so any key press puts the text back on top. -->
+                <control type="textbox" id="15">
+                    <font>font_main</font>
+                    <textcolor>FFD9D9D9</textcolor>
+                    <autoscroll>false</autoscroll>
+                    <label>$INFO[Window.Property(Series.Plot)]</label>
+                    <left>2</left>
+                    <top>-4</top>
+                    <width>748</width>
+                    <!-- 1 to 5 lines; a longer description stops after the fifth line (Read Full Description removed). -->
+                    <height min="42" max="178">auto</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + ![System.IdleTime(1) + ControlGroup(29).HasFocus]</visible>
+                </control>
+                <control type="textbox">
+                    <font>font_main</font>
+                    <textcolor>FFD9D9D9</textcolor>
+                    <autoscroll delay="4500" time="2500" repeat="5000">true</autoscroll>
+                    <label>$INFO[Window.Property(Series.Plot)]</label>
+                    <left>2</left>
+                    <top>-4</top>
+                    <width>748</width>
+                    <height min="42" max="178">auto</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + System.IdleTime(1) + ControlGroup(29).HasFocus</visible>
+                </control>
+            </control>
+            <control type="grouplist" id="29">
+                <visible>!$EXP[Netflix_Play_Loading]</visible>
+                <left>78</left>
+                <top>560</top>
+                <width>750</width>
+                <height>460</height>
+                <orientation>vertical</orientation>
+                <usecontrolcoords>false</usecontrolcoords>
+                <itemgap>16</itemgap>
+                <defaultcontrol>30</defaultcontrol>
+                <control type="grouplist" id="30">
+                    <width>640</width>
+                    <height>355</height>
+                    <orientation>vertical</orientation>
+                    <usecontrolcoords>false</usecontrolcoords>
+                    <itemgap>5</itemgap>
+                    <onup>noop</onup>
+                    <ondown>noop</ondown>
+                    <control type="group" id="44">
+                        <width>640</width>
+                        <height>63</height>
+                        <defaultcontrol>17</defaultcontrol>
+                        <visible>!String.IsEmpty(Window.Property(Series.ID))</visible>
+                        <control type="grouplist" id="19">
+                            <!-- Bare icons; focus is a light disc with a dark glyph. Glyph centres line up with the
+                                 button icons below (x 125 and 205 from the page edge). Up goes nowhere: nothing above
+                                 this row is focusable. -->
+                            <left>19</left>
+                            <top>0</top>
+                            <width>136</width>
+                            <height>56</height>
+                            <orientation>horizontal</orientation>
+                            <itemgap>24</itemgap>
+                            <usecontrolcoords>false</usecontrolcoords>
+                            <defaultcontrol>17</defaultcontrol>
+                            <onup>noop</onup>
+                            <ondown condition="String.IsEqual(Window.Property(Series.CanPlay),1)">10</ondown>
+                            <ondown>12</ondown>
+                            <control type="button" id="17">
+                                <width>56</width>
+                                <height>56</height>
+                                <font />
+                                <label>$INFO[Window.Property(Series.FavoriteLabel)]</label>
+                                <texturefocus colordiffuse="FFF5F5F5">common/circle.png</texturefocus>
+                                <texturenofocus />
+                                <onup>noop</onup>
+                                <ondown condition="String.IsEqual(Window.Property(Series.CanPlay),1)">10</ondown>
+                                <ondown>12</ondown>
+                                <onleft>17</onleft>
+                                <onright>18</onright>
+                            </control>
+                            <control type="button" id="18">
+                                <width>56</width>
+                                <height>56</height>
+                                <font />
+                                <label>$INFO[Window.Property(Series.BookmarkLabel)]</label>
+                                <texturefocus colordiffuse="FFF5F5F5">common/circle.png</texturefocus>
+                                <texturenofocus />
+                                <onup>noop</onup>
+                                <ondown condition="String.IsEqual(Window.Property(Series.CanPlay),1)">10</ondown>
+                                <ondown>12</ondown>
+                                <onleft>17</onleft>
+                                <onright>18</onright>
+                            </control>
+                        </control>
+                        <control type="image">
+                            <left>19</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/thumbs-up-regular.png</texture>
+                            <visible>!String.IsEqual(Window.Property(Series.Favorite),true) + !Control.HasFocus(17)</visible>
+                        </control>
+                        <control type="image">
+                            <left>19</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/thumbs-up.png</texture>
+                            <visible>String.IsEqual(Window.Property(Series.Favorite),true) + !Control.HasFocus(17)</visible>
+                        </control>
+                        <control type="image">
+                            <left>19</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/thumbs-up-regular.png</texture>
+                            <visible>!String.IsEqual(Window.Property(Series.Favorite),true) + Control.HasFocus(17)</visible>
+                        </control>
+                        <control type="image">
+                            <left>19</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/thumbs-up.png</texture>
+                            <visible>String.IsEqual(Window.Property(Series.Favorite),true) + Control.HasFocus(17)</visible>
+                        </control>
+                        <control type="image">
+                            <left>99</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>!String.IsEqual(Window.Property(Series.Bookmarked),true) + !Control.HasFocus(18)</visible>
+                        </control>
+                        <control type="image">
+                            <left>99</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/bookmark.png</texture>
+                            <visible>String.IsEqual(Window.Property(Series.Bookmarked),true) + !Control.HasFocus(18)</visible>
+                        </control>
+                        <control type="image">
+                            <left>99</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>!String.IsEqual(Window.Property(Series.Bookmarked),true) + Control.HasFocus(18)</visible>
+                        </control>
+                        <control type="image">
+                            <left>99</left>
+                            <top>0</top>
+                            <width>56</width>
+                            <height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/bookmark.png</texture>
+                            <visible>String.IsEqual(Window.Property(Series.Bookmarked),true) + Control.HasFocus(18)</visible>
+                        </control>
+                        <control type="group">
+                            <top>0</top>
+                            <width>480</width>
+                            <height>56</height>
+                            <control type="label">
+                                <width>480</width>
+                                <height>56</height>
+                                <font>font_main</font>
+                                <textcolor>FFE7E7E7</textcolor>
+                                <aligny>center</aligny>
+                                <label>$INFO[Window.Property(Series.FavoriteLabel)]</label>
+                                <visible>Control.HasFocus(17)</visible>
+                            </control>
+                            <control type="label">
+                                <width>480</width>
+                                <height>56</height>
+                                <font>font_main</font>
+                                <textcolor>FFE7E7E7</textcolor>
+                                <aligny>center</aligny>
+                                <label>$INFO[Window.Property(Series.BookmarkLabel)]</label>
+                                <visible>Control.HasFocus(18)</visible>
+                            </control>
+                            <left>179</left>
+                        </control>
+                    </control>
+                    <control type="group" id="40">
+                        <width>566</width>
+                        <height>62</height>
+                        <visible>String.IsEqual(Window.Property(Series.CanPlay),1)</visible>
+                        <control type="button" id="10">
+                            <width>566</width>
+                            <height>62</height>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textoffsetx>86</textoffsetx>
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <focusedcolor>FF101010</focusedcolor>
+                            <label>$INFO[Window.Property(Series.PrimaryLabel)]</label>
+                            <onleft>noop</onleft>
+                            <onright>noop</onright>
+                            <texturefocus border="32,0,32,0" colordiffuse="FFF5F5F5">common/menu.png</texturefocus>
+                            <texturenofocus />
+                            <onup>17</onup>
+                            <ondown condition="String.IsEqual(Window.Property(Series.ActionsReady),1) + String.IsEqual(Window.Property(Series.CanRestart),1)">11</ondown>
+                            <ondown condition="String.IsEqual(Window.Property(Series.ActionsReady),1)">12</ondown>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>String.IsEqual(Window.Property(Series.ActionsReady),1) + String.IsEqual(Window.Property(Series.CanPlay),1) + Control.HasFocus(10)</visible>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/play2.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>String.IsEqual(Window.Property(Series.ActionsReady),1) + String.IsEqual(Window.Property(Series.CanPlay),1) + !Control.HasFocus(10)</visible>
+                            <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/play2.png</texture>
+                        </control>
+                    </control>
+                    <control type="group" id="41">
+                        <width>566</width>
+                        <height>62</height>
+                        <visible>String.IsEqual(Window.Property(Series.ActionsReady),1) + String.IsEqual(Window.Property(Series.CanRestart),1)</visible>
+                        <control type="button" id="11">
+                            <width>566</width>
+                            <height>62</height>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textoffsetx>86</textoffsetx>
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <focusedcolor>FF101010</focusedcolor>
+                            <label>Play From Beginning</label>
+                            <onleft>noop</onleft>
+                            <onright>noop</onright>
+                            <texturefocus border="32,0,32,0" colordiffuse="FFF5F5F5">common/menu.png</texturefocus>
+                            <texturenofocus />
+                            <onup>10</onup>
+                            <ondown>12</ondown>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>Control.HasFocus(11)</visible>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/arrow-rotate-left.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>!Control.HasFocus(11)</visible>
+                            <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/arrow-rotate-left.png</texture>
+                        </control>
+                    </control>
+                    <control type="group" id="42">
+                        <width>566</width>
+                        <height>62</height>
+                        <visible>String.IsEqual(Window.Property(Series.ActionsReady),1)</visible>
+                        <control type="button" id="12">
+                            <width>566</width>
+                            <height>62</height>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textoffsetx>86</textoffsetx>
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <focusedcolor>FF101010</focusedcolor>
+                            <label>More Episodes</label>
+                            <onleft>noop</onleft>
+                            <onright>noop</onright>
+                            <texturefocus border="32,0,32,0" colordiffuse="FFF5F5F5">common/menu.png</texturefocus>
+                            <texturenofocus />
+                            <onup condition="String.IsEqual(Window.Property(Series.CanRestart),1)">11</onup>
+                            <onup condition="String.IsEqual(Window.Property(Series.CanPlay),1)">10</onup>
+                            <onup>17</onup>
+                            <ondown condition="String.IsEqual(Window.Property(Series.CanRelated),1)">13</ondown>
+                            <ondown>noop</ondown>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>Control.HasFocus(12)</visible>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/clone-regular.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>!Control.HasFocus(12)</visible>
+                            <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/clone-regular.png</texture>
+                        </control>
+                    </control>
+                    <control type="group" id="43">
+                        <width>566</width>
+                        <height>62</height>
+                        <visible>String.IsEqual(Window.Property(Series.ActionsReady),1) + String.IsEqual(Window.Property(Series.CanRelated),1)</visible>
+                        <control type="button" id="13">
+                            <width>566</width>
+                            <height>62</height>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textoffsetx>86</textoffsetx>
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <focusedcolor>FF101010</focusedcolor>
+                            <label>More Like This</label>
+                            <onleft>noop</onleft>
+                            <onright>noop</onright>
+                            <texturefocus border="32,0,32,0" colordiffuse="FFF5F5F5">common/menu.png</texturefocus>
+                            <texturenofocus />
+                            <onup>12</onup>
+                            <ondown>noop</ondown>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>Control.HasFocus(13)</visible>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/grid.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>24</left>
+                            <top>8</top>
+                            <width>46</width>
+                            <height>46</height>
+                            <aspectratio>keep</aspectratio>
+                            <visible>!Control.HasFocus(13)</visible>
+                            <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/grid.png</texture>
+                        </control>
+                    </control>
+                </control>
+                <control type="label">
+                    <font>font_mini</font>
+                    <textcolor>FFBBBBBB</textcolor>
+                    <label>$INFO[Window.Property(Series.Status)]</label>
+                    <left>2</left>
+                    <width>730</width>
+                    <height>35</height>
+                </control>
+            </control>
+        </control>
+        <control type="group">
+            <visible>String.IsEqual(Window.Property(Series.Page),episodes) | String.IsEqual(Window.Property(Series.Page),related)</visible>
+            <control type="image">
+                <width>1920</width>
+                <height>1080</height>
+                <texture colordiffuse="D8000000">common/white.png</texture>
+            </control>
+            <control type="image">
+                <left>80</left>
+                <top>96</top>
+                <width>450</width>
+                <height>122</height>
+                <visible>!String.IsEmpty(Window.Property(Series.Logo))</visible>
+                <aspectratio align="left" aligny="bottom">keep</aspectratio>
+                <texture background="true">$INFO[Window.Property(Series.Logo)]</texture>
+            </control>
+            <control type="textbox">
+                <font>font_head_bold</font>
+                <textcolor>FFD9D9D9</textcolor>
+                <autoscroll>false</autoscroll>
+                <label>$INFO[Window.Property(Series.Title)]</label>
+                <left>80</left>
+                <top>96</top>
+                <width>550</width>
+                <height>122</height>
+                <visible>String.IsEmpty(Window.Property(Series.Logo))</visible>
+            </control>
+            <control type="label">
+                <font>font_mini_bold</font>
+                <textcolor>FFF5F5F5</textcolor>
+                <label>$INFO[Window.Property(Series.Year),, · ]$INFO[Window.Property(Series.ShowMeta)]</label>
+                <left>80</left>
+                <top>230</top>
+                <width>565</width>
+                <height>40</height>
+            </control>
+            <control type="grouplist">
+                <left>80</left>
+                <top>307</top>
+                <width>700</width>
+                <height>30</height>
+                <orientation>horizontal</orientation>
+                <usecontrolcoords>false</usecontrolcoords>
+                <itemgap>20</itemgap>
+                <control type="group">
+                    <width>102</width>
+                    <height>30</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.IMDb))</visible>
+                    <control type="image">
+                        <top>3</top>
+                        <width>40</width>
+                        <height>24</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture background="true" colordiffuse="FFDDDDDD">flags/monochrome/ratings/imdb.png</texture>
+                    </control>
+                    <control type="label">
+                        <font>font_mini_bold</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <label>$INFO[Window.Property(Series.IMDb)]</label>
+                        <left>47</left>
+                        <height>30</height>
+                        <right>0</right>
+                    </control>
+                </control>
+                <control type="group">
+                    <width>108</width>
+                    <height>30</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.RottenTomatoes))</visible>
+                    <control type="image">
+                        <top>3</top>
+                        <width>25</width>
+                        <height>24</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture background="true" colordiffuse="FFDDDDDD">flags/monochrome/ratings/rtfresh.png</texture>
+                    </control>
+                    <control type="label">
+                        <font>font_mini_bold</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <label>$INFO[Window.Property(Series.RottenTomatoes)]</label>
+                        <left>32</left>
+                        <height>30</height>
+                        <right>0</right>
+                    </control>
+                </control>
+                <control type="group">
+                    <width>84</width>
+                    <height>30</height>
+                    <visible>!String.IsEmpty(Window.Property(Series.Letterboxd))</visible>
+                    <control type="image">
+                        <top>3</top>
+                        <width>25</width>
+                        <height>24</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture background="true" colordiffuse="FFDDDDDD">flags/monochrome/ratings/letterboxd.png</texture>
+                    </control>
+                    <control type="label">
+                        <font>font_mini_bold</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <label>$INFO[Window.Property(Series.Letterboxd)]</label>
+                        <left>32</left>
+                        <height>30</height>
+                        <right>0</right>
+                    </control>
+                </control>
+            </control>
+            <control type="button" id="23">
+                <left>786</left>
+                <top>158</top>
+                <width>1000</width>
+                <height>50</height>
+                <font>font_main</font>
+                <align>left</align>
+                <textoffsetx>0</textoffsetx>
+                <textcolor>FFCCCCCC</textcolor>
+                <focusedcolor>FFF5F5F5</focusedcolor>
+                <label>$INFO[Window.Property(Series.EpisodeStatus)]</label>
+                <!-- R10-playback: also the (empty, invisible) place focus rests while More Like This loads its grey cards. -->
+                <visible>!String.IsEmpty(Window.Property(Series.EpisodeStatus)) | String.IsEqual(Window.Property(Series.RelatedLoading),1) | String.IsEqual(Window.Property(Series.EpisodeLoading),1)</visible>
+                <onup>noop</onup>
+                <ondown>noop</ondown>
+                <onleft>noop</onleft>
+                <onright>noop</onright>
+                <texturefocus />
+                <texturenofocus />
+            </control>
+            <control type="group">
+                <visible>String.IsEqual(Window.Property(Series.Page),episodes)</visible>
+                <control type="label">
+                    <font>font_head_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <label>$INFO[Window.Property(Series.SeasonLabel)]</label>
+                    <left>786</left>
+                    <top>87</top>
+                    <width>1074</width>
+                    <height>50</height>
+                </control>
+                <control type="list" id="20">
+                    <left>78</left>
+                    <top>397</top>
+                    <width>555</width>
+                    <height>626</height>
+                    <orientation>vertical</orientation>
+                    <preloaditems>0</preloaditems>
+                    <onup>noop</onup>
+                    <ondown>noop</ondown>
+                    <onleft>noop</onleft>
+                    <onright>noop</onright>
+                    <itemlayout width="555" height="69">
+                        <control type="label">
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <left>32</left>
+                            <width>278</width>
+                            <height>62</height>
+                        </control>
+                        <control type="label">
+                            <font>font_mini</font>
+                            <textcolor>FFDFDFDF</textcolor>
+                            <label>$INFO[ListItem.Property(Count)]</label>
+                            <left>310</left>
+                            <width>211</width>
+                            <height>62</height>
+                            <align>right</align>
+                        </control>
+                    </itemlayout>
+                    <focusedlayout width="555" height="69">
+                        <control type="image">
+                            <width>548</width>
+                            <height>62</height>
+                            <visible>Control.HasFocus(20)</visible>
+                            <texture border="32,0,32,0" colordiffuse="FFF5F5F5">common/menu.png</texture>
+                        </control>
+                        <control type="image">
+                            <width>548</width>
+                            <height>62</height>
+                            <visible>!Control.HasFocus(20)</visible>
+                            <texture border="32,0,32,0" colordiffuse="FF383838">common/menu.png</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_main_bold</font>
+                            <textcolor>FF151515</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <left>32</left>
+                            <width>278</width>
+                            <height>62</height>
+                            <visible>Control.HasFocus(20)</visible>
+                        </control>
+                        <control type="label">
+                            <font>font_mini</font>
+                            <textcolor>FF404040</textcolor>
+                            <label>$INFO[ListItem.Property(Count)]</label>
+                            <left>310</left>
+                            <width>211</width>
+                            <height>62</height>
+                            <align>right</align>
+                            <visible>Control.HasFocus(20)</visible>
+                        </control>
+                        <control type="label">
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <left>32</left>
+                            <width>278</width>
+                            <height>62</height>
+                            <visible>!Control.HasFocus(20)</visible>
+                        </control>
+                        <control type="label">
+                            <font>font_mini</font>
+                            <textcolor>FFDFDFDF</textcolor>
+                            <label>$INFO[ListItem.Property(Count)]</label>
+                            <left>310</left>
+                            <width>211</width>
+                            <height>62</height>
+                            <align>right</align>
+                            <visible>!Control.HasFocus(20)</visible>
+                        </control>
+                    </focusedlayout>
+                </control>
+                <!-- R10.10a: while a season's episodes (or the season list) load, grey cards in the episode cells instead of a
+                     "Loading episodes..." line. A truly empty or failed answer still says so (Series.EpisodeStatus). -->
+                <control type="group">
+                    <left>784</left><top>153</top>
+                    <visible>String.IsEqual(Window.Property(Series.EpisodeLoading),1)</visible>
+                    <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
+                    <!-- R10.12: the shared loading look (Includes_Netflix_Loading.xml): FF222222, the loaded still's mask, the
+                         55 px sliver of the 4th card the list shows, one sweep for the column. -->
+                    <include content="Netflix_Loading_Episode_Column"><param name="condition">String.IsEqual(Window.Property(Series.EpisodeLoading),1)</param></include>
+                </control>
+                <control type="list" id="21">
+                    <left>784</left>
+                    <top>150</top>
+                    <width>1080</width>
+                    <height>874</height>
+                    <orientation>vertical</orientation>
+                    <preloaditems>0</preloaditems>
+                    <onup>noop</onup>
+                    <ondown>noop</ondown>
+                    <onleft>noop</onleft>
+                    <onright>noop</onright>
+                    <itemlayout width="1080" height="272">
+                        <control type="group">
+                            <left>3</left>
+                            <top>3</top>
+                            <width>437</width>
+                            <height>247</height>
+                            <control type="image">
+                                <width>437</width>
+                                <height>247</height>
+                                <texture border="14" colordiffuse="FF222222">common/box.png</texture>
+                            </control>
+                            <control type="image">
+                                <width>437</width>
+                                <height>247</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true" diffuse="diffuse/landscape_w410_h231.png">$INFO[ListItem.Art(thumb)]</texture>
+                            </control>
+                        </control>
+                        <control type="image">
+                            <left>4</left>
+                            <top>154</top>
+                            <width>435</width>
+                            <height>95</height>
+                            <texture colordiffuse="AA000000">common/poster_fade.png</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Property(Code)]</label>
+                            <left>20</left>
+                            <top>194</top>
+                            <width>365</width>
+                            <height>34</height>
+                        </control>
+                        <control type="progress">
+                            <left>21</left>
+                            <top>231</top>
+                            <width>398</width>
+                            <height>5</height>
+                            <visible>Integer.IsGreater(ListItem.Property(Progress),0)</visible>
+                            <info>ListItem.Property(Progress)</info>
+                            <texturebg colordiffuse="AAFFFFFF">common/white.png</texturebg>
+                            <midtexture colordiffuse="FFE50914">common/white.png</midtexture>
+                        </control>
+                        <control type="label">
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <left>474</left>
+                            <top>28</top>
+                            <width>598</width>
+                            <height>43</height>
+                        </control>
+                        <control type="textbox">
+                            <font>font_mini</font>
+                            <textcolor>FFD9D9D9</textcolor>
+                            <autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Plot]</label>
+                            <left>474</left>
+                            <top>81</top>
+                            <width>590</width>
+                            <height>96</height>
+                        </control>
+                        <control type="label">
+                            <font>font_mini</font>
+                            <textcolor>FFCCCCCC</textcolor>
+                            <label>$INFO[ListItem.Property(Duration)]</label>
+                            <left>474</left>
+                            <top>186</top>
+                            <width>552</width>
+                            <height>36</height>
+                        </control>
+                    </itemlayout>
+                    <focusedlayout width="1080" height="272">
+                        <control type="group">
+                            <left>3</left>
+                            <top>3</top>
+                            <width>437</width>
+                            <height>247</height>
+                            <control type="image">
+                                <width>437</width>
+                                <height>247</height>
+                                <texture border="14" colordiffuse="FF222222">common/box.png</texture>
+                            </control>
+                            <control type="image">
+                                <width>437</width>
+                                <height>247</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true" diffuse="diffuse/landscape_w410_h231.png">$INFO[ListItem.Art(thumb)]</texture>
+                            </control>
+                        </control>
+                        <control type="image">
+                            <left>0</left>
+                            <top>0</top>
+                            <width>443</width>
+                            <height>253</height>
+                            <visible>Control.HasFocus(21)</visible>
+                            <texture border="14" colordiffuse="FFF5F5F5">common/box.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>4</left>
+                            <top>4</top>
+                            <width>435</width>
+                            <height>245</height>
+                            <visible>Control.HasFocus(21) + !String.IsEmpty(ListItem.Art(thumb))</visible>
+                            <aspectratio scalediffuse="false">scale</aspectratio>
+                            <texture background="true" diffuse="diffuse/landscape_w410_h231.png">$INFO[ListItem.Art(thumb)]</texture>
+                        </control>
+                        <control type="image">
+                            <left>4</left>
+                            <top>4</top>
+                            <width>435</width>
+                            <height>245</height>
+                            <visible>Control.HasFocus(21) + String.IsEmpty(ListItem.Art(thumb))</visible>
+                            <texture border="12" colordiffuse="FF222222">common/box.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>4</left>
+                            <top>154</top>
+                            <width>435</width>
+                            <height>95</height>
+                            <texture colordiffuse="AA000000">common/poster_fade.png</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Property(Code)]</label>
+                            <left>20</left>
+                            <top>194</top>
+                            <width>365</width>
+                            <height>34</height>
+                        </control>
+                        <control type="progress">
+                            <left>21</left>
+                            <top>231</top>
+                            <width>398</width>
+                            <height>5</height>
+                            <visible>Integer.IsGreater(ListItem.Property(Progress),0)</visible>
+                            <info>ListItem.Property(Progress)</info>
+                            <texturebg colordiffuse="AAFFFFFF">common/white.png</texturebg>
+                            <midtexture colordiffuse="FFE50914">common/white.png</midtexture>
+                        </control>
+                        <control type="label">
+                            <font>font_main_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <left>474</left>
+                            <top>28</top>
+                            <width>598</width>
+                            <height>43</height>
+                        </control>
+                        <control type="textbox">
+                            <font>font_mini</font>
+                            <textcolor>FFD9D9D9</textcolor>
+                            <autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Plot]</label>
+                            <left>474</left>
+                            <top>81</top>
+                            <width>590</width>
+                            <height>96</height>
+                        </control>
+                        <control type="label">
+                            <font>font_mini</font>
+                            <textcolor>FFCCCCCC</textcolor>
+                            <label>$INFO[ListItem.Property(Duration)]</label>
+                            <left>474</left>
+                            <top>186</top>
+                            <width>552</width>
+                            <height>36</height>
+                        </control>
+                    </focusedlayout>
+                </control>
+            </control>
+            <control type="group">
+                <visible>String.IsEqual(Window.Property(Series.Page),related)</visible>
+                <control type="label">
+                    <font>font_head_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <label>More Like This</label>
+                    <left>786</left>
+                    <top>87</top>
+                    <width>1074</width>
+                    <height>50</height>
+                </control>
+                <!-- R10-playback (backlog 9c): while the similar shows load, grey cards in the panel's own cells instead
+                     of a "Loading similar shows…" line. A truly empty answer still says so (Series.EpisodeStatus). -->
+                <control type="group">
+                    <left>786</left><top>226</top>
+                    <visible>String.IsEqual(Window.Property(Series.RelatedLoading),1)</visible>
+                    <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
+                    <!-- R10.12: the shared loading look: FF222222, the loaded poster's silhouette, the 26 px third-row sliver, one sweep. -->
+                    <include content="Netflix_Loading_Related_Grid"><param name="condition">String.IsEqual(Window.Property(Series.RelatedLoading),1)</param></include>
+                </control>
+                <control type="panel" id="22">
+                    <left>786</left>
+                    <top>226</top>
+                    <width>1080</width>
+                    <height>802</height>
+                    <orientation>vertical</orientation>
+                    <preloaditems>0</preloaditems>
+                    <onup>noop</onup>
+                    <ondown>noop</ondown>
+                    <itemlayout width="264" height="388">
+                        <control type="image">
+                            <left>0</left>
+                            <top>0</top>
+                            <width>240</width>
+                            <height>350</height>
+                            <texture border="14" colordiffuse="FF222222">common/box.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>3</left>
+                            <top>3</top>
+                            <width>234</width>
+                            <height>344</height>
+                            <aspectratio scalediffuse="false">scale</aspectratio>
+                            <texture background="true" diffuse="diffuse/poster_w560_h820.png">$INFO[ListItem.Art(thumb)]</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <left>3</left>
+                            <top>352</top>
+                            <width>238</width>
+                            <height>34</height>
+                        </control>
+                    </itemlayout>
+                    <focusedlayout width="264" height="388">
+                        <control type="image">
+                            <left>0</left>
+                            <top>0</top>
+                            <width>240</width>
+                            <height>350</height>
+                            <texture border="14" colordiffuse="FFF5F5F5">common/box.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>3</left>
+                            <top>3</top>
+                            <width>234</width>
+                            <height>344</height>
+                            <aspectratio scalediffuse="false">scale</aspectratio>
+                            <texture background="true" diffuse="diffuse/poster_w560_h820.png">$INFO[ListItem.Art(thumb)]</texture>
+                        </control>
+                        <control type="label">
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Label]</label>
+                            <left>3</left>
+                            <top>352</top>
+                            <width>238</width>
+                            <height>34</height>
+                        </control>
+                    </focusedlayout>
+                </control>
+            </control>
+        </control>
+        <!-- R10-playback: play loader (design B, Includes_Netflix_Playback.xml), drawn over the page while POV
+             finds and opens the episode. Focus rests on 46 meanwhile; Back is handled by extras/netflix_series.py
+             (it withdraws the request; POV stops at its next step). -->
+        <control type="button" id="46">
+            <left>-2</left><top>-2</top><width>1</width><height>1</height>
+            <font /><texturefocus /><texturenofocus />
+            <visible>$EXP[Netflix_Play_Loading]</visible>
+            <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright>
+        </control>
+        <include>Netflix_Play_Loader</include>
+    </controls>
+</window>

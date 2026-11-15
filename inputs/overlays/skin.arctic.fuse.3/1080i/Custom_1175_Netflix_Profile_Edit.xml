@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Edit profile: opened by netflix_profiles.py edit-open (pencil on the Choose a Profile screen),
+     which fills Netflix.Profiles.Edit.* first. Rows: Name (Kodi keyboard, same validation as add),
+     Icon (colour picker 1176), then Done. The large avatar on the right previews the result.
+     Layout follows the owner's reference photo; game handle, language and maturity rows omitted. -->
+<window type="dialog" id="1175">
+    <defaultcontrol always="true">9201</defaultcontrol>
+    <zorder>1101</zorder>
+    <onload>SetProperty(TMDbHelper.ServicePause,True)</onload>
+    <animation type="WindowOpen">
+        <effect type="fade" start="0" end="100" time="160" tween="cubic" easing="out" />
+    </animation>
+    <animation type="WindowClose">
+        <effect type="fade" start="100" end="0" time="120" tween="cubic" easing="in" />
+    </animation>
+    <controls>
+        <control type="image">
+            <texture colordiffuse="FF080808">common/white.png</texture>
+        </control>
+        <control type="label">
+            <left>150</left><top>96</top><width>1200</width><height>60</height>
+            <aligny>center</aligny><font>font_huge_bold</font><textcolor>FFF5F5F5</textcolor>
+            <label>Edit profile</label>
+        </control>
+        <control type="label">
+            <left>150</left><top>160</top><width>1200</width><height>40</height>
+            <aligny>center</aligny><font>font_main</font><textcolor>FFCBCBD0</textcolor>
+            <label>Select what you want to change.</label>
+        </control>
+
+        <control type="group">
+            <left>150</left><top>406</top>
+            <control type="button" id="9201">
+                <description>Name</description>
+                <width>388</width><height>68</height>
+                <label />
+                <texturefocus border="34,0,34,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texturefocus>
+                <texturenofocus />
+                <onup>noop</onup><onleft>noop</onleft><onright>noop</onright>
+                <ondown>9202</ondown>
+                <onclick>RunScript(special://skin/extras/netflix_profiles.py,rename)</onclick>
+            </control>
+            <control type="image">
+                <left>13</left><top>4</top><width>60</width><height>60</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/user-regular.png</texture>
+                <visible>!Control.HasFocus(9201)</visible>
+            </control>
+            <control type="image">
+                <left>13</left><top>4</top><width>60</width><height>60</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FF080808">special://skin/extras/icons/user-regular.png</texture>
+                <visible>Control.HasFocus(9201)</visible>
+            </control>
+            <control type="label">
+                <left>80</left><top>0</top><width>290</width><height>68</height>
+                <aligny>center</aligny><font>font_main</font><textcolor>FFF5F5F5</textcolor>
+                <label>Name</label>
+                <visible>!Control.HasFocus(9201)</visible>
+            </control>
+            <control type="label">
+                <left>80</left><top>0</top><width>290</width><height>68</height>
+                <aligny>center</aligny><font>font_main</font><textcolor>FF080808</textcolor>
+                <label>Name</label>
+                <visible>Control.HasFocus(9201)</visible>
+            </control>
+
+            <control type="button" id="9202">
+                <description>Icon</description>
+                <top>76</top><width>388</width><height>68</height>
+                <label />
+                <texturefocus border="34,0,34,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texturefocus>
+                <texturenofocus />
+                <onup>9201</onup><onleft>noop</onleft><onright>noop</onright>
+                <ondown>9203</ondown>
+                <onclick>ActivateWindow(1176)</onclick>
+            </control>
+            <control type="image">
+                <left>13</left><top>80</top><width>60</width><height>60</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/palette.png</texture>
+                <visible>!Control.HasFocus(9202)</visible>
+            </control>
+            <control type="image">
+                <left>13</left><top>80</top><width>60</width><height>60</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FF080808">special://skin/extras/icons/palette.png</texture>
+                <visible>Control.HasFocus(9202)</visible>
+            </control>
+            <control type="label">
+                <left>80</left><top>76</top><width>290</width><height>68</height>
+                <aligny>center</aligny><font>font_main</font><textcolor>FFF5F5F5</textcolor>
+                <label>Icon</label>
+                <visible>!Control.HasFocus(9202)</visible>
+            </control>
+            <control type="label">
+                <left>80</left><top>76</top><width>290</width><height>68</height>
+                <aligny>center</aligny><font>font_main</font><textcolor>FF080808</textcolor>
+                <label>Icon</label>
+                <visible>Control.HasFocus(9202)</visible>
+            </control>
+
+            <control type="button" id="9203">
+                <description>Done</description>
+                <left>16</left><top>454</top><width>216</width><height>60</height>
+                <align>center</align><aligny>center</aligny>
+                <font>font_main_bold</font>
+                <textcolor>FFF5F5F5</textcolor><focusedcolor>FF080808</focusedcolor>
+                <label>Done</label>
+                <texturefocus border="30,0,30,0" colordiffuse="FFF5F5F5">special://skin/extras/netflix-nav-pill.png</texturefocus>
+                <texturenofocus border="30,0,30,0" colordiffuse="FF45454B">special://skin/extras/netflix-nav-pill.png</texturenofocus>
+                <onup>9202</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright>
+                <onclick>RunScript(special://skin/extras/netflix_profiles.py,list)</onclick>
+                <onclick>Close</onclick>
+            </control>
+        </control>
+
+        <!-- Preview of the person being edited. -->
+        <control type="image">
+            <left>1220</left><top>352</top><width>280</width><height>280</height>
+            <colordiffuse>$INFO[Window(Home).Property(Netflix.Profiles.Edit.Color)]</colordiffuse>
+            <texture diffuse="diffuse/square_w280_h280.png">common/white.png</texture>
+        </control>
+        <control type="label">
+            <left>1220</left><top>352</top><width>280</width><height>280</height>
+            <align>center</align><aligny>center</aligny>
+            <font>font_title_huge</font><textcolor>FFFFFFFF</textcolor>
+            <label>$INFO[Window(Home).Property(Netflix.Profiles.Edit.Initial)]</label>
+        </control>
+        <control type="label">
+            <left>1060</left><top>664</top><width>600</width><height>56</height>
+            <align>center</align><aligny>center</aligny>
+            <font>font_head_bold</font><textcolor>FFF5F5F5</textcolor>
+            <label>$INFO[Window(Home).Property(Netflix.Profiles.Edit.Name)]</label>
+        </control>
+        <control type="label">
+            <left>150</left><top>1004</top><width>1200</width><height>40</height>
+            <aligny>center</aligny><font>font_mini</font><textcolor>FFF0B4B4</textcolor>
+            <label>$INFO[Window(Home).Property(Netflix.Profiles.Error)]</label>
+        </control>
+    </controls>
+</window>

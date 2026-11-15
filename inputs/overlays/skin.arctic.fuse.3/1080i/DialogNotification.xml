@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <zorder>1000</zorder>
+    <!-- R10.7-voice-logo: Kodi's speech toasts (caption 39177 "Speech to text") are never drawn (see the <visible> below);
+         the Search page's Voice Search pill shows listening and failure instead.
+         onload conditions cannot read this toast's own labels (Kodi evaluates them in the active window's context), so
+         a voice search is followed by sequence: while Netflix.SearchVoiceActive (DialogKeyboard.xml), the FIRST toast
+         window opened is Kodi's "Listening..." (mic open) and is closed at once (so the next toast opens the window
+         again and runs this onload); a LATER one is Kodi's speech error (a recognised result never queues a toast):
+         flag the failure for the pill (3 s), close the hidden keyboard now by re-arming its timeout alarm at 0 s
+         instead of after 18 s, and close the (hidden) toast. -->
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.SearchVoiceActive),true) + Window.IsVisible(1105) + !String.IsEqual(Window(Home).Property(Netflix.SearchVoiceToastSeen),true)">SetProperty(Netflix.SearchVoiceToastSeen,true,Home)</onload>
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.SearchVoiceActive),true) + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoiceToastSeen),true)">SetProperty(Netflix.SearchVoiceFailed,true,Home)</onload>
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.SearchVoiceActive),true) + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoiceToastSeen),true)">AlarmClock(NetflixSearchVoiceFailedClear,ClearProperty(Netflix.SearchVoiceFailed,Home),00:03,silent)</onload>
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.SearchVoiceActive),true) + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoiceToastSeen),true)">AlarmClock(NetflixSearchVoiceTimeout,Action(Back,virtualkeyboard),00:00,silent)</onload>
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.SearchVoiceActive),true) + Window.IsVisible(1105)">AlarmClock(NetflixSpeechToastClose,Dialog.Close(10107,true),00:00,silent)</onload>
+    <controls>
+
+        <control type="group">
+            <visible>!String.IsEqual(Control.GetLabel(401),$LOCALIZE[39177])</visible>
+
+            <include content="Furniture_Busy_Main">
+                <param name="minilabel">$INFO[Control.GetLabel(402)]</param>
+                <param name="mainlabel">$INFO[Control.GetLabel(401)]</param>
+                <param name="visible_condition">!$EXP[Exp_FurnitureBusy_AnimationCond_DialogNotification]</param>
+                <param name="windowopen_condition">!$EXP[Exp_FurnitureBusy_AnimationCond_DialogNotification]</param>
+            </include>
+
+            <include content="Furniture_Busy_Base">
+                <param name="hasicon">false</param>
+            </include>
+
+            <!-- Left -->
+            <include content="Furniture_ItemIcon">
+                <param name="icon">special://skin/extras/icons/comment-dots.png</param>
+                <param name="flipped">true</param>
+                <param name="right">15</param>
+                <param name="visible">String.StartsWith(Control.GetLabel(400),Default)</param>
+                <param name="size">50</param>
+            </include>
+            <include content="Furniture_ItemIcon">
+                <param name="icon">$INFO[Control.GetLabel(400)]</param>
+                <param name="icon_colordiffuse">white</param>
+                <param name="bordersize">2</param>
+                <param name="flipped">true</param>
+                <param name="right">15</param>
+                <param name="visible">!String.StartsWith(Control.GetLabel(400),Default)</param>
+                <param name="size">50</param>
+            </include>
+        </control>
+
+        <control type="image" id="400">
+            <include>Object_Hidden_Item_Definition</include>
+        </control>
+        <control type="label" id="401">
+            <include>Object_Hidden_Item_Definition</include>
+        </control>
+        <control type="label" id="402">
+            <include>Object_Hidden_Item_Definition</include>
+        </control>
+    </controls>
+</window>

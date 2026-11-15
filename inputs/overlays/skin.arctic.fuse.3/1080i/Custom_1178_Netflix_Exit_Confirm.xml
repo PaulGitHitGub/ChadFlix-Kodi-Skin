@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Exit confirmation over fullscreen video (staged/exit-confirm, owner's Option C: text only, no buttons, no panel).
+     Opened by userdata/keymaps/NetflixExitConfirm.xml when Back reaches the bare fullscreen video window (12005);
+     any window above it (OSD, cards 1143/1145/1146/1147/1177, bookmarks, modal pop-ups) takes Back first, as before.
+       Back again  = exit: control 9001 <onback> sets Netflix.Exit.Go and runs extras/netflix_exit_return.py once
+                     (stop, then the title's page). Long-press Back is mapped to Back for this window (keymap).
+       OK / arrows / Play-Pause / Esc = keep watching: Dialog.Close(1178); onunload resumes only if this dialog paused.
+     Never "Close" here: it is an action that would reach 9001's <onback> (= exit).
+     Conditions in one action list are all read before any action runs (HANDOFF 9.1): nothing below reads a value
+     set earlier in the same list. -->
+<window type="dialog" id="1178">
+    <defaultcontrol always="true">9001</defaultcontrol>
+    <animation effect="fade" start="0" end="100" time="90" tween="cubic" easing="out">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="120">WindowClose</animation>
+    <onload>ClearProperty(Netflix.Exit.Go,Home)</onload>
+    <onload>ClearProperty(Netflix.Exit.WePaused,Home)</onload>
+    <!-- Pause at once. Action(Pause) is a toggle (PlayerControl(Pause) is a no-op in Kodi 21), so only when not paused.
+         Fast-forward / rewind / seeking / caching have speed != 0, so the same toggle pauses them too. -->
+    <onload condition="String.IsEmpty(Window(Home).Property(Netflix.Trailer.Active)) + !Player.Paused">SetProperty(Netflix.Exit.WePaused,1,Home)</onload>
+    <onload condition="String.IsEmpty(Window(Home).Property(Netflix.Trailer.Active)) + !Player.Paused">Action(Pause)</onload>
+    <!-- Trailers (play_trailer in netflix_movie_details.py is waiting): no prompt, stop; that script reopens the page. -->
+    <onload condition="!String.IsEmpty(Window(Home).Property(Netflix.Trailer.Active))">PlayerControl(Stop)</onload>
+    <!-- Keep watching (any close that is not Exit): resume only what this dialog paused. -->
+    <onunload condition="String.IsEmpty(Window(Home).Property(Netflix.Exit.Go)) + !String.IsEmpty(Window(Home).Property(Netflix.Exit.WePaused)) + Player.Paused">Action(Pause)</onunload>
+    <onunload>ClearProperty(Netflix.Exit.WePaused,Home)</onunload>
+    <controls>
+        <control type="group">
+            <visible>String.IsEmpty(Window(Home).Property(Netflix.Trailer.Active))</visible>
+            <!-- centred soft vignette: 80 % black in the middle to 50 % at the edges (exit-confirm-design) -->
+            <control type="image">
+                <left>0</left>
+                <top>0</top>
+                <width>1920</width>
+                <height>1080</height>
+                <texture>special://skin/extras/subtitles/exit-dim.png</texture>
+            </control>
+            <control type="label">
+                <left>0</left>
+                <top>444</top>
+                <width>1920</width>
+                <height>96</height>
+                <align>center</align>
+                <aligny>center</aligny>
+                <font>font_title_midi</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <shadowcolor>E0000000</shadowcolor>
+                <label>Are you sure you want to exit?</label>
+            </control>
+            <control type="label">
+                <left>0</left>
+                <top>552</top>
+                <width>1920</width>
+                <height>48</height>
+                <align>center</align>
+                <aligny>center</aligny>
+                <font>font_midi</font>
+                <textcolor>C8F5F5F5</textcolor>
+                <shadowcolor>E0000000</shadowcolor>
+                <label>Press Back again to exit   ·   OK to keep watching</label>
+            </control>
+        </control>
+        <!-- the only control: invisible 1x1 button that owns OK, arrows and Back -->
+        <control type="button" id="9001">
+            <left>0</left>
+            <top>0</top>
+            <width>1</width>
+            <height>1</height>
+            <texturefocus />
+            <texturenofocus />
+            <label />
+            <onclick>Dialog.Close(1178)</onclick>
+            <onleft>Dialog.Close(1178)</onleft>
+            <onright>Dialog.Close(1178)</onright>
+            <onup>Dialog.Close(1178)</onup>
+            <ondown>Dialog.Close(1178)</ondown>
+            <onback>SetProperty(Netflix.Exit.Go,1,Home)</onback>
+            <onback condition="String.IsEmpty(Window(Home).Property(Netflix.Exit.Go))">RunScript(special://skin/extras/netflix_exit_return.py,exit)</onback>
+        </control>
+    </controls>
+</window>

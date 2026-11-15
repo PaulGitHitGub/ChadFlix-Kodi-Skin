@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Profile menu: a small popover over the top-left of the top bar, opened by the profile button
+     3729 (Includes_Home.xml, Netflix_Top_Navigation). Row 1 = current person + "Switch Profiles"
+     (opens 1174), row 2 = Exit Kodi. Layout follows the owner's reference photo; no Netflix art.
+     Coordinates assume CompactHome (reference header: button at 56,31); the Conditional slide moves
+     it for the full header (button at 80,10). -->
+<window type="dialog" id="1173">
+    <defaultcontrol always="true">9001</defaultcontrol>
+    <zorder>1100</zorder>
+    <onload>RunScript(special://skin/extras/netflix_profiles.py,list)</onload>
+    <onload>SetProperty(TMDbHelper.ServicePause,True)</onload>
+    <controls>
+        <control type="group">
+            <left>33</left><top>5</top>
+            <width>560</width><height>200</height>
+            <animation effect="slide" end="24,3" time="0" condition="!Skin.HasSetting(Netflix.CompactHome)">Conditional</animation>
+            <animation type="WindowOpen">
+                <effect type="fade" start="0" end="100" time="140" tween="cubic" easing="out" />
+                <effect type="zoom" start="94" end="100" center="60,60" time="180" tween="cubic" easing="out" />
+            </animation>
+            <animation type="WindowClose">
+                <effect type="fade" start="100" end="0" time="100" tween="cubic" easing="in" />
+            </animation>
+            <!-- Same glass rim as the skin's other popovers, but an almost opaque backing: the menu
+                 sits over row titles and posters, which must not read through the labels. -->
+            <control type="image">
+                <left>3</left><top>3</top><right>3</right><bottom>3</bottom>
+                <texture border="24" colordiffuse="F51A1B1F">common/box.png</texture>
+            </control>
+            <control type="image">
+                <texture border="24">special://skin/extras/netflix-glass-button.png</texture>
+            </control>
+
+            <!-- Row 1: who is watching, and the way to switch. -->
+            <control type="button" id="9001">
+                <description>Switch profiles</description>
+                <left>12</left><top>12</top><width>536</width><height>96</height>
+                <label />
+                <texturefocus border="24" colordiffuse="FFF5F5F5">common/box.png</texturefocus>
+                <texturenofocus />
+                <onup>noop</onup>
+                <ondown>9002</ondown>
+                <onleft>noop</onleft>
+                <onright>Close</onright>
+                <onclick>Close</onclick>
+                <onclick>ActivateWindow(1174)</onclick>
+            </control>
+            <control type="image">
+                <left>28</left><top>28</top><width>64</width><height>64</height>
+                <colordiffuse>$INFO[Window(Home).Property(Netflix.Profiles.Current.Color)]</colordiffuse>
+                <texture diffuse="diffuse/square_w120_h120.png">common/white.png</texture>
+            </control>
+            <control type="label">
+                <left>28</left><top>28</top><width>64</width><height>64</height>
+                <align>center</align><aligny>center</aligny>
+                <font>font_midi_bold</font><textcolor>FFFFFFFF</textcolor>
+                <label>$INFO[Window(Home).Property(Netflix.Profiles.Current.Initial)]</label>
+            </control>
+            <control type="label">
+                <left>112</left><top>24</top><width>420</width><height>36</height>
+                <aligny>center</aligny><font>font_main_bold</font>
+                <textcolor>FFF5F5F5</textcolor>
+                <label>$INFO[Window(Home).Property(Netflix.Profiles.Current.Name)]</label>
+                <visible>!Control.HasFocus(9001)</visible>
+            </control>
+            <control type="label">
+                <left>112</left><top>24</top><width>420</width><height>36</height>
+                <aligny>center</aligny><font>font_main_bold</font>
+                <textcolor>FF080808</textcolor>
+                <label>$INFO[Window(Home).Property(Netflix.Profiles.Current.Name)]</label>
+                <visible>Control.HasFocus(9001)</visible>
+            </control>
+            <control type="label">
+                <left>112</left><top>60</top><width>420</width><height>30</height>
+                <aligny>center</aligny><font>font_mini</font>
+                <textcolor>FFCBCBD0</textcolor>
+                <label>Switch Profiles</label>
+                <visible>!Control.HasFocus(9001)</visible>
+            </control>
+            <control type="label">
+                <left>112</left><top>60</top><width>420</width><height>30</height>
+                <aligny>center</aligny><font>font_mini</font>
+                <textcolor>FF4A4A50</textcolor>
+                <label>Switch Profiles</label>
+                <visible>Control.HasFocus(9001)</visible>
+            </control>
+
+            <!-- Row 2: leave Kodi (same builtin as the skin's power menu). -->
+            <control type="button" id="9002">
+                <description>Exit Kodi</description>
+                <left>12</left><top>112</top><width>536</width><height>76</height>
+                <label />
+                <texturefocus border="24" colordiffuse="FFF5F5F5">common/box.png</texturefocus>
+                <texturenofocus />
+                <onup>9001</onup>
+                <ondown>noop</ondown>
+                <onleft>noop</onleft>
+                <onright>Close</onright>
+                <onclick>Quit()</onclick>
+            </control>
+            <control type="image">
+                <left>30</left><top>120</top><width>60</width><height>60</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/arrow-right-from-bracket.png</texture>
+                <visible>!Control.HasFocus(9002)</visible>
+            </control>
+            <control type="image">
+                <left>30</left><top>120</top><width>60</width><height>60</height>
+                <aspectratio>keep</aspectratio>
+                <texture colordiffuse="FF080808">special://skin/extras/icons/arrow-right-from-bracket.png</texture>
+                <visible>Control.HasFocus(9002)</visible>
+            </control>
+            <control type="label">
+                <left>112</left><top>112</top><width>420</width><height>76</height>
+                <aligny>center</aligny><font>font_main_bold</font>
+                <textcolor>FFF5F5F5</textcolor>
+                <label>Exit Kodi</label>
+                <visible>!Control.HasFocus(9002)</visible>
+            </control>
+            <control type="label">
+                <left>112</left><top>112</top><width>420</width><height>76</height>
+                <aligny>center</aligny><font>font_main_bold</font>
+                <textcolor>FF080808</textcolor>
+                <label>Exit Kodi</label>
+                <visible>Control.HasFocus(9002)</visible>
+            </control>
+        </control>
+    </controls>
+</window>

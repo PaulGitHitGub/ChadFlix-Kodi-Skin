@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Choose a Profile: opened only from the profile menu (1173), never at startup.
+     A vertical column of avatars; the focused one is enlarged with a white ring and its name to the
+     right. Left moves onto the pencil (edit this person), Right moves back. "+" is last while a
+     spare profile is free. People and colours come from netflix_profiles.py "list" (Home window
+     properties Netflix.Profiles.*). Original flat avatars only: no Netflix art, logos or photos. -->
+<window type="dialog" id="1174">
+    <defaultcontrol always="true">9100</defaultcontrol>
+    <zorder>1100</zorder>
+    <onload>ClearProperty(Netflix.Profiles.Pencil,Home)</onload>
+    <onload condition="!String.IsEmpty(Window(Home).Property(Netflix.Profiles.Current.Pos))">SetFocus(9100,$INFO[Window(Home).Property(Netflix.Profiles.Current.Pos)],absolute)</onload>
+    <onload>SetProperty(TMDbHelper.ServicePause,True)</onload>
+    <onunload>ClearProperty(Netflix.Profiles.Pencil,Home)</onunload>
+    <animation type="WindowOpen">
+        <effect type="fade" start="0" end="100" time="160" tween="cubic" easing="out" />
+    </animation>
+    <animation type="WindowClose">
+        <effect type="fade" start="100" end="0" time="120" tween="cubic" easing="in" />
+    </animation>
+    <controls>
+        <control type="image">
+            <texture colordiffuse="FF080808">common/white.png</texture>
+        </control>
+        <control type="label">
+            <left>72</left><top>110</top><width>520</width><height>48</height>
+            <align>center</align><aligny>center</aligny>
+            <font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor>
+            <label>Choose a Profile</label>
+        </control>
+
+        <control type="list" id="9100">
+            <description>People</description>
+            <left>120</left><top>186</top><width>1000</width><height>880</height>
+            <orientation>vertical</orientation>
+            <scrolltime tween="cubic" easing="out">160</scrolltime>
+            <onup>noop</onup>
+            <ondown>noop</ondown>
+            <onleft condition="!String.IsEqual(Container(9100).ListItem.Property(kind),add)">SetProperty(Netflix.Profiles.Pencil,true,Home)</onleft>
+            <onright>ClearProperty(Netflix.Profiles.Pencil,Home)</onright>
+            <onback>ClearProperty(Netflix.Profiles.Pencil,Home)</onback>
+            <onback>Close</onback>
+            <itemlayout width="1000" height="132">
+                <control type="image">
+                    <left>156</left><top>0</top><width>112</width><height>112</height>
+                    <colordiffuse>$INFO[ListItem.Property(color)]</colordiffuse>
+                    <texture diffuse="diffuse/square_w120_h120.png">common/white.png</texture>
+                    <visible>!String.IsEqual(ListItem.Property(kind),add)</visible>
+                </control>
+                <control type="label">
+                    <left>156</left><top>0</top><width>112</width><height>112</height>
+                    <align>center</align><aligny>center</aligny>
+                    <font>font_title_main</font><textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Property(initial)]</label>
+                    <visible>!String.IsEqual(ListItem.Property(kind),add)</visible>
+                </control>
+                <!-- "+" tile: a 3 px outline (white square, then black square inset by 3). -->
+                <control type="image">
+                    <left>156</left><top>0</top><width>112</width><height>112</height>
+                    <texture diffuse="diffuse/square_w120_h120.png" colordiffuse="FFB4B4BA">common/white.png</texture>
+                    <visible>String.IsEqual(ListItem.Property(kind),add)</visible>
+                </control>
+                <control type="image">
+                    <left>159</left><top>3</top><width>106</width><height>106</height>
+                    <texture diffuse="diffuse/square_w120_h120.png" colordiffuse="FF080808">common/white.png</texture>
+                    <visible>String.IsEqual(ListItem.Property(kind),add)</visible>
+                </control>
+                <control type="image">
+                    <left>180</left><top>24</top><width>64</width><height>64</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFB4B4BA">special://skin/extras/icons/plus.png</texture>
+                    <visible>String.IsEqual(ListItem.Property(kind),add)</visible>
+                </control>
+            </itemlayout>
+            <focusedlayout width="1000" height="228">
+                <control type="group">
+                    <animation effect="zoom" start="58" end="100" center="212,100" time="160" tween="cubic" easing="out">Focus</animation>
+                    <!-- White ring = focus. Hidden while the pencil holds focus. -->
+                    <control type="image">
+                        <left>112</left><top>0</top><width>200</width><height>200</height>
+                        <texture diffuse="diffuse/square_w217_h217.png" colordiffuse="FFF5F5F5">common/white.png</texture>
+                        <visible>!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true) | String.IsEqual(ListItem.Property(kind),add)</visible>
+                    </control>
+                    <control type="image">
+                        <left>117</left><top>5</top><width>190</width><height>190</height>
+                        <colordiffuse>$INFO[ListItem.Property(color)]</colordiffuse>
+                        <texture diffuse="diffuse/square_w217_h217.png">common/white.png</texture>
+                        <visible>!String.IsEqual(ListItem.Property(kind),add)</visible>
+                    </control>
+                    <control type="label">
+                        <left>117</left><top>5</top><width>190</width><height>190</height>
+                        <align>center</align><aligny>center</aligny>
+                        <font>font_title_huge</font><textcolor>FFFFFFFF</textcolor>
+                        <label>$INFO[ListItem.Property(initial)]</label>
+                        <visible>!String.IsEqual(ListItem.Property(kind),add)</visible>
+                    </control>
+                    <control type="image">
+                        <left>117</left><top>5</top><width>190</width><height>190</height>
+                        <texture diffuse="diffuse/square_w217_h217.png" colordiffuse="FF080808">common/white.png</texture>
+                        <visible>String.IsEqual(ListItem.Property(kind),add)</visible>
+                    </control>
+                    <control type="image">
+                        <left>164</left><top>52</top><width>96</width><height>96</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/plus.png</texture>
+                        <visible>String.IsEqual(ListItem.Property(kind),add)</visible>
+                    </control>
+                </control>
+                <!-- Pencil (edit), left of the focused person. -->
+                <control type="image">
+                    <left>28</left><top>72</top><width>56</width><height>56</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFCBCBD0">special://skin/extras/icons/pencil.png</texture>
+                    <visible>!String.IsEqual(ListItem.Property(kind),add) + !String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)</visible>
+                </control>
+                <control type="image">
+                    <left>24</left><top>68</top><width>64</width><height>64</height>
+                    <texture diffuse="diffuse/circle/circle_128.png" colordiffuse="FFF5F5F5">common/white.png</texture>
+                    <visible>!String.IsEqual(ListItem.Property(kind),add) + String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)</visible>
+                </control>
+                <control type="image">
+                    <left>28</left><top>72</top><width>56</width><height>56</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FF080808">special://skin/extras/icons/pencil.png</texture>
+                    <visible>!String.IsEqual(ListItem.Property(kind),add) + String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)</visible>
+                </control>
+                <control type="label">
+                    <left>348</left><top>0</top><width>640</width><height>200</height>
+                    <aligny>center</aligny>
+                    <font>font_head_bold</font><textcolor>FFF5F5F5</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <animation effect="fade" start="0" end="100" time="140" delay="60">Focus</animation>
+                </control>
+            </focusedlayout>
+            <content>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.1.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.1.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.1.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=1)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=1)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.1.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.2.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.2.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.2.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=2)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=2)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.2.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.3.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.3.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.3.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=3)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=3)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.3.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.4.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.4.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.4.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=4)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=4)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.4.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.5.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.5.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.5.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=5)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=5)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.5.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.6.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.6.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.6.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=6)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=6)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.6.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.7.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.7.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.7.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=7)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=7)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.7.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.8.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.8.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.8.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=8)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=8)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.8.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.9.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.9.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.9.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=9)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=9)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.9.Name))</visible>
+                    </item>
+                    <item>
+                        <label>$INFO[Window(Home).Property(Netflix.Profiles.10.Name)]</label>
+                        <property name="kind">person</property>
+                        <property name="initial">$INFO[Window(Home).Property(Netflix.Profiles.10.Initial)]</property>
+                        <property name="color">$INFO[Window(Home).Property(Netflix.Profiles.10.Color)]</property>
+                        <onclick condition="String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,edit-open,index=10)</onclick>
+                        <onclick condition="!String.IsEqual(Window(Home).Property(Netflix.Profiles.Pencil),true)">RunScript(special://skin/extras/netflix_profiles.py,switch,index=10)</onclick>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Profiles.10.Name))</visible>
+                    </item>
+                    <item>
+                        <label>Add Profile</label>
+                        <property name="kind">add</property>
+                        <onclick>ClearProperty(Netflix.Profiles.Pencil,Home)</onclick>
+                        <onclick>RunScript(special://skin/extras/netflix_profiles.py,add)</onclick>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Profiles.CanAdd),true)</visible>
+                    </item>
+            </content>
+        </control>
+
+        <!-- Errors from the script (e.g. "No free profile slots."). -->
+        <control type="label">
+            <left>120</left><top>1004</top><width>1200</width><height>40</height>
+            <aligny>center</aligny><font>font_mini</font><textcolor>FFF0B4B4</textcolor>
+            <label>$INFO[Window(Home).Property(Netflix.Profiles.Error)]</label>
+        </control>
+        <!-- While add/switch runs (Kodi reloads the skin right after). -->
+        <control type="group">
+            <visible>String.IsEqual(Window(Home).Property(Netflix.Profiles.Busy),true)</visible>
+            <animation effect="fade" start="0" end="100" time="160">VisibleChange</animation>
+            <control type="image">
+                <texture colordiffuse="E6080808">common/white.png</texture>
+            </control>
+            <control type="label">
+                <left>0</left><top>500</top><width>1920</width><height>80</height>
+                <align>center</align><aligny>center</aligny>
+                <font>font_head_bold</font><textcolor>FFF5F5F5</textcolor>
+                <label>$INFO[Window(Home).Property(Netflix.Profiles.Current.Name),Switching to ,…]</label>
+            </control>
+        </control>
+    </controls>
+</window>

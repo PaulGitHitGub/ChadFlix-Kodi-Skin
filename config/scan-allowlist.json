@@ -1,0 +1,59 @@
+{
+ "_comment": "Reviewed findings of tools/validate_release.py: one entry per place, rule and value fingerprint. Never a whole file, never a whole rule. A new or changed value is a new finding.",
+ "allow": [
+  {
+   "where": "zip!plugin.video.pov/resources/settings.xml",
+   "rule": "dotted-token",
+   "fingerprint": "e682398233924afe",
+   "reason": "upstream POV 6.11.03 application key (default value of a setting); the file is byte-identical to upstream's, sha256 2009543375916f49... (not in the ChadFlix overlay); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.pov/resources/settings.xml",
+   "rule": "jwt",
+   "fingerprint": "e02dba1d410d35e8",
+   "reason": "upstream POV 6.11.03 application key (default value of a setting); the file is byte-identical to upstream's, sha256 2009543375916f49... (not in the ChadFlix overlay); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.pov/resources/settings.xml",
+   "rule": "xml-setting",
+   "fingerprint": "4626fe27b27fec1c",
+   "reason": "upstream POV 6.11.03 application key (default value of a setting); the file is byte-identical to upstream's, sha256 2009543375916f49... (not in the ChadFlix overlay); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.pov/resources/settings.xml",
+   "rule": "xml-setting",
+   "fingerprint": "a64cdaff474c956b",
+   "reason": "upstream POV 6.11.03 application key (default value of a setting); the file is byte-identical to upstream's, sha256 2009543375916f49... (not in the ChadFlix overlay); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.themoviedb.helper/resources/tmdbhelper/lib/api/api_keys/fanarttv.py",
+   "rule": "assignment",
+   "fingerprint": "835eb9447b46f64b",
+   "reason": "upstream TMDb Helper 6.20.8 application key; unmodified upstream add-on carried by pinned zip sha256 (config/release.lock.json); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.themoviedb.helper/resources/tmdbhelper/lib/api/api_keys/tmdb.py",
+   "rule": "assignment",
+   "fingerprint": "2d13b4f25a488f9e",
+   "reason": "upstream TMDb Helper 6.20.8 application key; unmodified upstream add-on carried by pinned zip sha256 (config/release.lock.json); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.themoviedb.helper/resources/tmdbhelper/lib/api/api_keys/tmdb.py",
+   "rule": "assignment",
+   "fingerprint": "60a9682a1530315e",
+   "reason": "upstream TMDb Helper 6.20.8 application key; unmodified upstream add-on carried by pinned zip sha256 (config/release.lock.json); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.themoviedb.helper/resources/tmdbhelper/lib/api/api_keys/tmdb.py",
+   "rule": "dotted-token",
+   "fingerprint": "85ff2222dd762263",
+   "reason": "upstream TMDb Helper 6.20.8 application key; unmodified upstream add-on carried by pinned zip sha256 (config/release.lock.json); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!plugin.video.themoviedb.helper/resources/tmdbhelper/lib/api/api_keys/tmdb.py",
+   "rule": "jwt",
+   "fingerprint": "6c593c376eaafe92",
+   "reason": "upstream TMDb Helper 6.20.8 application key; unmodified upstream add-on carried by pinned zip sha256 (config/release.lock.json); public application identifier, not a personal sign-in"
+  }
+ ]
+}

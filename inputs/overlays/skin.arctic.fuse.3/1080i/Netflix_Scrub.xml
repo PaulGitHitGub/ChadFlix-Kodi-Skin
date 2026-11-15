@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <!-- scrubber-finish: input owner only. Nothing here is drawn; the play bar itself (DialogSeekBar/VideoOSD) shows the
+         scrub state from Window(Home) properties, so opening and closing this dialog cannot change a pixel. -->
+    <defaultcontrol always="true">9001</defaultcontrol>
+    <zorder>30</zorder>
+    <controls>
+        <control type="button" id="9001">
+            <left>0</left><top>0</top><width>1</width><height>1</height>
+            <label></label><texturefocus></texturefocus><texturenofocus></texturenofocus>
+            <onleft>9001</onleft><onright>9001</onright><onup>9001</onup><ondown>9001</ondown>
+        </control>
+    </controls>
+</window>

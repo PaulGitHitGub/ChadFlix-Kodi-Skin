@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="window" id="1165">
+    <defaultcontrol always="false">3734</defaultcontrol>
+    <menucontrol>3734</menucontrol>
+    <!-- restore-row only does something when returning from a watchlist; do not start a script otherwise. -->
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.Watchlists.Return),true)">RunScript(special://skin/extras/netflix_saved_lists.py,restore-row)</onload>
+    <!-- Rows stay loaded between visits (Kodi keeps this window in memory and does not refetch an unchanged
+         path). The row coordinator refreshes a row, one at a time, only when its content changed. -->
+    <controls>
+        <include>Netflix_My_Lists_Page</include>
+        <include content="Netflix_Top_Navigation">
+            <param name="active">My Lists</param>
+            <param name="reference">Skin.HasSetting(Netflix.CompactHome)</param>
+            <param name="body">$VAR[Netflix_My_List_Body]</param>
+        </include>
+    </controls>
+</window>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog" id="1156">
+    <!-- R9.5 one way to open a title: what an OK press in Videos means, decided in the skin instead of by starting a
+         script on every press. The OK keymap (userdata/keymaps/NetflixMovieDetails.xml) runs ActivateWindow(1156).
+         Kodi opens a dialog synchronously, inside the key handling, so the <onload> lines below run in the same
+         instant as the key (measured: 0 to 1 ms after Kodi's HandleKey line). They do exactly one thing:
+           1. focus on the window's own list 590 or 591 (Movies Trending, a watchlist's titles, a POV folder):
+              start extras/netflix_movie_details.py native, exactly as the keymap did for every press. Kodi runs no
+              <onclick> on those two lists, so this is their onclick. The script opens the movie page, the show page
+              or the Trending grid, or passes a plain Select on (season folders, paging tiles).
+           2. focus anywhere else (genre rows, Shows Trending 592, grid 593, tabs, buttons, the genre menu):
+              a plain Select, so the control's own <onclick> runs and no script is started before it.
+         Kodi reads all conditions of the <onload> lines before it runs any of them, so exactly one of 1 and 2
+         happens. Only window-independent conditions here (System.CurrentControlID, Window.IsActive): Control.* and
+         Container(id).* would resolve against this dialog, not Videos (see 1158).
+         <visible>false</visible> does two jobs: a dialog with a <visible> line is modeless (the real window stays
+         active and keeps the keys, as with 1158 and 1168), and Kodi closes it again in the same frame, so it is
+         never open when the next key arrives. It holds no state: nothing can leave it open or leave OK dead.
+         Do NOT drive this from a property + <visible> condition or from a skin timer: both were measured for R9.5.
+         Timers tick every ~500 ms, and a visible-driven dialog waits for Kodi's "external calls" pause (up to 80 ms
+         whenever an add-on script is asking Kodi something), which sits between the key and the dialogs. -->
+    <visible>false</visible>
+    <onload condition="Window.IsActive(Videos) + !System.HasActiveModalDialog + [String.IsEqual(System.CurrentControlID,590) | String.IsEqual(System.CurrentControlID,591)]">RunScript(special://skin/extras/netflix_movie_details.py,native)</onload>
+    <onload condition="Window.IsActive(Videos) + !System.HasActiveModalDialog + ![String.IsEqual(System.CurrentControlID,590) | String.IsEqual(System.CurrentControlID,591)]">Action(Select)</onload>
+    <controls />
+</window>

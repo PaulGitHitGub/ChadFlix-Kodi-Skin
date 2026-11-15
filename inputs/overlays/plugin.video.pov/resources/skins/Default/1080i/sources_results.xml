@@ -1,0 +1,720 @@
+<?xml version="1.0" encoding="utf-8"?>
+<window>
+    <defaultcontrol always="true">2000</defaultcontrol>
+    <controls>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="80000000">white.png</texture>
+        </control>
+        <control type="image">
+            <left>140</left>
+            <top>40</top>
+            <width>1640</width>
+            <height>980</height>
+            <texture border="24" colordiffuse="C70A0B0D">source-pill.png</texture>
+        </control>
+        <control type="image">
+            <left>140</left>
+            <top>40</top>
+            <width>1640</width>
+            <height>980</height>
+            <texture border="24">special://skin/extras/netflix-glass-button.png</texture>
+        </control>
+        <control type="label">
+            <left>192</left>
+            <top>72</top>
+            <width>1200</width>
+            <height>72</height>
+            <font>font45</font>
+            <textcolor>FFF5F5F5</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <scroll>false</scroll>
+            <label>$INFO[Window.Property(tikiskins.title)]</label>
+        </control>
+        <control type="label">
+            <left>1440</left>
+            <top>88</top>
+            <width>288</width>
+            <height>40</height>
+            <font>font13</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <align>right</align>
+            <aligny>center</aligny>
+            <label>$INFO[Window.Property(tikiskins.total_results)] sources</label>
+        </control>
+        <control type="grouplist">
+            <left>192</left>
+            <top>188</top>
+            <width>1536</width>
+            <height>58</height>
+            <orientation>horizontal</orientation>
+            <itemgap>12</itemgap>
+            <control type="button" id="2100">
+                <width>132</width>
+                <height>56</height>
+                <font>font12</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <label>All</label>
+                <textcolor>$INFO[Window.Property(pov.source.filter.text.all)]</textcolor>
+                <focusedcolor>FF101010</focusedcolor>
+                <onup>2100</onup>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2000)">SetFocus(2000)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2001)">SetFocus(2001)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2002)">SetFocus(2002)</ondown>
+                <onleft>2100</onleft>
+                <onright>2101</onright>
+                <visible>!String.IsEmpty(Window.Property(pov.source.available.all))</visible>
+                <texturefocus border="24" colordiffuse="FFF5F5F5">source-pill.png</texturefocus>
+                <texturenofocus border="24" colordiffuse="$INFO[Window.Property(pov.source.filter.fill.all)]">source-pill.png</texturenofocus>
+            </control>
+            <control type="button" id="2101">
+                <width>232</width>
+                <height>56</height>
+                <font>font12</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <label>Dolby Vision</label>
+                <textcolor>$INFO[Window.Property(pov.source.filter.text.dolby_vision)]</textcolor>
+                <focusedcolor>FF101010</focusedcolor>
+                <onup>2101</onup>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2000)">SetFocus(2000)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2001)">SetFocus(2001)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2002)">SetFocus(2002)</ondown>
+                <onleft>2100</onleft>
+                <onright>2102</onright>
+                <visible>!String.IsEmpty(Window.Property(pov.source.available.dolby_vision))</visible>
+                <texturefocus border="24" colordiffuse="FFF5F5F5">source-pill.png</texturefocus>
+                <texturenofocus border="24" colordiffuse="$INFO[Window.Property(pov.source.filter.fill.dolby_vision)]">source-pill.png</texturenofocus>
+            </control>
+            <control type="button" id="2102">
+                <width>132</width>
+                <height>56</height>
+                <font>font12</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <label>HDR</label>
+                <textcolor>$INFO[Window.Property(pov.source.filter.text.hdr)]</textcolor>
+                <focusedcolor>FF101010</focusedcolor>
+                <onup>2102</onup>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2000)">SetFocus(2000)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2001)">SetFocus(2001)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2002)">SetFocus(2002)</ondown>
+                <onleft>2101</onleft>
+                <onright>2103</onright>
+                <visible>!String.IsEmpty(Window.Property(pov.source.available.hdr))</visible>
+                <texturefocus border="24" colordiffuse="FFF5F5F5">source-pill.png</texturefocus>
+                <texturenofocus border="24" colordiffuse="$INFO[Window.Property(pov.source.filter.fill.hdr)]">source-pill.png</texturenofocus>
+            </control>
+            <control type="button" id="2103">
+                <width>160</width>
+                <height>56</height>
+                <font>font12</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <label>Atmos</label>
+                <textcolor>$INFO[Window.Property(pov.source.filter.text.atmos)]</textcolor>
+                <focusedcolor>FF101010</focusedcolor>
+                <onup>2103</onup>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2000)">SetFocus(2000)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2001)">SetFocus(2001)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2002)">SetFocus(2002)</ondown>
+                <onleft>2102</onleft>
+                <onright>2104</onright>
+                <visible>!String.IsEmpty(Window.Property(pov.source.available.atmos))</visible>
+                <texturefocus border="24" colordiffuse="FFF5F5F5">source-pill.png</texturefocus>
+                <texturenofocus border="24" colordiffuse="$INFO[Window.Property(pov.source.filter.fill.atmos)]">source-pill.png</texturenofocus>
+            </control>
+            <control type="button" id="2104">
+                <width>132</width>
+                <height>56</height>
+                <font>font12</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <label>DTS</label>
+                <textcolor>$INFO[Window.Property(pov.source.filter.text.dts)]</textcolor>
+                <focusedcolor>FF101010</focusedcolor>
+                <onup>2104</onup>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2000)">SetFocus(2000)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2001)">SetFocus(2001)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2002)">SetFocus(2002)</ondown>
+                <onleft>2103</onleft>
+                <onright>2105</onright>
+                <visible>!String.IsEmpty(Window.Property(pov.source.available.dts))</visible>
+                <texturefocus border="24" colordiffuse="FFF5F5F5">source-pill.png</texturefocus>
+                <texturenofocus border="24" colordiffuse="$INFO[Window.Property(pov.source.filter.fill.dts)]">source-pill.png</texturenofocus>
+            </control>
+            <control type="button" id="2105">
+                <width>132</width>
+                <height>56</height>
+                <font>font12</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <label>SDR</label>
+                <textcolor>$INFO[Window.Property(pov.source.filter.text.sdr)]</textcolor>
+                <focusedcolor>FF101010</focusedcolor>
+                <onup>2105</onup>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2000)">SetFocus(2000)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2001)">SetFocus(2001)</ondown>
+                <ondown condition="String.IsEqual(Window.Property(pov.source.active_list),2002)">SetFocus(2002)</ondown>
+                <onleft>2104</onleft>
+                <onright>2105</onright>
+                <visible>!String.IsEmpty(Window.Property(pov.source.available.sdr))</visible>
+                <texturefocus border="24" colordiffuse="FFF5F5F5">source-pill.png</texturefocus>
+                <texturenofocus border="24" colordiffuse="$INFO[Window.Property(pov.source.filter.fill.sdr)]">source-pill.png</texturenofocus>
+            </control>
+        </control>
+        <control type="list" id="2000">
+            <left>192</left>
+            <top>310</top>
+            <width>1536</width>
+            <height>672</height>
+            <visible>String.IsEqual(Window.Property(pov.source.active_list),2000)</visible>
+            <onleft>2000</onleft>
+            <onright>2060</onright>
+            <ondown>2000</ondown>
+            <scrolltime>150</scrolltime>
+            <orientation>vertical</orientation>
+            <pagecontrol>2060</pagecontrol>
+            <onup condition="Integer.IsEqual(Container(2000).Position,0)">2100</onup>
+            <onup>2000</onup>
+            <itemlayout height="112" width="1536">
+                <control type="group">
+                    <control type="label">
+                        <left>32</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>[B]$INFO[ListItem.Property(pov.source.label.unfocused)][/B]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>412</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(tikiskins.size_label)]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>792</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.video)]$INFO[ListItem.Property(pov.source.video_detail),[CR][COLOR FFB8B8B8],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>1172</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.audio)]$INFO[ListItem.Property(pov.source.audio_detail),[CR][COLOR FFB8B8B8],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>20</top>
+                        <width>1472</width>
+                        <height>64</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>Perform Full Search</label>
+                        <visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                </control>
+            </itemlayout>
+            <focusedlayout height="112" width="1536">
+                <control type="group">
+                    <control type="image">
+                        <left>0</left>
+                        <top>0</top>
+                        <width>1536</width>
+                        <height>104</height>
+                        <texture border="24" colordiffuse="FFF5F5F5">source-pill.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>[B]$INFO[ListItem.Property(pov.source.label.focused)][/B]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>412</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(tikiskins.size_label)]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>792</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.video)]$INFO[ListItem.Property(pov.source.video_detail),[CR][COLOR FF454545],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>1172</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.audio)]$INFO[ListItem.Property(pov.source.audio_detail),[CR][COLOR FF454545],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>20</top>
+                        <width>1472</width>
+                        <height>64</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>Perform Full Search</label>
+                        <visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                </control>
+            </focusedlayout>
+        </control>
+        <control type="scrollbar" id="2060">
+            <left>1750</left>
+            <top>310</top>
+            <width>6</width>
+            <height>664</height>
+            <onleft>2000</onleft>
+            <onright>2000</onright>
+            <orientation>vertical</orientation>
+            <showonepage>false</showonepage>
+            <visible>Control.IsVisible(2000)</visible>
+            <texturesliderbackground colordiffuse="FF1C1C1C">white.png</texturesliderbackground>
+            <texturesliderbar colordiffuse="FF686868">white.png</texturesliderbar>
+            <texturesliderbarfocus>white.png</texturesliderbarfocus>
+        </control>
+        <control type="list" id="2001">
+            <left>192</left>
+            <top>310</top>
+            <width>1536</width>
+            <height>672</height>
+            <visible>String.IsEqual(Window.Property(pov.source.active_list),2001)</visible>
+            <onleft>2001</onleft>
+            <onright>2061</onright>
+            <ondown>2001</ondown>
+            <scrolltime>150</scrolltime>
+            <orientation>vertical</orientation>
+            <pagecontrol>2061</pagecontrol>
+            <onup condition="Integer.IsEqual(Container(2001).Position,0)">2100</onup>
+            <onup>2001</onup>
+            <itemlayout height="112" width="1536">
+                <control type="group">
+                    <control type="label">
+                        <left>32</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>[B]$INFO[ListItem.Property(pov.source.label.unfocused)][/B]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>412</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(tikiskins.size_label)]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>792</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.video)]$INFO[ListItem.Property(pov.source.video_detail),[CR][COLOR FFB8B8B8],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>1172</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.audio)]$INFO[ListItem.Property(pov.source.audio_detail),[CR][COLOR FFB8B8B8],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>20</top>
+                        <width>1472</width>
+                        <height>64</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>Perform Full Search</label>
+                        <visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                </control>
+            </itemlayout>
+            <focusedlayout height="112" width="1536">
+                <control type="group">
+                    <control type="image">
+                        <left>0</left>
+                        <top>0</top>
+                        <width>1536</width>
+                        <height>104</height>
+                        <texture border="24" colordiffuse="FFF5F5F5">source-pill.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>[B]$INFO[ListItem.Property(pov.source.label.focused)][/B]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>412</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(tikiskins.size_label)]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>792</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.video)]$INFO[ListItem.Property(pov.source.video_detail),[CR][COLOR FF454545],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>1172</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.audio)]$INFO[ListItem.Property(pov.source.audio_detail),[CR][COLOR FF454545],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>20</top>
+                        <width>1472</width>
+                        <height>64</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>Perform Full Search</label>
+                        <visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                </control>
+            </focusedlayout>
+        </control>
+        <control type="scrollbar" id="2061">
+            <left>1750</left>
+            <top>310</top>
+            <width>6</width>
+            <height>664</height>
+            <onleft>2001</onleft>
+            <onright>2001</onright>
+            <orientation>vertical</orientation>
+            <showonepage>false</showonepage>
+            <visible>Control.IsVisible(2001)</visible>
+            <texturesliderbackground colordiffuse="FF1C1C1C">white.png</texturesliderbackground>
+            <texturesliderbar colordiffuse="FF686868">white.png</texturesliderbar>
+            <texturesliderbarfocus>white.png</texturesliderbarfocus>
+        </control>
+        <control type="list" id="2002">
+            <left>192</left>
+            <top>310</top>
+            <width>1536</width>
+            <height>672</height>
+            <visible>String.IsEqual(Window.Property(pov.source.active_list),2002)</visible>
+            <onleft>2002</onleft>
+            <onright>2062</onright>
+            <ondown>2002</ondown>
+            <scrolltime>150</scrolltime>
+            <orientation>vertical</orientation>
+            <pagecontrol>2062</pagecontrol>
+            <onup condition="Integer.IsEqual(Container(2002).Position,0)">2100</onup>
+            <onup>2002</onup>
+            <itemlayout height="112" width="1536">
+                <control type="group">
+                    <control type="label">
+                        <left>32</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>[B]$INFO[ListItem.Property(pov.source.label.unfocused)][/B]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>412</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(tikiskins.size_label)]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>792</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.video)]$INFO[ListItem.Property(pov.source.video_detail),[CR][COLOR FFB8B8B8],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>1172</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.audio)]$INFO[ListItem.Property(pov.source.audio_detail),[CR][COLOR FFB8B8B8],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>20</top>
+                        <width>1472</width>
+                        <height>64</height>
+                        <font>font14</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>Perform Full Search</label>
+                        <visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                </control>
+            </itemlayout>
+            <focusedlayout height="112" width="1536">
+                <control type="group">
+                    <control type="image">
+                        <left>0</left>
+                        <top>0</top>
+                        <width>1536</width>
+                        <height>104</height>
+                        <texture border="24" colordiffuse="FFF5F5F5">source-pill.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>[B]$INFO[ListItem.Property(pov.source.label.focused)][/B]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>412</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(tikiskins.size_label)]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>792</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.video)]$INFO[ListItem.Property(pov.source.video_detail),[CR][COLOR FF454545],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="textbox">
+                        <left>1172</left>
+                        <top>0</top>
+                        <width>332</width>
+                        <height>104</height>
+                        <font>font12</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>$INFO[ListItem.Property(pov.source.audio)]$INFO[ListItem.Property(pov.source.audio_detail),[CR][COLOR FF454545],[/COLOR]]</label>
+                        <visible>String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                    <control type="label">
+                        <left>32</left>
+                        <top>20</top>
+                        <width>1472</width>
+                        <height>64</height>
+                        <font>font14</font>
+                        <textcolor>FF101010</textcolor>
+                        <align>left</align>
+                        <aligny>center</aligny>
+                        <label>Perform Full Search</label>
+                        <visible>!String.IsEmpty(ListItem.Property(tikiskins.perform_full_search))</visible>
+                    </control>
+                </control>
+            </focusedlayout>
+        </control>
+        <control type="scrollbar" id="2062">
+            <left>1750</left>
+            <top>310</top>
+            <width>6</width>
+            <height>664</height>
+            <onleft>2002</onleft>
+            <onright>2002</onright>
+            <orientation>vertical</orientation>
+            <showonepage>false</showonepage>
+            <visible>Control.IsVisible(2002)</visible>
+            <texturesliderbackground colordiffuse="FF1C1C1C">white.png</texturesliderbackground>
+            <texturesliderbar colordiffuse="FF686868">white.png</texturesliderbar>
+            <texturesliderbarfocus>white.png</texturesliderbarfocus>
+        </control>
+        <control type="label">
+            <left>192</left>
+            <top>400</top>
+            <width>1536</width>
+            <height>100</height>
+            <font>font13</font>
+            <textcolor>FFF5F5F5</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label>No sources match this filter. Press Back to show all sources.</label>
+            <visible>!String.IsEmpty(Window.Property(pov.source.empty))</visible>
+        </control>
+        <control type="label">
+            <left>224</left>
+            <top>266</top>
+            <width>332</width>
+            <height>32</height>
+            <font>font10</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label>Source</label>
+        </control>
+        <control type="label">
+            <left>604</left>
+            <top>266</top>
+            <width>332</width>
+            <height>32</height>
+            <font>font10</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label>Size</label>
+        </control>
+        <control type="label">
+            <left>984</left>
+            <top>266</top>
+            <width>332</width>
+            <height>32</height>
+            <font>font10</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label>Video</label>
+        </control>
+        <control type="label">
+            <left>1364</left>
+            <top>266</top>
+            <width>332</width>
+            <height>32</height>
+            <font>font10</font>
+            <textcolor>FFB8B8B8</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <label>Audio</label>
+        </control>
+    </controls>
+</window>

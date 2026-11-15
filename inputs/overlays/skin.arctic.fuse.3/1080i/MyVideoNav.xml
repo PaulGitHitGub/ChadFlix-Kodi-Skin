@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <views>500,501,502,503,504,505,506,509,510,511,512,513,514,516,520,521,522,523,524,526,527,528,550,551,552,553,554,556,580,581,582,583,584,585,590,591</views>
+    <defaultcontrol always="true">500</defaultcontrol>
+    <menucontrol>67</menucontrol>
+    <include>Action_Blur_Onload</include>
+    <!-- R10.2: the view refocus is no longer an unconditional AlarmClock (Action_Media_Onload): it is noted in
+         Netflix.Refocus and done by the timer netflix_refocus only if the viewer has not moved to the top bar since. -->
+    <include content="Action_Media_Onload">
+        <param name="refocus">false</param>
+    </include>
+    <onload condition="!$EXP[Netflix_CatalogResults]">SetProperty(Netflix.Refocus,view,Home)</onload>
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)">SetFocus(8990)</onload>
+    <!-- Tab swap (staged/tabs-no-reload step 1): on window init Kodi focuses the view control (591),
+         which is hidden while the Shows tab is swapped in. Move focus to Shows Trending (592) or the
+         Shows tab after init, the same AlarmClock pattern Action_Media_Onload uses. A pending tab
+         arrival owns focus itself, so stay out of its way. -->
+    <onload condition="$EXP[Netflix_Shows_Swap] + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + !String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)">SetProperty(Netflix.Refocus,shows,Home)</onload>
+    <!-- R10.2: one guarded timer does the delayed refocus (Timers.xml netflix_refocus), never over the top bar. -->
+    <onload>Skin.TimerStart(netflix_refocus)</onload>
+    <!-- Pause TMDb Helper's per-focus monitor while this window is in front: its lookups and
+         property pushes on every focus change cost frames while scrolling rows. The details
+         page is a separate window, so ratings still load there. Clear the last looked-up
+         ratings so a stale value cannot show on a row card. -->
+    <onload>SetProperty(TMDbHelper.ServicePause,1)</onload>
+    <onload>ClearProperty(TMDbHelper.ListItem.IMDb_Rating,Home)</onload>
+    <onload>ClearProperty(TMDbHelper.ListItem.RottenTomatoes_Rating,Home)</onload>
+    <onload>ClearProperty(TMDbHelper.ListItem.Letterboxd_Rating,Home)</onload>
+    <controls>
+        <control type="group">
+            <visible>!$EXP[Netflix_CatalogResults]</visible>
+            <include>View_Main</include>
+        </control>
+        <control type="group">
+            <visible>$EXP[Netflix_CatalogResults]</visible>
+            <include>Netflix_Catalog_Results_View</include>
+        </control>
+        <!-- Tab-switch placeholders: the moment Left/Right is pressed on the top tabs, cover the old
+             rows with grey card shapes until the new tab's rows arrive. An overlay only: the rows
+             underneath are not hidden or changed. Starts below the header (y=112). -->
+        <control type="group">
+            <visible>$EXP[Netflix_Loading_Tab_Overlay]</visible>
+            <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
+            <control type="image">
+                <left>0</left><top>112</top><width>1920</width><height>968</height>
+                <texture colordiffuse="FF000000">common/white.png</texture>
+            </control>
+            <!-- R10.12: heading stubs and the two card rows come from the one shared loading look
+                 (Includes_Netflix_Loading.xml): FF222222, the loaded poster's mask, instant in, 120 ms out (this group),
+                 the 6th card cut by the screen edge, the second row's first 114 px showing, one sweep per row. -->
+            <include content="Netflix_Loading_Stub"><param name="left">70</param><param name="top">139</param><param name="width">150</param></include>
+            <include content="Netflix_Loading_Stub"><param name="left">70</param><param name="top">913</param><param name="width">110</param></include>
+            <include content="Netflix_Loading_Poster_Row"><param name="top">192</param><param name="condition">$EXP[Netflix_Loading_Tab_Overlay]</param></include>
+            <include content="Netflix_Loading_Poster_Row"><param name="top">966</param><param name="condition">$EXP[Netflix_Loading_Tab_Overlay]</param></include>
+        </control>
+        <!-- Reuse the incumbent startup artwork without holding window1198. -->
+        <include content="Hub_Widget_Splash">
+            <param name="condition">String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) + !Player.HasMedia</param>
+            <param name="showlabel">false</param>
+        </include>
+        <control type="button" id="8990">
+            <description>Skip catalog startup wait</description>
+            <left>0</left><top>0</top><width>1</width><height>1</height>
+            <label /><texturefocus /><texturenofocus />
+            <visible>String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)</visible>
+            <onback>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onback>
+            <onback>CancelAlarm(netflix_movies_boot_timeout,true)</onback>
+            <onback>3733</onback>
+            <onclick>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onclick>
+            <onclick>CancelAlarm(netflix_movies_boot_timeout,true)</onclick>
+            <onclick>SetFocus(3733)</onclick>
+            <onup>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onup>
+            <onup>CancelAlarm(netflix_movies_boot_timeout,true)</onup>
+            <onup>3733</onup>
+            <ondown>ClearProperty(Netflix.MoviesBoot.Pending,Home)</ondown>
+            <ondown>CancelAlarm(netflix_movies_boot_timeout,true)</ondown>
+            <ondown>3733</ondown>
+            <onleft>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onleft>
+            <onleft>CancelAlarm(netflix_movies_boot_timeout,true)</onleft>
+            <onleft>3733</onleft>
+            <onright>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onright>
+            <onright>CancelAlarm(netflix_movies_boot_timeout,true)</onright>
+            <onright>3733</onright>
+        </control>
+        <!-- R10-playback: the transition cover (Includes_Netflix_Playback.xml). Last control, so it is drawn over
+             everything in this window, in the same frame as the window itself: no browse frame can show while a
+             title page closes into video, or opens again after it. Title pages are dialogs and draw above it. -->
+        <include content="Netflix_Transition_Cover">
+            <param name="condition">$EXP[Netflix_Cover_Held]</param>
+        </include>
+    </controls>
+</window>

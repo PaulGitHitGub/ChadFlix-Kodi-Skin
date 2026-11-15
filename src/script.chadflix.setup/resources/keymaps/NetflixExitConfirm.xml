@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<keymap>
+    <!-- Exit confirmation (staged/exit-confirm). Back on the bare fullscreen video opens dialog 1178 (built-in only:
+         no Python on a Back press). Stop keys and long-press Back stop without the prompt and run the same
+         return-to-page script once. Windows above fullscreen video (OSD, cards, bookmarks, pop-ups) are not
+         FullscreenVideo and keep their own Back. Remove this file and restart Kodi to undo. -->
+    <!-- mod="longpress" works in <keyboard> only: in <remote> it is ignored and would replace the short press
+         (seen on the Mac: remote back ran the long-press action), so the remote section has no long-press lines. -->
+    <FullscreenVideo>
+        <keyboard>
+            <backspace>ActivateWindow(1178)</backspace>
+            <browser_back>ActivateWindow(1178)</browser_back>
+            <escape>ActivateWindow(1178)</escape>
+            <backspace mod="longpress">RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</backspace>
+            <browser_back mod="longpress">RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</browser_back>
+            <x>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</x>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </keyboard>
+        <remote>
+            <back>ActivateWindow(1178)</back>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </remote>
+    </FullscreenVideo>
+    <!-- Inside the prompt: short Back reaches control 9001's <onback> (= exit) through the global Back mapping.
+         Long-press Back would otherwise be the global "ActivateWindow(Home)": make it Back too.
+         Play/Pause and Stop keys must not toggle the player under the prompt. -->
+    <window11178>
+        <keyboard>
+            <backspace mod="longpress">Back</backspace>
+            <browser_back mod="longpress">Back</browser_back>
+            <space>Dialog.Close(1178)</space>
+            <p>Dialog.Close(1178)</p>
+            <play_pause>Dialog.Close(1178)</play_pause>
+            <play_pause mod="longpress">Dialog.Close(1178)</play_pause>
+            <x>Back</x>
+            <stop>Back</stop>
+        </keyboard>
+        <remote>
+            <play>Dialog.Close(1178)</play>
+            <pause>Dialog.Close(1178)</pause>
+            <stop>Back</stop>
+        </remote>
+    </window11178>
+</keymap>

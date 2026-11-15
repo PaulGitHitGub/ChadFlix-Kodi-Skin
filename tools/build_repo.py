@@ -25,9 +25,14 @@ Patched add-ons get version  <upstream major>.99.<other upstream digits>.<btn_re
 release, so an upstream update never replaces the patched files, and keeps the major number POV puts in its
 User-Agent ("POV/6.0").
 
-The build refuses to publish anything private: it stops on settings / database / log / bytecode files, on
-the owner's name, home paths or LAN addresses, and writes a full report of every credential-like word
-(token, api_key, password, secret, refresh, @ ...) to ../kodi-repo-evidence/privacy-scan.txt.
+The build stops on settings / database / log / bytecode files and on the owner's private patterns (name, home paths,
+LAN addresses), and writes a report of credential-like words to ../kodi-repo-evidence/privacy-scan.txt. This is a
+best-effort check, not a guarantee that nothing private is in the output.
+
+Since release 2.1 this script is only the PRIVATE assembly stage (it reads the test device's snapshot). What is
+published is built by tools/build_release.py from tracked inputs and pinned upstream archives, and must pass
+tools/validate_release.py: after this script, run tools/derive_inputs.py for the two modified add-ons, commit
+inputs/, then build and validate with those two tools (see RELEASING.md).
 """
 import argparse
 import hashlib
@@ -60,9 +65,14 @@ TRACKED = [r'^skin\.arctic\.fuse\.3/1080i/[^/]+\.xml$', r'^skin\.arctic\.fuse\.3
 _LOCAL = os.path.join(PUB, 'config', 'private-patterns.local.json')
 if os.path.isfile(_LOCAL):
     _P = json.load(open(_LOCAL, encoding='utf-8'))
-else:
-    print('WARNING: config/private-patterns.local.json missing: only generic privacy patterns are checked')
+elif '--base-url' in ' '.join(sys.argv[1:]):
+    # a local test build only (never the published tree): the generic patterns
+    print('NOTE: config/private-patterns.local.json missing: generic privacy patterns only (allowed for a --base-url test build)')
     _P = {'hard_patterns': [r'192\.168\.', r'/U[s]ers/', r'(?i)/h[o]me/[a-z]'], 'hard_allow': [], 'redact': []}
+else:
+    # security audit F-09: a release build without the owner's private patterns is not a checked build
+    sys.exit('BUILD FAILED: config/private-patterns.local.json is missing. A release build needs the private patterns; '
+             'only a --base-url test build may run without them.')
 HARD = _P['hard_patterns']
 HARD_ALLOW = set(_P['hard_allow'])  # upstream text checked byte-identical to the author's release
 REDACT = [tuple(r) for r in _P['redact']]
@@ -244,7 +254,10 @@ def mark_patched(addon_dir, addon_id, upstream_version, new_version):
     lines = ['%s %s: unofficial modified build of %s %s' % (addon_id, new_version, addon_id, upstream_version),
              'Modified by ChadFlix, 2026-11 (unofficial modified build for Kodi 21).',
              'Original author and copyright: see provider-name in addon.xml. Licence: see LICENSE.txt (or the <license> tag in addon.xml).', '']
-    if os.path.isdir(ref):
+    if not os.path.isdir(ref):
+        # security audit F-06: the comparison with upstream is part of every build, not an optional extra
+        die('missing upstream reference %s: the list of changed files cannot be made' % ref)
+    if True:
         up = set(walk(ref))
         ours = set(walk(addon_dir))
         changed = sorted(r for r in ours & up if r != 'addon.xml' and sha256(os.path.join(ref, r)) != sha256(os.path.join(addon_dir, r)))
@@ -393,7 +406,8 @@ def privacy_scan(work, ids, report_path):
                     detail.append('%s/%s:%d: %s' % (a, rel, i, mask.sub(r'\1<masked>\2', l.strip())[:180]))
     with open(report_path, 'w', encoding='utf-8') as f:
         f.write('Privacy scan of the add-on folders before zipping\n')
-        f.write('Hard patterns (build stops on any): %s\n' % ', '.join(HARD))
+        # security audit F-09: the patterns are private values themselves: only their number is written
+        f.write('Hard patterns (build stops on any): %d (in config/private-patterns.local.json, not shown)\n' % len(HARD))
         f.write('Hard hits: %d\n\n' % len(hard_hits))
         f.write('Credential-like words (%s), hit lines per add-on:\n' % ', '.join(REPORT))
         for (a, s), n in sorted(counts.items()):

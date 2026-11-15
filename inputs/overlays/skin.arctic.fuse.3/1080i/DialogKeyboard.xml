@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+
+    <defaultcontrol always="true">300</defaultcontrol>
+
+    <!-- Wait until Kodi has initialized its edit field before starting speech input. -->
+    <onload>ClearProperty(Netflix.SearchVoiceActive,Home)</onload>
+    <onload>ClearProperty(Netflix.SearchVoiceArmed,Home)</onload>
+    <!-- R10.16: a new keyboard starts with no sentinel space (Primed) and no recognised result (Done). -->
+    <onload>ClearProperty(Netflix.SearchVoicePrimed,Home)</onload>
+    <onload>ClearProperty(Netflix.SearchVoiceDone,Home)</onload>
+    <!-- R10.7: a new keyboard (a retry) ends the "Didn't catch that" pill state at once. -->
+    <onload>CancelAlarm(NetflixSearchVoiceFailedClear,true)</onload>
+    <onload>ClearProperty(Netflix.SearchVoiceFailed,Home)</onload>
+    <onload>ClearProperty(Netflix.SearchVoiceToastSeen,Home)</onload>
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">SetProperty(Netflix.SearchVoiceActive,true,Home)</onload>
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">AlarmClock(NetflixSearchVoice,Action(VoiceRecognizer,virtualkeyboard),00:00,silent)</onload>
+    <!-- R10.7: close any toast that is still up, so Kodi's "Listening..." toast opens the toast window fresh and its
+         onload can follow the voice search (DialogNotification.xml). -->
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">Dialog.Close(10107,true)</onload>
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">AlarmClock(NetflixSearchVoiceTimeout,Action(Back,virtualkeyboard),00:18,silent)</onload>
+    <!-- R10.16: Back while "Listening...". The remote's Back is the BACKSPACE key; while this dialog is the topmost modal
+         dialog it can only delete a character from edit 312 (no keymap can change that for voice alone, and an empty
+         field gives no event at all). So a space is put in the field while listening: Back deletes it and edit 312's
+         <ontextchange> (Dialog_DialogKeyboard.xml) sees the field empty, which cancels. Three steps, all 0 s alarms
+         started HERE (so they run after OnInitWindow has put the old query in; onload runs before that):
+           1 Kodi's own Clear (button id 308, SetEditText(""); the skin needs no button 308): the field opens with the old query;
+           2 the mark Primed: from now on an empty field means Back, and the sentinel space is not a result;
+           3 the space (id 32).
+         Kodi's alarm thread (every 0.1 s) fires due alarms in name order, and after firing the FIRST entry of its list it
+         stops until the next round; the names start with "Z" so they sort after NetflixSearchVoiceTimeout (18 s, not due),
+         and all four fire in one round, about 0.1-0.2 s after the open, in order Z1, Z2, Z3, Z4 (posted first-in first-out).
+         Each fires exactly once per keyboard: no text change starts anything, so nothing can loop. Primed is set by an alarm, not
+         by watching the text, because Kodi caches every condition until the next frame is drawn.
+         The fourth alarm moves the hidden keyboard's focus from Done (300) to Cancel (301): an OK pressed while listening
+         would otherwise confirm the space as the search text ("No matching titles."); on Cancel it just ends the try.
+         No window over the keyboard (DESIGN.md 1b: a modal window on top makes Control.GetLabel(312) read that window). -->
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">AlarmClock(NetflixSearchVoiceZ1Clear,SendClick(virtualkeyboard,308),00:00,silent)</onload>
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">AlarmClock(NetflixSearchVoiceZ2Mark,SetProperty(Netflix.SearchVoicePrimed,true,Home),00:00,silent)</onload>
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">AlarmClock(NetflixSearchVoiceZ3Space,SendClick(virtualkeyboard,32),00:00,silent)</onload>
+    <onload condition="System.Platform.Android + Window.IsVisible(1105) + String.IsEqual(Window(Home).Property(Netflix.SearchVoicePending),true)">AlarmClock(NetflixSearchVoiceZ4OkCancels,SetFocus(301),00:00,silent)</onload>
+    <onload>ClearProperty(Netflix.SearchVoicePending,Home)</onload>
+    <onunload>CancelAlarm(NetflixSearchVoice,true)</onunload>
+    <onunload>CancelAlarm(NetflixSearchVoiceTimeout,true)</onunload>
+    <onunload>ClearProperty(Netflix.SearchVoicePending,Home)</onunload>
+    <!-- R10.7: after a failed voice search, focus goes back to the Voice Search pill (OK retries at once). The alarm runs
+         once the keyboard has left the dialog stack, so SetFocus reaches the Search page.
+         R10.16 (R10.9.1's rule): the same whenever a voice keyboard closes WITHOUT a recognised result: Back, a speech
+         error, and the 18 s timeout (which used to land in the search field 3000). Done is set by edit 312 when the
+         result arrives. Before the clears below, so it sees Active set whichever way Kodi reads this list. -->
+    <onunload condition="String.IsEqual(Window(Home).Property(Netflix.SearchVoiceActive),true) + !String.IsEqual(Window(Home).Property(Netflix.SearchVoiceDone),true) + Window.IsVisible(1105)">AlarmClock(NetflixSearchVoiceRefocus,SetFocus(3051),00:00,silent)</onunload>
+    <onunload>ClearProperty(Netflix.SearchVoiceToastSeen,Home)</onunload>
+    <onunload>ClearProperty(Netflix.SearchVoiceActive,Home)</onunload>
+    <onunload>ClearProperty(Netflix.SearchVoiceArmed,Home)</onunload>
+    <onunload>ClearProperty(Netflix.SearchVoicePrimed,Home)</onunload>
+    <onunload>ClearProperty(Netflix.SearchVoiceDone,Home)</onunload>
+
+    <controls>
+        <control type="group">
+            <visible>!String.IsEqual(Window(Home).Property(Netflix.SearchVoiceActive),true)</visible>
+            <include>DialogKeyboard</include>
+        </control>
+    </controls>
+</window>

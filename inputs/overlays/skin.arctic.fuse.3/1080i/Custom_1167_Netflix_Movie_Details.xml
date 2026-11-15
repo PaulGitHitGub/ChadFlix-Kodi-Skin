@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog" id="1167">
+    <defaultcontrol always="true">16</defaultcontrol>
+    <onunload>ClearProperty(Netflix.Movie.ID,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Title,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Plot,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Meta,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Backdrop,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Poster,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Logo,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Action,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Trailer,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Origin,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Favorite,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Bookmarked,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.FavoriteLabel,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.BookmarkLabel,Home)</onunload>
+    <!-- R10.9: the ratings this page carried over a reopen (netflix_movie_details.page_ratings) -->
+    <onunload>ClearProperty(Netflix.Movie.IMDb_Rating,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.RottenTomatoes_Rating,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.RottenTomatoes_Icon,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Letterboxd_Rating,Home)</onunload>
+    <!-- R9 movie page: a source check whose alarm is clearly not due yet (more than half a second left, which is
+         what AlarmLessOrEqual(..,1) says for a one-second alarm) is dropped when the page closes, with its
+         "pending" flight entry (extras/netflix_movie_details.py). Any later and the alarm is left alone:
+         cancelling an alarm at its time runs it, so that check starts, finds its page gone and leaves, with the
+         entry still in place. Kodi tests the condition before it runs either action. -->
+    <onunload condition="System.AlarmLessOrEqual(NetflixQualityPreview,1)">ClearProperty(Netflix.Flight,Home)</onunload>
+    <onunload condition="System.AlarmLessOrEqual(NetflixQualityPreview,1)">CancelAlarm(NetflixQualityPreview,true)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityOpen,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityToken,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityState,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityAllSpecs,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityHighestSpecs,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityHighestVideo,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityHighestAudio,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityMediumSpecs,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityMediumVideo,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityMediumAudio,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityLowestSpecs,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityLowestVideo,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityLowestAudio,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityHighestLine,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityMediumLine,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityLowestLine,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityAllLine,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityHighestRes,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityHighestSpecA,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.QualityHighestSpecB,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.Percent,Home)</onunload>
+    <!-- R10-playback: a play request ends with its page (POV closes the page when video starts; POV reads the
+         cleared property as "cancelled" if it is still loading). -->
+    <onunload>ClearProperty(Netflix.Play.Loading,Home)</onunload>
+    <controls>
+        <control type="button" id="16">
+            <left>-2</left>
+            <top>-2</top>
+            <width>1</width>
+            <height>1</height>
+            <font />
+            <texturefocus />
+            <texturenofocus />
+            <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))">SetFocus(10)</onfocus>
+            <onfocus condition="String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + System.AddonIsEnabled(plugin.video.youtube) + !String.IsEmpty(Window(Home).Property(Netflix.Movie.Trailer))">SetFocus(12)</onfocus>
+            <onfocus condition="String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + [!System.AddonIsEnabled(plugin.video.youtube) | String.IsEmpty(Window(Home).Property(Netflix.Movie.Trailer))]">SetFocus(11)</onfocus>
+        </control>
+        <!-- R10-playback: while the transition cover is up (under this page, in the window below) the page draws
+             no opaque base of its own, so its first frames show the cover's copy of the same backdrop instead of a
+             bare panel while its own backdrop loads. -->
+        <control type="image">
+            <texture colordiffuse="FF080808">common/white.png</texture>
+            <visible>!$EXP[Netflix_Cover_Held]</visible>
+        </control>
+        <control type="image">
+            <left>0</left>
+            <right>0</right>
+            <aspectratio align="right">scale</aspectratio>
+            <texture background="true">$INFO[Window(Home).Property(Netflix.Movie.Backdrop)]</texture>
+            <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Backdrop))</visible>
+        </control>
+        <control type="image">
+            <left>0</left>
+            <width>1500</width>
+            <texture colordiffuse="B0080808">special://skin/extras/backgrounds/overlay/combined_sidemenu.png</texture>
+            <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Backdrop))</visible>
+        </control>
+        <control type="group">
+            <visible>!Window.IsVisible(movieinformation)</visible>
+            <control type="image">
+                <right>160</right>
+                <centertop>50%</centertop>
+                <width>435</width>
+                <height>635</height>
+                <aspectratio>keep</aspectratio>
+                <texture background="true">$INFO[Window(Home).Property(Netflix.Movie.Poster)]</texture>
+                <visible>String.IsEmpty(Window(Home).Property(Netflix.Movie.Backdrop)) + !String.IsEmpty(Window(Home).Property(Netflix.Movie.Poster))</visible>
+            </control>
+            <!-- Layout (owner request: same spacing on every title, no added delay; plain XML, nothing measured at
+                 run time). Same system as the show page: the text stack (15) ends just above the fixed line
+                 y 560 and grows UPWARD (align bottom); the actions stack (14) starts on that line, so the icons
+                 and Play sit in the same place on every movie (and at the same height as on the show page).
+                 Hidden blocks collapse with their gap; gaps are each block's own top offset (usecontrolcoords).
+                 Visible gaps (lowest pixel of one block to highest pixel of the next, measured at 1920x1080 against
+                 a Shield capture with real ratings): logo ~20, year line 16 ratings 28 description 40 icons; year
+                 line to description 28 when there are no ratings. -->
+            <control type="grouplist" id="15">
+                <left>96</left>
+                <top>24</top>
+                <width>940</width>
+                <height>520</height>
+                <orientation>vertical</orientation>
+                <align>bottom</align>
+                <itemgap>0</itemgap>
+                <usecontrolcoords>true</usecontrolcoords>
+                <control type="image">
+                    <width>620</width>
+                    <height>144</height>
+                    <aspectratio align="left" aligny="bottom">keep</aspectratio>
+                    <texture background="true">$INFO[Window(Home).Property(Netflix.Movie.Logo)]</texture>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Logo))</visible>
+                </control>
+                <control type="textbox">
+                    <width>860</width>
+                    <!-- 1 or 2 lines -->
+                    <height min="94" max="180">auto</height>
+                    <font>font_title_midi</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Window(Home).Property(Netflix.Movie.Title)]</label>
+                    <visible>String.IsEmpty(Window(Home).Property(Netflix.Movie.Logo))</visible>
+                    <autoscroll>false</autoscroll>
+                </control>
+                <!-- A text title carries more space under its last line than a logo; pull the meta line up to match. -->
+                <control type="image">
+                    <top>-17</top>
+                    <width>1</width>
+                    <height>1</height>
+                    <texture />
+                    <visible>String.IsEmpty(Window(Home).Property(Netflix.Movie.Logo))</visible>
+                </control>
+                <control type="label">
+                    <top>15</top>
+                    <width>660</width>
+                    <height>32</height>
+                    <font>font_main</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <label>$INFO[Window(Home).Property(Netflix.Movie.Meta)]</label>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Meta))</visible>
+                </control>
+                <control type="grouplist">
+                    <visible>$EXP[Exp_TMDbHelper_IsData] + [!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + String.IsEqual(Window(Home).Property(Netflix.Movie.ID),Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_id)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_type),movie) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdatingRatings))] + [!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating))]</visible>
+                    <top>7</top>
+                    <width>675</width>
+                    <height>34</height>
+                    <orientation>horizontal</orientation>
+                    <itemgap>18</itemgap>
+                    <include content="Netflix_Focused_Rating" condition="$EXP[Exp_TMDbHelper_IsData]">
+                        <param name="field">IMDb_Rating</param>
+                        <param name="width">94</param>
+                        <param name="current">true</param>
+                        <param name="icon">imdb.png</param>
+                        <param name="icon_width">42</param>
+                        <param name="suffix" value="" />
+                    </include>
+                    <include content="Netflix_Focused_Rating" condition="$EXP[Exp_TMDbHelper_IsData]">
+                        <param name="field">RottenTomatoes_Rating</param>
+                        <param name="width">106</param>
+                        <param name="current">true</param>
+                        <param name="icon">$VAR[Image_ListItem_RottenTomatoes]</param>
+                        <param name="icon_width">25</param>
+                        <param name="suffix" value="%" />
+                    </include>
+                    <include content="Netflix_Focused_Rating" condition="$EXP[Exp_TMDbHelper_IsData]">
+                        <param name="field">Letterboxd_Rating</param>
+                        <param name="width">76</param>
+                        <param name="current">true</param>
+                        <param name="icon">letterboxd.png</param>
+                        <param name="icon_width">25</param>
+                        <param name="suffix" value="" />
+                    </include>
+                </control>
+                <!-- R10.9: the same row from the page's own copy (Netflix.Movie.*_Rating, set by show_movie() when the page
+                     reopens after playback or a trailer), shown only when the row above cannot show: TMDb Helper's
+                     monitor describes the browse focus under the page, which is not this title after a return.
+                     Same sizes, icons and gaps as Netflix_Focused_Rating, so the two rows look identical. -->
+                <control type="grouplist">
+                    <visible>$EXP[Exp_TMDbHelper_IsData] + ![[!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + String.IsEqual(Window(Home).Property(Netflix.Movie.ID),Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_id)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_type),movie) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdatingRatings))] + [!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating))]] + [!String.IsEmpty(Window(Home).Property(Netflix.Movie.IMDb_Rating)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.RottenTomatoes_Rating)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.Letterboxd_Rating))]</visible>
+                    <top>7</top>
+                    <width>675</width>
+                    <height>34</height>
+                    <orientation>horizontal</orientation>
+                    <itemgap>18</itemgap>
+                    <control type="grouplist">
+                        <width>94</width>
+                        <height>33</height>
+                        <orientation>horizontal</orientation>
+                        <itemgap>6</itemgap>
+                        <animation effect="fade" start="0" end="100" time="90" delay="130">Visible</animation>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.IMDb_Rating))</visible>
+                        <control type="image">
+                            <top>4</top>
+                            <width>42</width>
+                            <height>25</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFDDDDDD">flags/monochrome/ratings/imdb.png</texture>
+                        </control>
+                        <control type="label">
+                            <width max="74">auto</width>
+                            <height>33</height>
+                            <aligny>center</aligny>
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF4F4F4</textcolor>
+                            <label>$INFO[Window(Home).Property(Netflix.Movie.IMDb_Rating),,]</label>
+                        </control>
+                    </control>
+                    <control type="grouplist">
+                        <width>106</width>
+                        <height>33</height>
+                        <orientation>horizontal</orientation>
+                        <itemgap>6</itemgap>
+                        <animation effect="fade" start="0" end="100" time="90" delay="130">Visible</animation>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.RottenTomatoes_Rating))</visible>
+                        <control type="image">
+                            <top>4</top>
+                            <width>25</width>
+                            <height>25</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFDDDDDD">flags/monochrome/ratings/$INFO[Window(Home).Property(Netflix.Movie.RottenTomatoes_Icon)]</texture>
+                        </control>
+                        <control type="label">
+                            <width max="74">auto</width>
+                            <height>33</height>
+                            <aligny>center</aligny>
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF4F4F4</textcolor>
+                            <label>$INFO[Window(Home).Property(Netflix.Movie.RottenTomatoes_Rating),,%]</label>
+                        </control>
+                    </control>
+                    <control type="grouplist">
+                        <width>76</width>
+                        <height>33</height>
+                        <orientation>horizontal</orientation>
+                        <itemgap>6</itemgap>
+                        <animation effect="fade" start="0" end="100" time="90" delay="130">Visible</animation>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Letterboxd_Rating))</visible>
+                        <control type="image">
+                            <top>4</top>
+                            <width>25</width>
+                            <height>25</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFDDDDDD">flags/monochrome/ratings/letterboxd.png</texture>
+                        </control>
+                        <control type="label">
+                            <width max="74">auto</width>
+                            <height>33</height>
+                            <aligny>center</aligny>
+                            <font>font_mini_bold</font>
+                            <textcolor>FFF4F4F4</textcolor>
+                            <label>$INFO[Window(Home).Property(Netflix.Movie.Letterboxd_Rating),,]</label>
+                        </control>
+                    </control>
+                </control>
+                <!-- 1 to 5 lines; a longer description stops after the fifth line (Read Full Description removed). -->
+                <!-- Long description: two identical boxes share this slot (same text, size and position, so layout cannot change).
+                         Quiet box (this one): shown while a key was pressed in the last second or focus is off the buttons.
+                         Scrolling box (next): shown when the page is still and focus is on the buttons; autoscroll starts delay ms
+                         after it appears, moves one line per time ms, holds repeat ms at the end, fades and returns to the top.
+                         Hiding a textbox resets its scroll position, so any key press puts the text back on top. -->
+                <control type="textbox">
+                    <top>13</top>
+                    <width>640</width>
+                    <height min="42" max="178">auto</height>
+                    <font>font_main</font>
+                    <textcolor>FFE7E7E7</textcolor>
+                    <label>$INFO[Window(Home).Property(Netflix.Movie.Plot)]</label>
+                    <autoscroll>false</autoscroll>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Plot)) + ![System.IdleTime(1) + ControlGroup(14).HasFocus + !Control.HasFocus(30)]</visible>
+                </control>
+                <control type="textbox">
+                    <top>13</top>
+                    <width>640</width>
+                    <height min="42" max="178">auto</height>
+                    <font>font_main</font>
+                    <textcolor>FFE7E7E7</textcolor>
+                    <label>$INFO[Window(Home).Property(Netflix.Movie.Plot)]</label>
+                    <autoscroll delay="4500" time="2500" repeat="5000">true</autoscroll>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Plot)) + System.IdleTime(1) + ControlGroup(14).HasFocus + !Control.HasFocus(30)</visible>
+                </control>
+                <control type="label">
+                    <top>8</top>
+                    <width>600</width>
+                    <height>34</height>
+                    <font>font_main</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <label>Playback unavailable</label>
+                    <visible>String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))</visible>
+                </control>
+            </control>
+            <control type="grouplist" id="14">
+                <visible>!$EXP[Netflix_Play_Loading]</visible>
+                <left>96</left>
+                <top>560</top>
+                <width>940</width>
+                <height>456</height>
+                <orientation>vertical</orientation>
+                <usecontrolcoords>false</usecontrolcoords>
+                <itemgap>16</itemgap>
+                <onup>SetFocus(17)</onup>
+                <ondown>noop</ondown>
+                <control type="group" id="20">
+                    <width>640</width>
+                    <height>52</height>
+                    <defaultcontrol>17</defaultcontrol>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))</visible>
+                    <control type="grouplist" id="19">
+                        <!-- Bare icons (no outline); focus is a light disc with a dark glyph, like the pills.
+                             Up goes nowhere: nothing above this row is focusable. -->
+                        <top>0</top>
+                        <width>136</width>
+                        <height>56</height>
+                        <orientation>horizontal</orientation>
+                        <itemgap>24</itemgap>
+                        <usecontrolcoords>false</usecontrolcoords>
+                        <defaultcontrol>17</defaultcontrol>
+                        <onup>noop</onup>
+                        <ondown>SetFocus(10)</ondown>
+                        <control type="button" id="17">
+                            <width>56</width>
+                            <height>56</height>
+                            <font />
+                            <label>$INFO[Window(Home).Property(Netflix.Movie.FavoriteLabel)]</label>
+                            <texturefocus colordiffuse="FFF5F5F5">common/circle.png</texturefocus>
+                            <texturenofocus />
+                            <onup>noop</onup>
+                            <ondown>SetFocus(10)</ondown>
+                            <onleft>SetFocus(17)</onleft>
+                            <onright>SetFocus(18)</onright>
+                            <onclick>RunScript(special://skin/extras/netflix_saved_lists.py,favorite-movie)</onclick>
+                        </control>
+                        <control type="button" id="18">
+                            <width>56</width>
+                            <height>56</height>
+                            <font />
+                            <label>$INFO[Window(Home).Property(Netflix.Movie.BookmarkLabel)]</label>
+                            <texturefocus colordiffuse="FFF5F5F5">common/circle.png</texturefocus>
+                            <texturenofocus />
+                            <onup>noop</onup>
+                            <ondown>SetFocus(10)</ondown>
+                            <onleft>SetFocus(17)</onleft>
+                            <onright>SetFocus(18)</onright>
+                            <onclick>RunScript(special://skin/extras/netflix_saved_lists.py,bookmark-movie)</onclick>
+                        </control>
+                    </control>
+                    <control type="image">
+                        <left>0</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/thumbs-up-regular.png</texture>
+                        <visible>!String.IsEqual(Window(Home).Property(Netflix.Movie.Favorite),true) + !Control.HasFocus(17)</visible>
+                    </control>
+                    <control type="image">
+                        <left>0</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/thumbs-up.png</texture>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.Favorite),true) + !Control.HasFocus(17)</visible>
+                    </control>
+                    <control type="image">
+                        <left>0</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FF080808">special://skin/extras/icons/thumbs-up-regular.png</texture>
+                        <visible>!String.IsEqual(Window(Home).Property(Netflix.Movie.Favorite),true) + Control.HasFocus(17)</visible>
+                    </control>
+                    <control type="image">
+                        <left>0</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FF080808">special://skin/extras/icons/thumbs-up.png</texture>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.Favorite),true) + Control.HasFocus(17)</visible>
+                    </control>
+                    <control type="image">
+                        <left>80</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/bookmark-regular.png</texture>
+                        <visible>!String.IsEqual(Window(Home).Property(Netflix.Movie.Bookmarked),true) + !Control.HasFocus(18)</visible>
+                    </control>
+                    <control type="image">
+                        <left>80</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/bookmark.png</texture>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.Bookmarked),true) + !Control.HasFocus(18)</visible>
+                    </control>
+                    <control type="image">
+                        <left>80</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FF080808">special://skin/extras/icons/bookmark-regular.png</texture>
+                        <visible>!String.IsEqual(Window(Home).Property(Netflix.Movie.Bookmarked),true) + Control.HasFocus(18)</visible>
+                    </control>
+                    <control type="image">
+                        <left>80</left>
+                        <top>0</top>
+                        <width>56</width>
+                        <height>56</height>
+                        <aspectratio>keep</aspectratio>
+                        <texture colordiffuse="FF080808">special://skin/extras/icons/bookmark.png</texture>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.Bookmarked),true) + Control.HasFocus(18)</visible>
+                    </control>
+                    <control type="group">
+                        <top>0</top>
+                        <width>480</width>
+                        <height>56</height>
+                        <control type="label">
+                            <width>480</width>
+                            <height>56</height>
+                            <font>font_main</font>
+                            <textcolor>FFE7E7E7</textcolor>
+                            <aligny>center</aligny>
+                            <label>$INFO[Window(Home).Property(Netflix.Movie.FavoriteLabel)]</label>
+                            <visible>Control.HasFocus(17)</visible>
+                        </control>
+                        <control type="label">
+                            <width>480</width>
+                            <height>56</height>
+                            <font>font_main</font>
+                            <textcolor>FFE7E7E7</textcolor>
+                            <aligny>center</aligny>
+                            <label>$INFO[Window(Home).Property(Netflix.Movie.BookmarkLabel)]</label>
+                            <visible>Control.HasFocus(18)</visible>
+                        </control>
+                        <left>160</left>
+                    </control>
+                </control>
+                <control type="group" id="21">
+                    <width>940</width><height>52</height>
+                    <defaultcontrol>10</defaultcontrol>
+                    <control type="button" id="10">
+                        <width>320</width>
+                        <height>52</height>
+                        <font>font_main_bold</font>
+                        <textcolor>FFF5F5F5</textcolor>
+                        <focusedcolor>FF080808</focusedcolor>
+                        <texturefocus border="24" colordiffuse="FFF5F5F5">special://home/addons/plugin.video.pov/resources/skins/Default/media/source-pill.png</texturefocus>
+                        <texturenofocus />
+                        <label>$INFO[Window(Home).Property(Netflix.Movie.Action),▶  ]</label>
+                        <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))</visible>
+                        <onfocus>ClearProperty(Netflix.Movie.QualityOpen,Home)</onfocus>
+                        <onleft>noop</onleft>
+                        <onright>RunScript(special://skin/extras/netflix_movie_details.py,open-quality)</onright>
+                        <onup>SetFocus(17)</onup>
+                        <ondown condition="String.IsEqual(Window(Home).Property(Netflix.Movie.Action),Resume)">13</ondown>
+                        <ondown condition="System.AddonIsEnabled(plugin.video.youtube)">12</ondown>
+                        <ondown>11</ondown>
+                        <!-- R10 (review M4): no script starts in the 2 s a POV request is leaving (netflix_pov_leaving). -->
+                        <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play)</onclick>
+                    </control>
+                    <control type="image">
+                        <left>284</left><top>15</top><width>22</width><height>22</height>
+                        <texture colordiffuse="FF080808">special://skin/extras/icons/angle-right.png</texture>
+                        <visible>Control.HasFocus(10)</visible>
+                    </control>
+                    <!-- While the quality menu is open, Play keeps a faint plate and its chevron so the menu reads as Play's. -->
+                    <control type="image">
+                        <width>320</width><height>52</height>
+                        <texture border="24" colordiffuse="2EF5F5F5">special://home/addons/plugin.video.pov/resources/skins/Default/media/source-pill.png</texture>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.QualityOpen),true) + !Control.HasFocus(10)</visible>
+                    </control>
+                    <control type="image">
+                        <left>284</left><top>15</top><width>22</width><height>22</height>
+                        <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/angle-right.png</texture>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.QualityOpen),true) + !Control.HasFocus(10)</visible>
+                    </control>
+                    <!-- Quality menu (staged quality-menu option A): 560 x 356, 40 to the right of Play, rows 84 tall.
+                         infoupdate makes each row re-read its Window(Home) labels every 250 ms; without it Kodi keeps
+                         whatever text a row layout had when it was first built ("Checking sources…"). -->
+                    <control type="group">
+                        <left>360</left><top>-12</top>
+                        <width>560</width><height>356</height>
+                        <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.QualityOpen),true)</visible>
+                        <include>Netflix_Menu_Glass_Background</include>
+                        <control type="list" id="30">
+                            <description>Playback quality</description>
+                            <left>0</left><top>10</top><width>560</width><height>336</height>
+                            <orientation>vertical</orientation>
+                            <scrolltime>90</scrolltime>
+                            <onleft>ClearProperty(Netflix.Movie.QualityOpen,Home)</onleft>
+                            <onleft>10</onleft>
+                            <onback>ClearProperty(Netflix.Movie.QualityOpen,Home)</onback>
+                            <onback>10</onback>
+                            <onright>noop</onright><onup>noop</onup><ondown>noop</ondown>
+                            <itemlayout width="560" height="84" infoupdate="250">
+                                <control type="label">
+                                    <left>32</left><top>10</top><width>496</width><height>34</height>
+                                    <aligny>center</aligny><font>font_main_bold</font><textcolor>FFF5F5F5</textcolor>
+                                    <label>$INFO[ListItem.Label]</label>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FFB4B4BA</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityHighestLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),Highest) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FFB4B4BA</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityMediumLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),Medium) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FFB4B4BA</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityLowestLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),Lowest) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FFB4B4BA</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityAllLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),All) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="image">
+                                    <left>32</left><top>52</top><width>176</width><height>14</height>
+                                    <texture border="7" colordiffuse="29F5F5F5">common/box.png</texture>
+                                    <!-- quality-speed: the bar also stays on a tier still being checked while others are shown (State partial) -->
+                                    <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking) | [String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),partial) + [[String.IsEqual(ListItem.Property(QualityTier),Highest) + String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityHighestLine))] | [String.IsEqual(ListItem.Property(QualityTier),Medium) + String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityMediumLine))] | [String.IsEqual(ListItem.Property(QualityTier),Lowest) + String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityLowestLine))]]]</visible>
+                                    <animation effect="fade" start="100" end="40" time="800" tween="sine" pulse="true" condition="true">Conditional</animation>
+                                </control>
+                            </itemlayout>
+                            <focusedlayout width="560" height="84" infoupdate="250">
+                                <control type="image">
+                                    <left>8</left><top>2</top><width>544</width><height>80</height>
+                                    <texture border="24" colordiffuse="FFF5F5F5">special://home/addons/plugin.video.pov/resources/skins/Default/media/source-pill.png</texture>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>10</top><width>496</width><height>34</height>
+                                    <aligny>center</aligny><font>font_main_bold</font><textcolor>FF080808</textcolor>
+                                    <label>$INFO[ListItem.Label]</label>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FF2A2A2F</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityHighestLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),Highest) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FF2A2A2F</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityMediumLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),Medium) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FF2A2A2F</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityLowestLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),Lowest) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="label">
+                                    <left>32</left><top>44</top><width>496</width><height>29</height>
+                                    <aligny>center</aligny><font>font_mini</font><textcolor>FF2A2A2F</textcolor>
+                                    <label>$INFO[Window(Home).Property(Netflix.Movie.QualityAllLine)]</label>
+                                    <visible>String.IsEqual(ListItem.Property(QualityTier),All) + !String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking)</visible>
+                                </control>
+                                <control type="image">
+                                    <left>32</left><top>52</top><width>176</width><height>14</height>
+                                    <texture border="7" colordiffuse="24080808">common/box.png</texture>
+                                    <!-- quality-speed: the bar also stays on a tier still being checked while others are shown (State partial) -->
+                                    <visible>String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),checking) | [String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),partial) + [[String.IsEqual(ListItem.Property(QualityTier),Highest) + String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityHighestLine))] | [String.IsEqual(ListItem.Property(QualityTier),Medium) + String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityMediumLine))] | [String.IsEqual(ListItem.Property(QualityTier),Lowest) + String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityLowestLine))]]]</visible>
+                                    <animation effect="fade" start="100" end="40" time="800" tween="sine" pulse="true" condition="true">Conditional</animation>
+                                </control>
+                            </focusedlayout>
+                            <content>
+                                <item id="1">
+                                    <label>Highest Quality</label>
+                                    <property name="QualityTier">Highest</property>
+                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-highest)</onclick>
+                                </item>
+                                <item id="2">
+                                    <label>Medium Quality</label>
+                                    <property name="QualityTier">Medium</property>
+                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-medium)</onclick>
+                                </item>
+                                <item id="3">
+                                    <label>Low Quality</label>
+                                    <property name="QualityTier">Lowest</property>
+                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-lowest)</onclick>
+                                </item>
+                                <item id="4">
+                                    <label>All Sources</label>
+                                    <property name="QualityTier">All</property>
+                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-all)</onclick>
+                                </item>
+                            </content>
+                        </control>
+                    </control>
+                </control>
+                <!-- R10-playback (owner): the page's choice is final, POV never asks "Resume / Start Over" again. With
+                     "Resume" on Play, this starts the movie from the beginning (netflix_resume=restart). "Start Over"
+                     (the owner's word) fits the 320 px pill; the show page's wider row says "Play From Beginning". -->
+                <control type="button" id="13">
+                    <width>320</width>
+                    <height>52</height>
+                    <font>font_main_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <focusedcolor>FF080808</focusedcolor>
+                    <texturefocus border="24" colordiffuse="FFF5F5F5">special://home/addons/plugin.video.pov/resources/skins/Default/media/source-pill.png</texturefocus>
+                    <texturenofocus />
+                    <label>Start Over</label>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + String.IsEqual(Window(Home).Property(Netflix.Movie.Action),Resume)</visible>
+                    <onleft>noop</onleft>
+                    <onright>noop</onright>
+                    <onup>10</onup>
+                    <ondown condition="System.AddonIsEnabled(plugin.video.youtube)">12</ondown>
+                    <ondown>11</ondown>
+                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-restart)</onclick>
+                </control>
+                <control type="button" id="12">
+                    <width>320</width>
+                    <height>52</height>
+                    <font>font_main_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <focusedcolor>FF080808</focusedcolor>
+                    <texturefocus border="24" colordiffuse="FFF5F5F5">special://home/addons/plugin.video.pov/resources/skins/Default/media/source-pill.png</texturefocus>
+                    <texturenofocus />
+                    <label>$LOCALIZE[31393]</label>
+                    <visible>System.AddonIsEnabled(plugin.video.youtube) + [!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.Trailer))]</visible>
+                    <onleft>noop</onleft>
+                    <onright>noop</onright>
+                    <onup condition="!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + String.IsEqual(Window(Home).Property(Netflix.Movie.Action),Resume)">13</onup>
+                    <onup condition="!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))">10</onup>
+                    <onup>noop</onup>
+                    <ondown>11</ondown>
+                    <onclick>RunScript(special://skin/extras/netflix_movie_details.py,trailer)</onclick>
+                </control>
+                <control type="button" id="11">
+                    <width>320</width>
+                    <height>52</height>
+                    <font>font_main_bold</font>
+                    <textcolor>FFF5F5F5</textcolor>
+                    <focusedcolor>FF080808</focusedcolor>
+                    <texturefocus border="24" colordiffuse="FFF5F5F5">special://home/addons/plugin.video.pov/resources/skins/Default/media/source-pill.png</texturefocus>
+                    <texturenofocus />
+                    <label>More Info</label>
+                    <onleft>noop</onleft>
+                    <onright>noop</onright>
+                    <onup condition="System.AddonIsEnabled(plugin.video.youtube) + [!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.Trailer))]">12</onup>
+                    <onup condition="!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + String.IsEqual(Window(Home).Property(Netflix.Movie.Action),Resume)">13</onup>
+                    <onup condition="!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))">10</onup>
+                    <onup>noop</onup>
+                    <ondown>noop</ondown>
+                    <onclick>RunScript(special://skin/extras/netflix_movie_details.py,info)</onclick>
+                </control>
+            </control>
+        </control>
+        <!-- R10-playback: play loader (design B, Includes_Netflix_Playback.xml). It replaces POV's loading window and
+             R9's "Starting…" beside Play. While it is up the buttons are hidden and focus rests on 42; Back there
+             withdraws the request (POV stops at its next step) and the page is usable again.
+             Kodi closes the dialog after a control's <onback> unless that <onback> also names a control to move to:
+             16 (always focusable) keeps the page open; Play is visible again only on the next frame, so focus goes
+             there through a zero-second alarm (the pattern Action_Media_Onload uses).
+             Once POV has a stream and is starting the player (Netflix.Play.Phase "play") Back no longer cancels: the
+             loader shows it (the sweep stops, the track fills). When a request ends with no video, POV moves focus back
+             to Play itself (sources.py); the conditional exits below are the key-press fallback, read from the raw
+             property (not an $EXP) so no per-frame cached value is used. -->
+        <control type="button" id="42">
+            <left>-2</left><top>-2</top><width>1</width><height>1</height>
+            <font /><texturefocus /><texturenofocus />
+            <visible>$EXP[Netflix_Play_Loading]</visible>
+            <onup condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">10</onup>
+            <ondown condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">10</ondown>
+            <onleft condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">10</onleft>
+            <onright condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">10</onright>
+            <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">SetFocus(10)</onclick>
+            <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play) + String.IsEqual(Window(Home).Property(Netflix.PlaybackCover),Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.PlaybackCover,Home)</onback>
+            <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">ClearProperty(Netflix.Play.Loading,Home)</onback>
+            <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play) | String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">AlarmClock(netflix_loader_back,SetFocus(10),00:00,silent)</onback>
+            <onback>16</onback>
+        </control>
+        <include>Netflix_Play_Loader</include>
+    </controls>
+</window>

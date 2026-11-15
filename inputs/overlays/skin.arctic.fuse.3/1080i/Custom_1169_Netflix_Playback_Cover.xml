@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- R10-playback: the same transition cover as the Videos window (Includes_Netflix_Playback.xml), for title pages
+     opened from any other window (My Lists, Search). Videos draws its own copy in-window, which is never late;
+     this modeless dialog opens on its visible condition, one frame after the window under it at the latest. -->
+<window type="dialog" id="1169">
+    <zorder>0</zorder>
+    <visible>$EXP[Netflix_Cover_Held] + !Window.IsActive(fullscreenvideo) + !Window.IsActive(videos)</visible>
+    <controls>
+        <include content="Netflix_Transition_Cover">
+            <param name="condition">true</param>
+        </include>
+    </controls>
+</window>

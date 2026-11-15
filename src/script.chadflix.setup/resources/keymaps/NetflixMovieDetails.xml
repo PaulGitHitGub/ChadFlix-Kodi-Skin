@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<keymap>
+    <!-- R9.5 one way to open a title. OK in Videos used to start extras/netflix_movie_details.py on EVERY press.
+         Kodi never runs a <onclick> on the window's own lists (590/591: no content provider), so the key is still
+         taken here, but all it does is open the skin dialog 1156 (1080i/Custom_1156_Netflix_OK.xml), whose <onload>
+         lines run at once: focus on 590/591 starts the script, as before; everything else gets a plain Select,
+         so rows, grids, tabs and buttons run their own <onclick> with no script before it.
+         This file and Custom_1156_Netflix_OK.xml must always be installed together. -->
+    <Videos>
+        <keyboard>
+            <return>ActivateWindow(1156)</return>
+        </keyboard>
+        <remote>
+            <select>ActivateWindow(1156)</select>
+        </remote>
+    </Videos>
+</keymap>

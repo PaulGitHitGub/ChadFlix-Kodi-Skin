@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog" id="1168">
+    <!-- A modeless dialog checks visibility each GUI frame and leaves the real window active. -->
+    <visible>
+        $EXP[Netflix_Tab_Arrival_Ready] |
+        [$EXP[Netflix_Tab_Pending] + System.HasActiveModalDialog +
+         ![Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)]]
+    </visible>
+    <onload condition="$EXP[Netflix_Tab_Arrival_Ready]">SetFocus($INFO[Window(Home).Property(Netflix.TabArrival)])</onload>
+    <onload condition="System.HasActiveModalDialog">ClearProperty(Netflix.TabDwellTarget,Home)</onload>
+    <onload>ClearProperty(Netflix.TabArrival,Home)</onload>
+    <controls />
+</window>
