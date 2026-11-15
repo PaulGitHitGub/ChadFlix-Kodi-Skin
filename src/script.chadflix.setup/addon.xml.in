@@ -10,7 +10,7 @@
     <extension point="xbmc.service" library="service.py"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">One-time setup for the ChadFlix look</summary>
-        <description lang="en_GB">Run once after installing. Installs and enables the add-ons the look needs, applies the ChadFlix layout settings to Arctic Fuse 3 (skipping its setup wizard), switches to the skin and adds four remote-control key files. Its first menu also has "Undo ChadFlix Keymaps" for going back to another skin. Safe to run again. Never touches sign-ins, keys or watch history; backs up any file it replaces.</description>
+        <description lang="en_GB">Run once after installing. Installs and enables the add-ons the look needs, applies the ChadFlix layout settings to Arctic Fuse 3 (skipping its setup wizard), switches to the skin and adds five remote-control key files. Its first menu also has "Undo ChadFlix Keymaps" for going back to another skin. Safe to run again. Never touches sign-ins, keys or watch history; backs up any file it replaces.</description>
         <disclaimer lang="en_GB">Unofficial. The setup answers Kodi's "Keep skin?" question itself after switching the skin (that question only).</disclaimer>
         <platform>all</platform>
         <license>GPL-3.0-or-later</license>

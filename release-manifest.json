@@ -97,14 +97,14 @@
    "zip": "zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
   },
   {
-   "content_sha256": "436127d987667c7231a7238229ca36c60701cb171681c79aa682622086f5ef0f",
+   "content_sha256": "135d6cf9117d377b76102ea542b010003d88891675f5633c867f62a5d1f10a78",
    "files": 11,
    "id": "script.chadflix.setup",
-   "sha256": "8cbb29d90d260872f067b3dfd2f764c6b2f601f6cb1c29dc45c9d66a0a07d80e",
+   "sha256": "cd43c5dc489dda7f54a4c6ab910d91b1c9944284135183fec39a978f3023cdef",
    "size": 27996,
    "source": "tree",
    "tree": "src/script.chadflix.setup",
-   "tree_sha256": "436127d987667c7231a7238229ca36c60701cb171681c79aa682622086f5ef0f",
+   "tree_sha256": "135d6cf9117d377b76102ea542b010003d88891675f5633c867f62a5d1f10a78",
    "version": "1.0.3",
    "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.3.zip"
   },
@@ -217,8 +217,8 @@
  },
  "index": {
   "file": "zips/addons.xml",
-  "md5": "0ca8a97b3bf709d790509da732be1abe",
-  "sha256": "e7544764927f33a95fc83c3f05e7927811584c48a1aa0448bcf18ec515184a19"
+  "md5": "8c82b665303008340d1eefca6b08e8e8",
+  "sha256": "90cdd84fdfd35e8959b1fa17b89a5127e83fc9a9e7a82faf236819b9f955a6ed"
  },
  "lock_sha256": "d976145f561f73e04660930e83e6bdb489733a5d7dbea61d125ba73687dbdefa",
  "release": "4 (release 3 + R10.23, R10.24, R10.25 security fixes, R10.22 My Lists; Setup 1.0.3, repository 1.0.1)",

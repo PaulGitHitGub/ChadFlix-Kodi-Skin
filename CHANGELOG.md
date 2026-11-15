@@ -11,7 +11,7 @@ don't need to run ChadFlix Setup again.
 
 - New **My Lists**: your lists as cards, with **Saved Movies** and **Saved Shows** rows. Save single episodes from a
   show's episode list; they show under **Saved Episodes**.
-- Grids load faster.
+- Grids fetch their pages together instead of one by one.
 - Hold **OK** on **Watchlist** on a movie page to add the movie to another list.
 
 ### Fixed
@@ -23,6 +23,8 @@ don't need to run ChadFlix Setup again.
 - Security hardening: sign-in secrets are masked in Kodi's log, sign-in QR codes are drawn on the device (TMDb Lists
   now shows a QR code), playable links are no longer kept on disk, and Kodi checks every download from this repository
   with SHA-256.
+- Installed before release 4? Set **Update official add-ons from** back to **Official repositories only
+  (default)**, then turn **Unknown sources** off (README, Install step 6).
 
 ## Release 3 (2026-11-14)
 
