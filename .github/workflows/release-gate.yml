@@ -1,0 +1,67 @@
+# Release gate for the ChadFlix Kodi repository (security audit F-01).
+# Make the three job names below required status checks in the ruleset for main:
+#   tests / validate-release / clean-build
+# No third-party action is used (nothing to pin): the jobs fetch the commit with git and run the tools in tools/.
+# The private-pattern check cannot run here (the patterns are not public): CI passing is necessary, not sufficient.
+# The owner runs tools/validate_release.py --private-patterns ... before publishing (RELEASING.md).
+name: release-gate
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Fetch this commit
+        run: |
+          git init -q . && git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth 1 origin "${GITHUB_SHA}" && git checkout -q FETCH_HEAD
+      - name: Unit tests (validator fixtures, Setup dialog simulation)
+        run: python3 -B -W ignore -m unittest discover -s tools/tests -v
+  validate-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Fetch this commit
+        run: |
+          git init -q . && git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth 1 origin "${GITHUB_SHA}" && git checkout -q FETCH_HEAD
+      - name: Validate the published tree (hashes, index, packages, lock, contents, secrets)
+        run: python3 -B tools/validate_release.py . --public-only
+  clean-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Fetch this commit
+        run: |
+          git init -q . && git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth 1 origin "${GITHUB_SHA}" && git checkout -q FETCH_HEAD
+      - name: Fetch the pinned upstream archives (SHA-256 is checked by the build)
+        run: |
+          mkdir -p "$RUNNER_TEMP/upstream"
+          python3 - <<'PY'
+          import json, os, subprocess
+          for e in json.load(open('config/release.lock.json'))['addons']:
+              s = e['source']
+              if s['type'] == 'upstream+overlay':
+                  subprocess.run(['curl', '-fsSL', '--proto', '=https', '-o', os.path.join(os.environ['RUNNER_TEMP'], 'upstream', s['upstream']['file']), s['upstream']['url']], check=True)
+          PY
+      - name: Build twice from the declared inputs
+        run: |
+          python3 -B tools/build_release.py --out "$RUNNER_TEMP/a" --upstream-dir "$RUNNER_TEMP/upstream"
+          python3 -B tools/build_release.py --out "$RUNNER_TEMP/b" --upstream-dir "$RUNNER_TEMP/upstream"
+          diff -r "$RUNNER_TEMP/a" "$RUNNER_TEMP/b"
+      - name: The committed release equals the clean build
+        run: |
+          python3 -B tools/compare_release.py "$RUNNER_TEMP/a" .
+          diff "$RUNNER_TEMP/a/index.html" index.html
+          ls repository.chadflix-*.zip | wc -l | grep -qx 1
+      - name: The unmodified add-ons equal their upstream archives
+        run: python3 -B tools/verify_upstream.py
