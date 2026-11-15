@@ -8,8 +8,8 @@ What it does, in order:
   2. offers YouTube (for trailers), optional;
   3. writes the ChadFlix layout settings for Arctic Fuse 3, including the flag that skips the
      skin's own setup wizard (only these skin settings; nothing else in any add-on's data);
-  4. switches the skin to Arctic Fuse 3 after asking, and answers Kodi's own "keep this change?" question
-     itself (see _switch_once for why);
+  4. switches the skin to Arctic Fuse 3 after asking, and answers Kodi's own "Keep skin?" question
+     itself (see _switch_once for why; it answers that question only, never another yes/no dialog);
   5. copies four remote-control key files into userdata/keymaps and reloads them;
   6. offers to close Kodi once so every add-on restarts on its new version.
 
@@ -184,8 +184,41 @@ def apply_settings_file():
 
 
 # 4. skin switch ------------------------------------------------------------------------------------
+YESNO_DIALOG = 10100          # Kodi's yes/no dialog
+KEEP_HEADING, KEEP_TEXT = 13123, 13111   # Kodi's own strings: "Keep skin?" / "Would you like to keep this change?"
+
+
+def _dialog_texts():
+    """(heading, text) of the yes/no dialog on screen, '' for a part that cannot be read."""
+    heading = text = ''
+    try:
+        window = xbmcgui.Window(YESNO_DIALOG)
+        try:
+            heading = window.getControl(1).getLabel() or ''
+        except Exception:
+            heading = ''
+        try:
+            text = window.getControl(9).getText() or ''
+        except Exception:
+            text = ''
+    except Exception:
+        pass
+    return heading.strip(), text.strip()
+
+
+def is_keep_skin_question():
+    """True only when the yes/no dialog on screen is Kodi's "Keep skin?" question, compared with Kodi's own strings in
+    the language Kodi is running in. Any other yes/no dialog (another add-on's question, an update prompt), or a
+    dialog whose heading cannot be read, is left for the person to answer: this script never clicks it."""
+    want_heading, want_text = xbmc.getLocalizedString(KEEP_HEADING).strip(), xbmc.getLocalizedString(KEEP_TEXT).strip()
+    heading, text = _dialog_texts()
+    if not want_heading or heading != want_heading:
+        return False
+    return not text or not want_text or text == want_text
+
+
 def _switch_once():
-    """Change the skin setting and answer Kodi's "keep this change?" question with Yes.
+    """Change the skin setting and answer Kodi's "Keep skin?" question with Yes.
 
     The question must be answered by this script: on the first start of Arctic Fuse 3, Skin Variables
     rebuilds one of the skin's include files and reloads the skin about half a second after it appears,
@@ -193,13 +226,19 @@ def _switch_once():
     The person already agreed to the switch in the dialog before this.
     """
     rpc('Settings.SetSettingValue', {'setting': 'lookandfeel.skin', 'value': SKIN})
-    answered = False
+    answered, skipped = False, False
     for _ in range(600):  # up to 60 s: a first load on a slow box can take a while
         xbmc.sleep(100)
         if not answered and xbmc.getSkinDir() == SKIN and xbmc.getCondVisibility('Window.IsActive(yesnodialog)'):
-            xbmc.executebuiltin('SendClick(10100,11)')  # 11 = Yes in Kodi's yes/no dialog
-            answered = True
-            log('keep-skin question answered: Yes')
+            # Only Kodi's own "Keep skin?" question is answered. Any other yes/no dialog that happens to be open now
+            # is not touched (checked again on every pass: the keep-skin question may still follow it).
+            if is_keep_skin_question():
+                xbmc.executebuiltin('SendClick(%d,11)' % YESNO_DIALOG)  # 11 = Yes in Kodi's yes/no dialog
+                answered = True
+                log('keep-skin question answered: Yes')
+            elif not skipped:
+                skipped = True
+                log('a yes/no dialog that is not the keep-skin question is open: left alone')
         if answered and not xbmc.getCondVisibility('Window.IsActive(yesnodialog)'):
             break
     # let any skin reload (Skin Variables) or a switch back finish before deciding
