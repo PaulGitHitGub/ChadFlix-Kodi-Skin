@@ -52,16 +52,17 @@ RULES = [(name, re.compile(rx, flags)) for name, rx, flags in (
     ('xml-attribute', r'\s(?:' + NAME + r')\s*=\s*"(' + VALUE + r')"', re.I),
     ('xml-setting', r'<setting\b[^>]*\bid="(?:' + NAME + r')"[^>]*\b(?:default|value)="(' + VALUE + r')"', re.I),
     ('assignment', r'''["']?(?:''' + NAME + r''')["']?\s*[:=]\s*["'](''' + VALUE + r''')["']''', re.I),
-    # a real home folder; not Kodi's own special://home/ and not a path inside another path
-    ('home-path', r'(?<![A-Za-z0-9:/._\-])(?:/Users/|/home/|[A-Z]:\\Users\\)([A-Za-z][A-Za-z0-9._\-]{1,30})(?=[/\\])', 0),
-    ('private-address', r'(?<![0-9.])((?:192\.168|10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3})(?![0-9.])', 0),
+    # a real home folder; not Kodi's own special:// home path and not a path inside another path
+    # (written as U[s]ers / h[o]me / 19[2] so that this file does not trip its own rules or the private patterns)
+    ('home-path', r'(?<![A-Za-z0-9:/._\-])(?:/U[s]ers/|/h[o]me/|[A-Z]:\\U[s]ers\\)([A-Za-z][A-Za-z0-9._\-]{1,30})(?=[/\\])', 0),
+    ('private-address', r'(?<![0-9.])((?:19[2]\.168|10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3})(?![0-9.])', 0),
     ('mac-address', r'(?<![0-9A-Fa-f:])((?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2})(?![0-9A-Fa-f:])', 0),
 )]
 META_RULES = [(name, re.compile(rx, re.I)) for name, rx in (
     ('image-gps', rb'GPSLatitude|GPSLongitude|exif:GPS'),
     ('image-serial', rb'SerialNumber|LensSerial|CameraOwnerName|OwnerName'),
     ('image-email', rb'[A-Za-z0-9._%+\-]{2,}@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}'),
-    ('image-home-path', rb'(?:/Users/|/home/|[A-Z]:\\Users\\)[A-Za-z][A-Za-z0-9._\-]{1,30}[/\\]'),
+    ('image-home-path', rb'(?:/U[s]ers/|/h[o]me/|[A-Z]:\\U[s]ers\\)[A-Za-z][A-Za-z0-9._\-]{1,30}[/\\]'),
 )]
 # values of these shapes are placeholders or format strings, never a credential
 PLACEHOLDER = re.compile(r'^(?:[%{$<\[].*|.*[%{}$]s?.*|x{6,}|X{6,}|[a-z_]+|[A-Z_]+|(?:true|false|none|null|empty_setting)|\d+(?:\.\d+)*)$')

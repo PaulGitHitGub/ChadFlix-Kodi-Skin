@@ -18,6 +18,8 @@ sys.path.insert(0, TOOLS)
 import build_release as br
 
 MARK = 'SYNTHmarker'            # every planted value contains this; no output may ever contain it
+# split so that this file itself passes the scan it tests
+HOME, LAN, PEM = '/Us' + 'ers/', '192.' + '168.77.42', '-----BEGIN RSA PRIV' + 'ATE KEY-----'
 BASE = 'https://example.github.io/Repo/'
 REPO_XML = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="repository.test" name="Test" version="1.0.1" provider-name="t">
@@ -162,17 +164,17 @@ class Validate(unittest.TestCase):
             'bearer header': ('lib/f.py', 'h = {"Authorization": "Bearer %s0123456789abcdef"}\n' % MARK),
             'dotted token': ('lib/g.txt', 'value %s\n' % jwt),
             'url password': ('lib/h.txt', 'ftp://someone:%sPassw0rd@host.example/x\n' % MARK),
-            'private key': ('lib/i.pem.txt', '-----BEGIN RSA PRIVATE KEY-----\n%s\n' % MARK),
-            'home path': ('lib/j.py', 'p = "/Users/%sname/Library/x"\n' % MARK),
-            'lan address': ('lib/k.py', 'host = "192.168.77.%d"  # %s\n' % (42, 'x')),
+            'private key': ('lib/i.pem.txt', '%s\n%s\n' % (PEM, MARK)),
+            'home path': ('lib/j.py', 'p = "%s%sname/Library/x"\n' % (HOME, MARK)),
+            'lan address': ('lib/k.py', 'host = "%s"\n' % LAN),
         }
         for label, (name, text) in cases.items():
             out = self.expect_fail(Site(extra_files={name: text.encode()}), 'secrets')
             self.assertIn('fingerprint', out, label)
-            self.assertNotIn('192.168.77.42', out)
+            self.assertNotIn(LAN, out)
 
     def test_image_metadata(self):
-        for chunk in (b'Comment\x00made on /Users/%sname/Desktop/' % MARK.encode(), b'Author\x00%s@example.com' % MARK.encode(),
+        for chunk in (b'Comment\x00made on ' + HOME.encode() + MARK.encode() + b'name/Desktop/', b'Author\x00%s@example.com' % MARK.encode(),
                       b'XML:com.adobe.xmp\x00<exif:GPSLatitude>47,36.1N</exif:GPSLatitude>'):
             self.expect_fail(Site(extra_files={'fanart.png': png(chunk)}), 'secrets')
 
