@@ -190,19 +190,18 @@ KEEP_HEADING, KEEP_TEXT = 13123, 13111   # Kodi's own strings: "Keep skin?" / "W
 
 def _dialog_texts():
     """(heading, text) of the yes/no dialog on screen, '' for a part that cannot be read.
-    The text comes from the dialog's text box (control 9), which Kodi's Python API reads live. The heading is a label:
-    in Kodi 21 the API returns '' for a label's text, so it is read as the info label Control.GetLabel(1), and only
-    while the yes/no dialog is the topmost window (the label is then that dialog's own)."""
+    Both are read as info labels (Control.GetLabel), which Kodi evaluates itself, and only while the yes/no dialog is the
+    topmost window (the labels are then that dialog's own: control 9 is its text box, control 1 its heading).
+    Never through xbmcgui.Window(10100).getControl(): on Kodi 21.3 getControl(9).getText() crashed Kodi (SIGSEGV in
+    ControlTextBox.getText) when it ran while the dialog was still being loaded right after the skin switch, and
+    getControl(1).getLabel() always returns '' for a label."""
     heading = text = ''
     try:
-        text = xbmcgui.Window(YESNO_DIALOG).getControl(9).getText() or ''
-    except Exception:
-        text = ''
-    try:
         if xbmc.getCondVisibility('Window.IsTopMost(yesnodialog)'):
+            text = xbmc.getInfoLabel('Control.GetLabel(9)') or ''
             heading = xbmc.getInfoLabel('Control.GetLabel(1)') or ''
     except Exception:
-        heading = ''
+        heading = text = ''
     return heading.strip(), text.strip()
 
 
@@ -228,12 +227,14 @@ def _switch_once():
     The person already agreed to the switch in the dialog before this.
     """
     rpc('Settings.SetSettingValue', {'setting': 'lookandfeel.skin', 'value': SKIN})
-    answered, skipped = False, False
+    answered, skipped, seen = False, False, False
     for _ in range(600):  # up to 60 s: a first load on a slow box can take a while
         xbmc.sleep(100)
-        if not answered and xbmc.getSkinDir() == SKIN and xbmc.getCondVisibility('Window.IsActive(yesnodialog)'):
+        active = xbmc.getSkinDir() == SKIN and xbmc.getCondVisibility('Window.IsActive(yesnodialog)')
+        if not answered and active and seen:
             # Only Kodi's own "Keep skin?" question is answered. Any other yes/no dialog that happens to be open now
-            # is not touched (checked again on every pass: the keep-skin question may still follow it).
+            # is not touched (checked again on every pass: the keep-skin question may still follow it). The dialog is
+            # read on the pass after it was first seen (0.1 s later), not in the instant it is being loaded.
             if is_keep_skin_question():
                 xbmc.executebuiltin('SendClick(%d,11)' % YESNO_DIALOG)  # 11 = Yes in Kodi's yes/no dialog
                 answered = True
@@ -241,6 +242,7 @@ def _switch_once():
             elif not skipped:
                 skipped = True
                 log('a yes/no dialog that is not the keep-skin question is open: left alone')
+        seen = active
         if answered and not xbmc.getCondVisibility('Window.IsActive(yesnodialog)'):
             break
     # let any skin reload (Skin Variables) or a switch back finish before deciding

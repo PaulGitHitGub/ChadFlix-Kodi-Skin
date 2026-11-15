@@ -34,8 +34,12 @@ class Kodi:
             return k.dialog is not None if 'yesnodialog' in text else False
 
         def infolabel(label):
-            # Kodi evaluates Control.GetLabel(1) on the topmost window: the dialog's heading while the dialog is on top
-            if label == 'Control.GetLabel(1)' and k.dialog is not None and k.heading_label:
+            # Kodi evaluates Control.GetLabel(n) on the topmost window: the dialog's own controls while the dialog is on top
+            if k.dialog is None:
+                return ''
+            if label == 'Control.GetLabel(9)':
+                return ('' if k.unreadable else k.dialog[1]) if k.topmost else 'Some Other Window Text'
+            if label == 'Control.GetLabel(1)' and k.heading_label:
                 return k.dialog[0] if k.topmost else 'Some Other Window Label'
             return ''
         def builtin(text):
@@ -59,7 +63,8 @@ class Kodi:
 
         class Window:
             def __init__(self, window_id):
-                assert window_id == 10100
+                # real Kodi 21.3 crashed in getControl(9).getText() during the skin switch: Setup must not use the window wrapper
+                raise AssertionError('Setup touched xbmcgui.Window(%r)' % window_id)
 
             def getControl(self, control_id):
                 if k.dialog is None:
@@ -88,7 +93,7 @@ class SkinSwitch(unittest.TestCase):
         k = Kodi({5: KEEP})
         self.assertTrue(k.ns['_switch_once']())
         self.assertEqual([c[1] for c in k.clicks], [KEEP])
-        self.assertLess(k.clicks[0][0], 10)                       # answered at once (Kodi closes it by itself after 10 s)
+        self.assertEqual(k.clicks[0][0], 6)                       # on the pass after it appeared: 0.1 to 0.2 s, before Skin Variables' reload
 
     def test_an_unrelated_dialog_is_never_clicked(self):
         k = Kodi({5: OTHER})                                      # stays open for the whole wait
@@ -122,10 +127,10 @@ class SkinSwitch(unittest.TestCase):
         k.ns['_switch_once']()
         self.assertEqual(k.clicks, [])
 
-    def test_heading_is_only_read_while_the_dialog_is_on_top(self):
-        k = Kodi({5: KEEP}, topmost=False)                        # something else is on top: its label is not taken for the heading
-        self.assertTrue(k.ns['_switch_once']())
-        self.assertEqual([c[1] for c in k.clicks], [KEEP])
+    def test_nothing_is_read_or_clicked_while_another_window_is_on_top(self):
+        k = Kodi({5: KEEP}, topmost=False)                        # something else is on top of the dialog: its labels are not the dialog's
+        k.ns['_switch_once']()
+        self.assertEqual(k.clicks, [])
 
     def test_other_language(self):
         k = Kodi({5: (GERMAN[13123], GERMAN[13111])}, strings=GERMAN)
