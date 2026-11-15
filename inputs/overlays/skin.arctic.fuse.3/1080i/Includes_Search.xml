@@ -1438,6 +1438,12 @@
         !Window.IsVisible(busydialog) + !Window.IsVisible(busydialognocancel)
     </expression>
 
+    <!-- R10.21: a grid page whose first load never started (the observer's watchdog sets Netflix.Grid.Stuck to the page) -->
+    <variable name="Netflix_Grid_Failed_Text">
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.Grid.Stuck),Window(Home).Property(Netflix.Grid.Shell))">Couldn't Load Titles. Press Back to Try Again.</value>
+        <value>No Titles Available.</value>
+    </variable>
+
     <variable name="Netflix_Catalog_Empty_Message">
         <value condition="$EXP[Netflix_WatchlistResults]">This Watchlist is empty. Add titles using Add to Watchlist.</value>
         <value>No titles available.</value>
@@ -2245,7 +2251,7 @@
         <control type="label">
             <left>80</left><top>148</top><width>1760</width><height>56</height>
             <font>font_main</font><textcolor>FFB3B3B3</textcolor>
-            <label>No titles available.</label>
+            <label>$VAR[Netflix_Grid_Failed_Text]</label>
             <visible>$EXP[Netflix_Grid_Failed] + !$EXP[Netflix_Grid_Ready]</visible>
         </control>
         <!-- First load of a genre: grey cards in the grid's own cells until the titles arrive (the owner's

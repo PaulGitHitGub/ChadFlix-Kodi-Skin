@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
-"""ChadFlix Setup: keep the ChadFlix key files current after an update (PROPOSED, script.chadflix.setup 1.0.2).
+"""ChadFlix Setup: keep the ChadFlix key files current after an update (script.chadflix.setup 1.0.3).
 
 Runs once at every Kodi start and right after this add-on updates, then exits (no loop, no polling).
 For each of the key files Setup installs:
-  - missing                      -> nothing (Setup never ran, or the person chose "Undo ChadFlix keymaps");
+  - missing                      -> nothing (Setup never ran, or the person chose "Undo ChadFlix Keymaps"), with one exception:
+                                    a key file that is NEW in this Setup version (setup.json "keymaps_new") is added when at
+                                    least one other ChadFlix key file is installed, i.e. Setup ran and was not undone. Someone
+                                    who updated from an older Setup then gets the new key without running Setup again;
   - equal to the shipped file    -> nothing;
   - equal to a file an OLDER ChadFlix Setup shipped (hash in setup.json "keymaps_previous")
                                  -> back it up (same backup folder as Setup) and replace it with the shipped file;
@@ -41,10 +44,17 @@ def main():
     previous = cfg.get('keymaps_previous', {})
     stamp = time.strftime('%Y%m%d-%H%M%S')
     changed = []
+    installed = [n for n in cfg['keymaps'] if os.path.isfile(os.path.join(KEYMAPS_DST, n))]
     for name in cfg['keymaps']:
         src = os.path.join(RES, 'keymaps', name)
         dst = os.path.join(KEYMAPS_DST, name)
         if not os.path.isfile(dst):
+            # new in this Setup version, and the person has the ChadFlix key files (not undone, not a fresh device): add it
+            if name in cfg.get('keymaps_new', []) and any(n != name for n in installed):
+                tmp = dst + '.chadflix-tmp'
+                shutil.copyfile(src, tmp)
+                os.replace(tmp, dst)
+                changed.append(name)
             continue
         have = sha(dst)
         if have == sha(src) or have not in previous.get(name, []):

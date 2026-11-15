@@ -171,7 +171,7 @@ As with any third-party Kodi repository, installing it means trusting its publis
 
 In this order, so Back keeps working:
 
-1. **ChadFlix Setup** → **Undo ChadFlix keymaps** (Home → **Add-ons** → **Program add-ons**).
+1. **ChadFlix Setup** → **Undo ChadFlix Keymaps** (Home → **Add-ons** → **Program add-ons**).
 2. **Settings** → **Interface** → **Skin** → **Skin** → **Estuary**, then **Yes**.
 3. Optional: **Settings** → **Add-ons** → **My add-ons** → uninstall **Arctic Fuse 3**, **ChadFlix Setup** and
    **ChadFlix Repository**.

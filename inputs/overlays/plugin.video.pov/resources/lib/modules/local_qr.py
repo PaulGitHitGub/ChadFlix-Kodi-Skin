@@ -3,7 +3,8 @@
 Before: the link (and for Trakt the code) of every sign-in went to a third-party QR image service, and the TMDb link
 went through a plain-HTTP link shortener. Now nothing about a sign-in leaves the device except to the service itself.
 
-    official(service, url)          the url, or AuthLinkError when it is not https on one of the service's own hosts
+    official(service, url)          the url, or AuthLinkError when it is not https on the service's own domain
+    shown(service, text)            a link line for the screen: as received (it may come without "https://"), checked the same way
     icon(service, url, ...)         path of a local PNG with the QR code of that url ('' when it cannot be drawn:
                                     the screen then shows the link and code as text only, as before)
     cleanup()                       remove every QR file this run made (called when a sign-in ends, whatever the way)
@@ -22,16 +23,17 @@ SIZE = 256              # pixels, as the remote images were
 STALE_SECONDS = 1800    # a file left behind by a crash is removed at the next sign-in
 _made = []
 
-# The only hosts a sign-in link may point at, per service (exact names, https only).
-HOSTS = {
-    'premiumize': ('www.premiumize.me', 'premiumize.me'),
-    'offcloud': ('offcloud.com', 'www.offcloud.com'),
-    'torbox': ('torbox.app', 'www.torbox.app', 'tor.box', 'www.tor.box'),
-    'realdebrid': ('real-debrid.com', 'www.real-debrid.com', 'app.real-debrid.com'),
-    'alldebrid': ('alldebrid.com', 'www.alldebrid.com'),
-    'trakt': ('trakt.tv', 'www.trakt.tv', 'app.trakt.tv'),
-    'mdblist': ('mdblist.com', 'www.mdblist.com', 'api.mdblist.com'),
-    'tmdb': ('www.themoviedb.org',),
+# The only places a sign-in link may point at, per service: the service's own domain or a subdomain of it (nobody else can
+# create those), https only. A look-alike such as real-debrid.com.example or evilreal-debrid.com does not match.
+DOMAINS = {
+    'premiumize': ('premiumize.me',),
+    'offcloud': ('offcloud.com',),
+    'torbox': ('torbox.app', 'tor.box'),
+    'realdebrid': ('real-debrid.com',),
+    'alldebrid': ('alldebrid.com',),
+    'trakt': ('trakt.tv',),
+    'mdblist': ('mdblist.com',),
+    'tmdb': ('themoviedb.org',),
 }
 
 
@@ -45,7 +47,8 @@ def official(service, url):
         text = str(url)
         parts = urlsplit(text)
         host, port = parts.hostname, parts.port
-        fine = (parts.scheme == 'https' and host in HOSTS[service] and parts.username is None and parts.password is None
+        fine = (parts.scheme == 'https' and bool(host) and any(host == d or host.endswith('.' + d) for d in DOMAINS[service])
+                and parts.username is None and parts.password is None
                 and '@' not in parts.netloc and port in (None, 443) and len(text) <= 2048
                 and not any(ord(c) <= 32 or ord(c) == 127 for c in text))
     except Exception:
@@ -53,6 +56,18 @@ def official(service, url):
     if not fine:
         raise AuthLinkError(service)
     return text
+
+
+def _with_scheme(text):
+    text = str(text).strip()
+    return text if '://' in text else 'https://' + text
+
+
+def shown(service, text):
+    """A link line for the sign-in screen, returned as the service sent it. Services may send it without "https://"
+    (tor.box/link): it is checked as an https link to the service's own domain; anything else is AuthLinkError."""
+    official(service, _with_scheme(text))
+    return str(text)
 
 
 def _matrix(data):
@@ -127,7 +142,7 @@ def icon(service, url, color=None, bgcolor=None):
     AuthLinkError when it is not the service's own https link (never drawn, never sent anywhere)."""
     if not url:
         return ''
-    official(service, url)
+    url = official(service, _with_scheme(url))      # what a phone opens is always the https link
     try:
         folder = _folder()
         os.makedirs(folder, exist_ok=True)

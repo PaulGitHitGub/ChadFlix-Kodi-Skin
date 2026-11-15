@@ -445,6 +445,7 @@ class SettingsManager:
 	def __init__(self):
 		self._cache = {}
 		self._secrets = {}
+		self._addon = None
 		self._last_raw_string = None
 
 	def _sync(self):
@@ -459,7 +460,9 @@ class SettingsManager:
 		self._sync()
 		if is_secret_setting(key):
 			# R10.25 (inherited-audit M4): from POV's own settings, kept only in this script's memory
-			if key not in self._secrets: self._secrets[key] = Addon().getSetting(key)
+			if key not in self._secrets:
+				if self._addon is None: self._addon = Addon()  # one per running script, not one per value
+				self._secrets[key] = self._addon.getSetting(key)
 			value = self._secrets[key]
 		else: value = self._cache.get(key, '')
 		if value == '' and fallback is not None: return fallback

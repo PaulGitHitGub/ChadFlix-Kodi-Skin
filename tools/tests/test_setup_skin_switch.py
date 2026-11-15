@@ -14,8 +14,11 @@ GERMAN = {13123: 'Skin behalten?', 13111: 'Soll diese Änderung beibehalten werd
 class Kodi:
     """dialogs: {tick: (heading, text) or None}; a dialog stays until answered or replaced. One tick = one 100 ms sleep."""
 
-    def __init__(self, dialogs, strings=STRINGS, skin_after_set=SKIN, unreadable=False, start_skin='skin.estuary', user_answer=True):
+    def __init__(self, dialogs, strings=STRINGS, skin_after_set=SKIN, unreadable=False, start_skin='skin.estuary', user_answer=True,
+                 heading_label=True, topmost=True):
+        # unreadable: the text box cannot be read. heading_label: Control.GetLabel(1) gives the heading (as in Kodi 21).
         self.tick, self.dialogs, self.strings, self.unreadable = 0, dialogs, strings, unreadable
+        self.heading_label, self.topmost = heading_label, topmost
         self.skin, self.skin_after_set = start_skin, skin_after_set
         self.dialog, self.clicks, self.logs, self.asked, self.user_answer = None, [], [], [], user_answer
         k = self
@@ -26,12 +29,20 @@ class Kodi:
                 if k.tick in k.dialogs:
                     k.dialog = k.dialogs[k.tick]
         def cond(text):
+            if 'IsTopMost(yesnodialog)' in text:
+                return k.dialog is not None and k.topmost
             return k.dialog is not None if 'yesnodialog' in text else False
+
+        def infolabel(label):
+            # Kodi evaluates Control.GetLabel(1) on the topmost window: the dialog's heading while the dialog is on top
+            if label == 'Control.GetLabel(1)' and k.dialog is not None and k.heading_label:
+                return k.dialog[0] if k.topmost else 'Some Other Window Label'
+            return ''
         def builtin(text):
             if text.startswith('SendClick'):
                 k.clicks.append((k.tick, k.dialog))
                 k.dialog = None
-        self.xbmc = types.SimpleNamespace(sleep=sleep, getCondVisibility=cond, executebuiltin=builtin, getSkinDir=lambda: k.skin,
+        self.xbmc = types.SimpleNamespace(sleep=sleep, getCondVisibility=cond, executebuiltin=builtin, getSkinDir=lambda: k.skin, getInfoLabel=infolabel,
                                           getLocalizedString=lambda i: k.strings.get(i, ''), LOGINFO=1)
 
         class Control:
@@ -39,11 +50,12 @@ class Kodi:
                 self.value = value
 
             def getLabel(self):
+                return ''                    # Kodi 21: a label wrapper made by getControl() never holds the on-screen text
+
+            def getText(self):               # a text box is read live
                 if k.unreadable:
                     raise RuntimeError('no control')
                 return self.value
-
-            getText = getLabel
 
         class Window:
             def __init__(self, window_id):
@@ -95,10 +107,25 @@ class SkinSwitch(unittest.TestCase):
         k.ns['_switch_once']()
         self.assertEqual(k.clicks, [])
 
-    def test_unreadable_dialog_is_not_clicked(self):
+    def test_unreadable_text_is_not_clicked(self):
         k = Kodi({5: KEEP}, unreadable=True)
         k.ns['_switch_once']()
-        self.assertEqual(k.clicks, [])                            # identity uncertain: fail closed
+        self.assertEqual(k.clicks, [])                            # the text cannot be read: never click
+
+    def test_kodi_21_label_wrapper_returns_nothing_and_it_still_answers(self):
+        k = Kodi({5: KEEP}, heading_label=False)                  # neither the wrapper nor the info label gives the heading
+        self.assertTrue(k.ns['_switch_once']())
+        self.assertEqual([c[1] for c in k.clicks], [KEEP])        # the text identifies the question
+
+    def test_right_text_under_another_heading_is_not_clicked(self):
+        k = Kodi({5: ('Delete everything?', STRINGS[13111])})
+        k.ns['_switch_once']()
+        self.assertEqual(k.clicks, [])
+
+    def test_heading_is_only_read_while_the_dialog_is_on_top(self):
+        k = Kodi({5: KEEP}, topmost=False)                        # something else is on top: its label is not taken for the heading
+        self.assertTrue(k.ns['_switch_once']())
+        self.assertEqual([c[1] for c in k.clicks], [KEEP])
 
     def test_other_language(self):
         k = Kodi({5: (GERMAN[13123], GERMAN[13111])}, strings=GERMAN)

@@ -5,7 +5,8 @@
   "NetflixRootBack.xml",
   "NetflixMovieDetails.xml",
   "VirtualKeyboardBack.xml",
-  "NetflixExitConfirm.xml"
+  "NetflixExitConfirm.xml",
+  "NetflixWatchlistMore.xml"
  ],
  "keymaps_previous": {
   "NetflixRootBack.xml": [
@@ -75,5 +76,8 @@
   "TMDbHelper.Corner.Radius": "20",
   "TMDbHelper.UseLocalWindowIDs": "10000|11101|11102|11103|11104|11105|11106|11107|11108|11109|11162|11163|11165",
   "VideoOSD.PersonCredits.CastCrew": "crew"
- }
+ },
+ "keymaps_new": [
+  "NetflixWatchlistMore.xml"
+ ]
 }

@@ -50,7 +50,7 @@
                                 <animation effect="fade" start="0" end="100" delay="120" time="160" tween="sine" easing="out" reversible="true">Visible</animation>
                                 <animation effect="fade" start="100" end="0" time="120" tween="sine" easing="out" reversible="true">Hidden</animation>
                                 <include content="Furniture_Header">
-                                    <param name="label">Jump to</param>
+                                    <param name="label">Jump To</param>
                                     <param name="include_right">false</param>
                                     <param name="textcolor">panel_fg_90</param>
                                     <param name="top">780</param>

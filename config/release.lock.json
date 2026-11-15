@@ -1,7 +1,7 @@
 {
  "_comment": "Every input of a release build. tools/build_release.py reads nothing else. Change a version here and in the overlay addon.xml together.",
- "release": "2.1 (security fixes)",
- "previous_release": "2",
+ "release": "4 (security fixes on release 3)",
+ "previous_release": "3",
  "github_user": "PaulGitHitGub",
  "repo_slug": "ChadFlix-Kodi-Skin",
  "repository_addon": "repository.chadflix",
@@ -9,15 +9,15 @@
   "plugin.program.autocompletion": "2.1.2"
  },
  "previous_versions": {
-  "skin.arctic.fuse.3": "3.99.418.2",
-  "plugin.video.pov": "6.99.1103.2",
+  "skin.arctic.fuse.3": "3.99.418.3",
+  "plugin.video.pov": "6.99.1103.3",
   "script.chadflix.setup": "1.0.2",
   "repository.chadflix": "1.0.0"
  },
  "addons": [
   {
    "id": "plugin.video.pov",
-   "version": "6.99.1103.3",
+   "version": "6.99.1103.4",
    "source": {
     "type": "upstream+overlay",
     "upstream": {
@@ -185,7 +185,7 @@
   },
   {
    "id": "skin.arctic.fuse.3",
-   "version": "3.99.418.3",
+   "version": "3.99.418.4",
    "source": {
     "type": "upstream+overlay",
     "upstream": {

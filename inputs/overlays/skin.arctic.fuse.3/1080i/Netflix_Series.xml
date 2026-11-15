@@ -237,7 +237,7 @@
                 <itemgap>16</itemgap>
                 <defaultcontrol>30</defaultcontrol>
                 <control type="grouplist" id="30">
-                    <width>640</width>
+                    <width>750</width>
                     <height>355</height>
                     <orientation>vertical</orientation>
                     <usecontrolcoords>false</usecontrolcoords>
@@ -245,7 +245,7 @@
                     <onup>noop</onup>
                     <ondown>noop</ondown>
                     <control type="group" id="44">
-                        <width>640</width>
+                        <width>750</width>
                         <height>63</height>
                         <defaultcontrol>17</defaultcontrol>
                         <visible>!String.IsEmpty(Window.Property(Series.ID))</visible>
@@ -368,7 +368,7 @@
                             <width>480</width>
                             <height>56</height>
                             <control type="label">
-                                <width>480</width>
+                                <width>560</width>
                                 <height>56</height>
                                 <font>font_main</font>
                                 <textcolor>FFE7E7E7</textcolor>
@@ -377,7 +377,7 @@
                                 <visible>Control.HasFocus(17)</visible>
                             </control>
                             <control type="label">
-                                <width>480</width>
+                                <width>560</width>
                                 <height>56</height>
                                 <font>font_main</font>
                                 <textcolor>FFE7E7E7</textcolor>
@@ -1039,6 +1039,8 @@
                             <height>350</height>
                             <texture border="14" colordiffuse="FFF5F5F5">common/box.png</texture>
                         </control>
+                        <!-- R10.17: the plate above is the white ring; until the art arrives the card inside it is the shared flat loading card (FF222222, the poster's mask, no sweep) -->
+                        <include content="Netflix_Loading_Card"><param name="left">3</param><param name="top">3</param><param name="width">234</param><param name="height">344</param></include>
                         <control type="image">
                             <left>3</left>
                             <top>3</top>

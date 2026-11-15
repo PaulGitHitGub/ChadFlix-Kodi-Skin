@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<keymap>
+    <!-- R10.18 "Add to Another Watchlist". On the movie page (dialog 1167 = window11167) OK on the Watchlist button is a toggle (add, or remove when the title is on
+         one list). A title on several lists reads "Manage Watchlists" and OK opens the picker with checks; to put a title that is already on a list onto ANOTHER one,
+         the Menu / context key (keyboard Menu or C, remote Menu) or a LONG PRESS of OK on the Watchlist button runs `netflix_saved_lists.py another-movie`, which opens the
+         same picker (heading "Add to Another Watchlist"). The script ignores the key unless control 18 has focus, so Play / Trailer / the thumb are unaffected. Only these
+         keys start it (never an arrow key). Long press is mapped in <keyboard> only (a <remote> long press is ignored by Kodi and would replace the short press: see
+         NetflixExitConfirm.xml); the Shield remote's OK arrives as the keyboard key `return`. The show page needs no keymap: its Python window takes Kodi's
+         ContextMenu action (Menu key, and the default long-press OK mapping) itself. Remove this file and restart Kodi to undo. -->
+    <window11167>
+        <keyboard>
+            <menu>RunScript(special://skin/extras/netflix_saved_lists.py,another-movie)</menu>
+            <c>RunScript(special://skin/extras/netflix_saved_lists.py,another-movie)</c>
+            <return mod="longpress">RunScript(special://skin/extras/netflix_saved_lists.py,another-movie)</return>
+            <enter mod="longpress">RunScript(special://skin/extras/netflix_saved_lists.py,another-movie)</enter>
+        </keyboard>
+        <remote>
+            <menu>RunScript(special://skin/extras/netflix_saved_lists.py,another-movie)</menu>
+        </remote>
+    </window11167>
+</keymap>

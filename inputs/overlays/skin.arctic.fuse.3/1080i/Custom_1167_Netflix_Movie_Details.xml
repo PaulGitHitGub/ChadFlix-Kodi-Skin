@@ -427,7 +427,7 @@
                         <width>480</width>
                         <height>56</height>
                         <control type="label">
-                            <width>480</width>
+                            <width>560</width>
                             <height>56</height>
                             <font>font_main</font>
                             <textcolor>FFE7E7E7</textcolor>
@@ -436,7 +436,7 @@
                             <visible>Control.HasFocus(17)</visible>
                         </control>
                         <control type="label">
-                            <width>480</width>
+                            <width>560</width>
                             <height>56</height>
                             <font>font_main</font>
                             <textcolor>FFE7E7E7</textcolor>

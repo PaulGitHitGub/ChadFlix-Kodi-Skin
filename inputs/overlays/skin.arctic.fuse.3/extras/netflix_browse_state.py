@@ -90,6 +90,13 @@ HOME_FIELDS = ('Pos', 'Lbl', 'Path', 'Media', 'View', 'Off')
 HOME_VIEW = 'Netflix.Home.View.'      # published per slot: the entry's view ('' = its own path); the hook for a per-row view tile (EXTENDING.md)
 HOME_KIND = 'Netflix.Home.Views.'     # R10.15b, published per slot: '' (no view tile) | movies | shows | anime-movies | anime-shows (which picker the tile opens)
 HOME_VIEWNAME = 'Netflix.Home.ViewName.'   # R10.15b, published per slot: the current view's Title Case name (tile value, header "Genre . View")
+# R10.19: the genre drawer follows the Home layout. Published (only when the layout changes, from home_apply) per tab code (M | S) and drawer row n:
+# Netflix.Menu.Label / Gid / Hid / Div .<code>.<n>, Netflix.Menu.DivAt.<code>. Rows shown at Home come first, in Customize Home's order; the genres hidden at Home
+# follow (dimmer, after a hairline divider) and stay openable. Default entries only (a custom entry is not a genre).
+MENU = 'Netflix.Menu.'
+MENU_STATE = ('Netflix.GenreMenu.Genre',)   # the remembered drawer row is a slot id: meaningless once the order moved (ViewFocus is a views item id: unaffected)
+MENU_ROWS_MAX = 11
+MENU_SLOTS = (3751, 3752, 3753, 3754, 3755, 3756, 3757, 3758, 3759, 3760, 3765)   # drawer row n -> its button id
 HOME_CUSTOM_SECONDS = 20.0
 HOME_AFTER_GATE_SECONDS = 1.0   # review 5: deferred / re-pointed rows start no sooner than this after the boot gate released
 HOME_RESET = ('Completed', 'NonEmpty', 'EmptyConfirmed', 'Failed', 'RetryAttempts')   # per-slot state that belonged to the old entry
@@ -246,6 +253,23 @@ def home_layout(tab, raw):
 HOME_SLOTS = frozenset(s for t in HOME_TABS.values() for s in t['slots'])
 
 
+def menu_rows(tab, layout):
+    """R10.19: [(label, genre id, hidden at Home)] in drawer order: the shown default entries in layout order, then the hidden ones in layout order.
+    A genre appears once (a damaged layout that names an id twice keeps the first), and a default no position names is appended as hidden (still openable)."""
+    defaults = HOME_TABS[tab]['defaults']
+    ids = {e[0] for e in defaults}
+    gid = lambda path: (parse_qs(urlsplit(path).query).get('genre_id') or [''])[0]
+    seen, rows = set(), []
+    for slot, entry, shown, reason in layout:
+        if entry.get('custom') or entry['id'] not in ids or entry['id'] in seen:
+            continue
+        seen.add(entry['id'])
+        rows.append((entry['label'], gid(entry['path']), not shown))
+    rows = [r for r in rows if not r[2]] + [r for r in rows if r[2]]
+    return rows + [(e[1], gid(e[2]), True) for e in defaults if e[0] not in seen]
+
+
+
 def home_focusable(api, row):
     """review 7: focus may only go to a slot that is shown and not stale (a hidden or re-pointed row draws nothing)."""
     if row not in HOME_SLOTS:
@@ -292,6 +316,14 @@ GRID_QUIET_SECONDS = 1.0      # the page must be in front, with no dialog or pla
 GRID_SETTLE_SECONDS = 1.0     # accept a first load whose "updating" flag was never observed after this long
 GRID_EMPTY_SECONDS = 3.0      # an empty list this long after a load was asked for, and not loading, is an empty answer
 GRID_FAIL_SECONDS = 25.0
+# R10.21 (owner freeze 13:55): the first load of a page waits only for the tab under the grid (row_busy), for no running POV call and POV's
+# quiet window. R10.21.1: nothing ever forces the start (the POV marker is a last-setter token: no marker does not prove a row's call ended).
+# Safety net: after GRID_STUCK_SECONDS the page fails if nothing changed for GRID_STUCK_STILL_SECONDS (busy rows, marker token, wait reason) and no
+# POV marker is up; while POV calls keep coming, or one call holds the marker, it waits on, up to POV_QUIET_CAP_SECONDS. GRID_STUCK names a
+# failed page (the skin: "Couldn't Load Titles. Press Back to Try Again.").
+GRID_STUCK_SECONDS = 20.0
+GRID_STUCK_STILL_SECONDS = 8.0
+GRID_STUCK = 'Netflix.Grid.Stuck'
 GRID_STALE_SECONDS = 8.0      # a list that still held another genre is only trusted after it was seen reloading, or this long
 GRID_RETRY_SECONDS = 30.0     # after a step that failed or brought nothing new, wait this long before asking again
 # A load-more step is an add-on call; OK and Back start scripts through the keymaps, and this observer cannot
@@ -883,6 +915,43 @@ class Coordinator:
         self.home_wait = None
         self.home_apply(now)
 
+    def menu_publish(self, tab, layout):
+        """R10.19: publish the genre drawer's rows for this tab (see MENU). Runs from home_apply only (start, and after Customize Home closed); nothing runs per key press."""
+        api = self.api
+        code = HOME_TABS[tab]['code']
+        rows = menu_rows(tab, layout)
+        signature = repr(rows)
+        known = getattr(self, 'menu_sig', None)
+        if known is None:
+            known = self.menu_sig = {}
+        if known.get(tab) == signature:
+            return
+        first = known.get(tab) is None
+        known[tab] = signature
+        first_hidden = next((i for i, r in enumerate(rows) if r[2]), None)
+        for n, (label, gid, hidden) in enumerate(rows, 1):
+            api.put('%sLabel.%s.%d' % (MENU, code, n), label)
+            api.put('%sGid.%s.%d' % (MENU, code, n), gid)
+            for field, on in (('Hid', hidden), ('Div', first_hidden is not None and first_hidden > 0 and n - 1 == first_hidden)):
+                key = '%s%s.%s.%d' % (MENU, field, code, n)
+                api.put(key, '1') if on else api.clear(key)
+        for n in range(len(rows) + 1, MENU_ROWS_MAX + 1):   # a shorter list leaves no stale row behind
+            for field in ('Label', 'Gid', 'Hid', 'Div'):
+                api.clear('%s%s.%s.%d' % (MENU, field, code, n))
+        key = '%sDivAt.%s' % (MENU, code)
+        if first_hidden is not None and first_hidden > 0:
+            api.put(key, str(first_hidden + 1))
+        else:
+            api.clear(key)
+        if not first:
+            for key in MENU_STATE:   # the remembered row was a slot of the old order
+                api.clear(key)
+            # a view grid opened from the drawer reopens it on GridGenre (a slot id): follow the genre to its new slot, so Back highlights the right row
+            if api.prop('Netflix.GenreMenu.Grid') == tab and api.prop('Netflix.GenreMenu.GridGenre'):
+                new_slot = next((MENU_SLOTS[n] for n, r in enumerate(rows) if r[1] == api.prop('Netflix.GenreMenu.GridViewGenre')), None)
+                api.put('Netflix.GenreMenu.GridGenre', new_slot) if new_slot else api.clear('Netflix.GenreMenu.GridGenre')
+        api.log('genre menu order %s: %s' % (tab, ', '.join(('(%s)' if r[2] else '%s') % r[0] for r in rows)))
+
     def home_apply(self, now, startup=False):
         """Read the Customize Home skin strings, publish the layout and reset the slots whose entry changed or came back on."""
         api = self.api
@@ -893,7 +962,9 @@ class Coordinator:
             for k in range(1, len(t['slots']) + 1):
                 strings = [api.skin_string('Netflix.Home.%s.%s.%d' % (f, t['code'], k)) for f in HOME_FIELDS]
                 raw.append(dict(zip(('id', 'label', 'path', 'media', 'view', 'off'), strings)))
-            for slot, entry, shown, reason in home_layout(tab, raw):
+            layout = home_layout(tab, raw)
+            self.menu_publish(tab, layout)   # R10.19: the genre drawer's order (a no-op unless it changed)
+            for slot, entry, shown, reason in layout:
                 signature = entry['id'] + '\t' + home_path(entry) + '\t' + entry['view']
                 broken = api.prop(HOME_BROKEN + str(slot))
                 if broken:
@@ -1354,6 +1425,8 @@ class Coordinator:
         """Not on a grid page (or a player is up): 593 gets no route, so Kodi cannot load it by itself."""
         if self.grid is not None and now is not None:
             self.grid_return = {'left': now, 'origin': self.grid['origin'], 'tab': grid_tab(self.grid['path'])}
+        if self.grid is not None and self.grid.get('stuck'):
+            self.api.clear(GRID_STUCK)   # R10.21 (review F3): no stale "Couldn't Load Titles." when the page is opened again
         self.grid = None
         if self.grid_armed:
             self.api.clear(GRID_FOR)
@@ -1409,9 +1482,12 @@ class Coordinator:
             # and the list is not loading: the route set now is the only add-on call starting.
             # Review F4: a row job the grid paused keeps loading (the rows stay "visible" to Kodi under the grid), so
             # also wait until no row list is loading: two add-on launches together is the invoker race (HANDOFF 12.18).
-            if (quiet >= GRID_FIRST_QUIET_SECONDS and not self.inflight and not updating
-                    and not any(api.updating(row) for row in ALL_ROWS)):
-                self.grid_apply(grid, now, count)
+            # R10.21: only the rows of the tab under the grid (row_busy), plus POV's marker and quiet window; and a watchdog (grid_wait).
+            self.grid_wait(grid, now, quiet, count, updating)
+            return True
+        if grid.get('stuck'):
+            # R10.21: the first load never started (watchdog): no route was set and the marker is not ours to check; stay failed until Back.
+            self.grid_hold_focus(grid)
             return True
         if not api.grid_marker():
             # The Videos window was rebuilt (skin reload): its lists are new and empty and it is loading its
@@ -1430,6 +1506,73 @@ class Coordinator:
             self.grid_shown(grid, now, count, quiet)
         return True
 
+    def grid_under(self):
+        """R10.21: the tab under the grid page: Netflix.Tab with the tab swap on, otherwise the root the window's own directory is on
+        (build_tvshow_list = Shows). Not Control.IsVisible(row): a genre row's visibility sits on its parent group."""
+        api = self.api
+        if api.swap():
+            return 'shows' if api.prop(TAB) == 'shows' else 'movies'
+        return 'shows' if 'build_tvshow_list' in xbmc.getInfoLabel('Container.FolderPath') else 'movies'
+
+    def grid_wait(self, grid, now, quiet, count, updating):
+        """R10.21: start the first load of a grid page once it may (the serial loading guard as before: no row job in flight, the list
+        not loading), counting only the rows of the tab under the grid: a shown row's IsUpdating counts, the other tab's rows only while
+        the observer dropped their job (row_busy's orphan rule; a hidden list Kodi refetched after a playback stop never clears its flag).
+        Never while POV's marker is up (POV_QUIET_CAP_SECONDS cap), and only in POV's quiet window.
+        Watchdog, on `quiet` (the time the page has been in front with no dialog and the window not loading; a dialog RESTARTS it): one log
+        line per wait reason (the first time it is seen). R10.21.1: no forced start; the grid starts only through the gate above. Failure
+        (grid_stuck): after GRID_STUCK_SECONDS with nothing changing for GRID_STUCK_STILL_SECONDS and no POV marker up, or at
+        POV_QUIET_CAP_SECONDS whatever happens."""
+        api = self.api
+        if quiet < GRID_FIRST_QUIET_SECONDS:
+            return
+        token = api.prop(POV_RUNNING)
+        marker = bool(token) and now - self.pov_token_since < POV_QUIET_CAP_SECONDS
+        under = self.grid_under()
+        why = detail = ''
+        busy = []
+        if self.inflight:
+            why, detail = 'row job', 'row %s in flight' % self.inflight.get('row')
+        elif updating:
+            why = detail = 'grid list loading'
+        else:
+            # the same rows as row_busy(row, under, now), with api.rows(under) read once (review F8): mode '' goes straight to the orphan rule
+            shown = set(api.rows(under))
+            busy = [row for row in ALL_ROWS if api.updating(row) and (row in shown or self.row_busy(row, '', now))]
+            if busy:
+                why, detail = 'rows', 'rows %s loading (tab under the grid: %s)' % (', '.join(str(row) for row in busy), under)
+            elif marker:
+                why, detail = 'pov', 'a POV call is running'
+            elif not self.pov_quiet(now):
+                why, detail = 'quiet', "POV's quiet window"
+        seen = grid.setdefault('whys', set())
+        if not why:
+            if seen:
+                api.log('grid: wait over after %.2f s' % quiet)
+            self.grid_apply(grid, now, count)
+            return
+        if why not in seen:
+            seen.add(why)
+            api.log('grid: waiting (%s)' % detail)
+        progress = (why, tuple(busy), token)
+        if progress != grid.get('progress') or 'progress_at' not in grid:
+            grid['progress'], grid['progress_at'] = progress, now
+        # R10.21.1: no forced start (fail closed). A held marker is a call in progress (Astra finding 2): only the 60 s cap fails the page then.
+        if ((quiet >= GRID_STUCK_SECONDS and now - grid['progress_at'] >= GRID_STUCK_STILL_SECONDS and not marker)
+                or quiet >= POV_QUIET_CAP_SECONDS):
+            self.grid_stuck(grid, quiet, detail)
+
+    def grid_stuck(self, grid, waited, detail):
+        """R10.21: the first load could not start in GRID_STUCK_SECONDS: the page fails (no route is set). Grid.Failed shows the failed line
+        and parks focus on the tab (the skin and grid_hold_focus); Grid.Stuck picks its text. Back closes the page as on any failed page."""
+        api = self.api
+        grid.update(phase='failed', stuck=True)
+        api.clear(GRID_READY)
+        api.put(GRID_STUCK, grid['path'])
+        api.put(GRID_FAILED, grid['path'])
+        api.log('grid: first load never started in %.1f s (%s): failed until the page is opened again' % (waited, detail))
+        self.grid_hold_focus(grid)
+
     def grid_new(self, path, now):
         api = self.api
         url = grid_url(path)
@@ -1438,6 +1581,9 @@ class Coordinator:
                 'start': 0, 'index': 0, 'moved': now, 'kept': False, 'fresh': self.grid_seen != path,
                 'stray': None, 'origin': self.grid_origin(path)}
         self.grid_seen = path
+        api.clear(GRID_STUCK)   # R10.21
+        if api.prop(GRID_FAILED) == path and grid_url(path):
+            api.clear(GRID_FAILED)   # R10.21 (review F3): a reopened failed page waits behind grey cards, not the old failed line
         api.put(GRID_NAME, dict(grid_query(path)).get('name', ''))
         if not url:
             api.clear(GRID_READY)
@@ -1462,6 +1608,7 @@ class Coordinator:
         api = self.api
         stale = '' if grid['kept'] or count == 0 else self.grid_first()
         api.clear(GRID_FAILED)
+        api.clear(GRID_STUCK)   # R10.21
         api.put(GRID_URL, grid['url'])
         api.put(GRID_FOR, grid['path'])
         api.grid_marker('true')

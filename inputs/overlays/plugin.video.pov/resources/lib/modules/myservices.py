@@ -11,7 +11,8 @@ get_setting, set_setting, sleep = kodi_utils.get_setting, kodi_utils.set_setting
 notification, confirm_dialog = kodi_utils.notification, kodi_utils.confirm_dialog
 # R10.25 (security audit F-03): the sign-in QR codes are drawn on the device (modules/local_qr.py). Before, every sign-in link
 # (and Trakt's code) went to api.qrserver.com to be drawn, and the TMDb link went through tinyurl.com over plain HTTP.
-# local_qr.official() also checks each link: https, the service's own host, no user/password part; anything else stops the sign-in.
+# Each link is also checked: https, the service's own domain (or a subdomain of it), no user/password part; anything else stops
+# the sign-in. A link line may come without "https://" (it is shown as received); the link in the QR code is always https.
 meta_keys = 'title year poster fanart clearlogo'
 code_str, nav2_str, await_str = 'PIN CODE: [B]%s[/B]', 'LOCATION: [B]%s[/B]', 'REMAINING: [B]%02d:%02d[/B]'
 auth_str, noauth_str = 'Authorized: Select to Remove', 'Unauthorized: Select to Add'
@@ -100,7 +101,7 @@ class Premiumize:
 		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
 		qr_icon = local_qr.icon('premiumize', result.get('verification_uri'))
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
-		detail = code_str % result['user_code'], nav2_str % local_qr.official('premiumize', result['verification_uri'])
+		detail = code_str % result['user_code'], nav2_str % local_qr.shown('premiumize', result['verification_uri'])
 		progress_dialog = _make_progress_dialog(meta=meta)
 		timer = RepeatTimer(result['interval'], self.poll, args=(conn, data))
 		timer.start()
@@ -152,7 +153,7 @@ class Offcloud:
 		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
 		qr_icon = local_qr.icon('offcloud', result.get('verification_uri_complete'))
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
-		detail = code_str % result['user_code'], nav2_str % local_qr.official('offcloud', result['verification_uri'])
+		detail = code_str % result['user_code'], nav2_str % local_qr.shown('offcloud', result['verification_uri'])
 		progress_dialog = _make_progress_dialog(meta=meta)
 		timer = RepeatTimer(result['interval'], self.poll, args=(conn, data))
 		timer.start()
@@ -203,7 +204,7 @@ class TorBox:
 		expires_in, expires_at = 600, 600 + time.monotonic()
 		qr_icon = local_qr.icon('torbox', result.get('verification_url'), bgcolor='04bf8a')
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
-		detail = code_str % result['code'], nav2_str % local_qr.official('torbox', result['friendly_verification_url'])
+		detail = code_str % result['code'], nav2_str % local_qr.shown('torbox', result['friendly_verification_url'])
 		progress_dialog = _make_progress_dialog(meta=meta)
 		timer = RepeatTimer(result['interval'], self.poll, args=(conn, data))
 		timer.start()
@@ -261,7 +262,7 @@ class RealDebrid:
 		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
 		qr_icon = local_qr.icon('realdebrid', result.get('direct_verification_url'))
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
-		detail = code_str % result['user_code'], nav2_str % local_qr.official('realdebrid', result['verification_url'])
+		detail = code_str % result['user_code'], nav2_str % local_qr.shown('realdebrid', result['verification_url'])
 		progress_dialog = _make_progress_dialog(meta=meta)
 		timer = RepeatTimer(result['interval'], self.poll, args=(conn, data))
 		timer.start()
@@ -317,7 +318,7 @@ class AllDebrid:
 		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
 		qr_icon = local_qr.icon('alldebrid', result.get('user_url'), bgcolor='ffd700')
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
-		detail = code_str % result['pin'], nav2_str % local_qr.official('alldebrid', result['base_url'])
+		detail = code_str % result['pin'], nav2_str % local_qr.shown('alldebrid', result['base_url'])
 		progress_dialog = _make_progress_dialog(meta=meta)
 		timer = RepeatTimer(5, self.poll, args=(conn, result['check_url']))
 		timer.start()
@@ -412,7 +413,7 @@ class Trakt:
 		result = response.json()
 		data['code'] = result['device_code']
 		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
-		link = local_qr.official('trakt', result['verification_url'])
+		link = local_qr.shown('trakt', result['verification_url'])
 		qr_icon = local_qr.icon('trakt', '%s/%s' % (link, result['user_code']), color='f00')
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
 		detail = code_str % result['user_code'], nav2_str % link
@@ -486,7 +487,7 @@ class MDBList:
 		expires_in, expires_at = result['expires_in'], result['expires_in'] + time.monotonic()
 		qr_icon = local_qr.icon('mdblist', result.get('verification_uri_complete'))
 		meta = {**dict.fromkeys(meta_keys.split(), ''), 'poster': qr_icon}
-		detail = code_str % result['user_code'], nav2_str % local_qr.official('mdblist', result['verification_uri'])
+		detail = code_str % result['user_code'], nav2_str % local_qr.shown('mdblist', result['verification_uri'])
 		progress_dialog = _make_progress_dialog(meta=meta)
 		timer = RepeatTimer(result['interval'], self.poll, args=(conn, data))
 		timer.start()

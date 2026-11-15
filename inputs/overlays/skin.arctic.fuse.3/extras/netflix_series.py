@@ -29,6 +29,10 @@ VIDEOS, FULLSCREEN_VIDEO = 10025, 12005
 PRIMARY, RESTART, MORE, RELATED = 10, 11, 12, 13
 DESCRIPTION, FAVORITE, BOOKMARK = 16, 17, 18
 DETAIL_ACTIONS = {DESCRIPTION, FAVORITE, BOOKMARK}
+MORE_LISTS = 1018   # R10.18: "Add to Another Watchlist" (the Menu key / a long press of OK on the Watchlist button): not a control, only a request
+CONTEXT_MENU = 117  # Kodi's ACTION_CONTEXT_MENU (Menu key, long-press OK)
+SAVED_COOLDOWN = 0.7  # seconds after a Favorite / Watchlist action in which another request (a held OK repeating, the OK that closed the picker) is dropped
+SAVED_GUARD = 1.4     # ... and never less than this long after the action STARTED: on the show window (a Python dialog) a held key delivered ONE late repeat ~1.03 s after the press (measured), so the lock runs to start + 1.4
 STAYS = {MORE, RELATED, FAVORITE, BOOKMARK}  # buttons that are on the page from its first frame
 SEASONS, EPISODES, RECOMMENDATIONS, SECONDARY_STATUS = 20, 21, 22, 23
 BACK = {9, 10, 92}
@@ -364,13 +368,21 @@ def cache_restore(view):
     view.revalidate = "seasons"
 
 
+def remembered(saved):
+    """R10.18: what is kept for a show's next opening: the two states with GENERIC labels, never a watchlist's name (the list may be renamed, or the
+    title removed from it in My Lists, before the page opens again; the real label arrives with the first refresh_saved_actions())."""
+    favorite, bookmarked = saved.get("Favorite") == "true", saved.get("Bookmarked") == "true"
+    return {"Favorite": "true" if favorite else "", "FavoriteLabel": "Remove from Favorites" if favorite else "Favorite",
+            "Bookmarked": "true" if bookmarked else "", "BookmarkLabel": "Remove from Watchlist" if bookmarked else "Add to Watchlist"}
+
+
 def known_restore(view):
     """Like/watchlist icons and ratings as last seen for this show, so the first frame already has them."""
     known = recall(KNOWN, show_key(view.tmdb_id))
     known = known if isinstance(known, dict) else {}
     saved, rated = known.get("saved"), known.get("ratings")
     if isinstance(saved, dict) and set(saved) == set(SAVED_DEFAULT) and all(isinstance(v, str) for v in saved.values()):
-        view.saved = saved
+        view.saved = remembered(saved)
     if any(view.fields.get(key) for key in RATINGS):
         known_store(view, ratings={key: view.fields[key] for key in RATINGS if view.fields.get(key)})
     elif isinstance(rated, dict) and set(rated) <= set(RATINGS) and all(isinstance(v, str) for v in rated.values()):
@@ -494,6 +506,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         self.cover_renewed = float("-inf")
         self.cover_release_at = None
         self.detail_request = None
+        self.saved_done = float("-inf")   # R10.18: monotonic() when the last Favorite / Watchlist action finished (inf while one runs)
         self.closed = False
         self.ready = False
         self.season_moved = float("-inf")
@@ -553,7 +566,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
 
     def refresh_saved_actions(self, action=None):
         from netflix_saved_lists import (
-            ListsError, bookmark_item, favorite_item, media_item, notify, saved_properties,
+            ListsError, bookmark_item, favorite_item, media_item, more_watchlists, notify, saved_properties,
         )
 
         # Each SeriesView owns its own state, including nested recommendations. paint() has already put
@@ -567,11 +580,11 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                 return
             if action == BOOKMARK and not bookmark_item(item):
                 return
+            if action == MORE_LISTS and not more_watchlists(item):
+                return
             self.view.saved = saved_properties(item)
             self.properties(**self.view.saved)
-            known_store(self.view, saved=self.view.saved)
-            if action == BOOKMARK:
-                notify("Added to Watchlist")
+            known_store(self.view, saved=remembered(self.view.saved))   # R10.18: adding to a watchlist is not announced (errors below still notify)
         except (ListsError, OSError, RuntimeError, ImportError, KeyError) as error:
             if action is not None:
                 notify(str(error) if isinstance(error, ListsError) else "Could not update saved titles. Try again.")
@@ -802,12 +815,25 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                 self.refresh()
             else:
                 self.closed = True
+        elif action == CONTEXT_MENU and not view.page and self.focus_id() == BOOKMARK:
+            self.request_saved(view, MORE_LISTS)   # R10.18: Menu key / long-press OK on the Watchlist button: the picker with checks
         elif view.page == "episodes":
             focus = self.focus_id()
             if action == RIGHT and focus == SEASONS:
                 self.enter_episodes()
             elif action == LEFT and focus == EPISODES:
                 self.leave_episodes()
+
+    def request_saved(self, view, action):
+        """R10.18: queue a Favorite / Watchlist action unless one runs, or one finished less than SAVED_COOLDOWN ago (each refused request in the
+        cooldown renews it, so a held OK is one toggle however long it is held)."""
+        since = monotonic() - self.saved_done
+        if since < SAVED_COOLDOWN:
+            if since >= 0:
+                self.saved_done = monotonic()
+            return
+        if self.detail_request is None:
+            self.detail_request = (view, action)
 
     def onClick(self, control):
         if self.closed or self.play_request:
@@ -844,6 +870,8 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                     del self.stack[1]
                 self.stack.append(SeriesView(fields, from_row=False))
                 self.refresh()
+        elif control in {FAVORITE, BOOKMARK}:
+            self.request_saved(view, control)
         elif control in DETAIL_ACTIONS:
             if self.detail_request is None:
                 self.detail_request = (view, control)
@@ -1220,7 +1248,12 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                                 if plot:
                                     xbmcgui.Dialog().ok(view.fields["Title"], plot)
                             else:
-                                self.refresh_saved_actions(action)
+                                started = monotonic()
+                                self.saved_done = float("inf")
+                                try:
+                                    self.refresh_saved_actions(action)
+                                finally:
+                                    self.saved_done = max(monotonic(), started + SAVED_GUARD - SAVED_COOLDOWN)
                         self.detail_request = None
                     self.check_result()
                     self.resolve_play()

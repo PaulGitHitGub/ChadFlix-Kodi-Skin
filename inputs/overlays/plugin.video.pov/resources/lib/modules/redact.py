@@ -73,12 +73,16 @@ def _plain(match, name):
     return match.group(0) if name.lower() in _PLAIN_NAMES else None
 
 
-def _clean_path(host, path, rules):
+_SLUG = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)+$')   # the-dark-knight-2008: a readable name, kept in ordinary log lines
+
+
+def _clean_path(host, path, rules, strict=True):
     parts = path.split('/')
     if _LINK_HOSTS.search(host or '') and (host or '').split('.')[0].lower() not in _API_LABELS:
         # ['', 'd', 'ABC', 'file.mkv'] -> /d/[REDACTED]
         return '/'.join(parts[:2] + [_M]) if len(parts) > 2 and any(parts[2:]) else path
-    return '/'.join(_M if rules['opaque'].match(part) or rules['hex'].match(part) else part for part in parts)
+    return '/'.join(_M if (rules['opaque'].match(part) and (strict or not _SLUG.match(part))) or rules['hex'].match(part) else part
+                    for part in parts)
 
 
 def _clean_url(match, rules, strict):
@@ -95,7 +99,7 @@ def _clean_url(match, rules, strict):
             break
     path, question, query = (slash + after).partition('?')
     host = netloc.rsplit('@', 1)[-1].split(':')[0]
-    path = _clean_path(host, path, rules)
+    path = _clean_path(host, path, rules, strict)
     if question and strict:
         query, hash_mark, fragment = query.partition('#')
         query = '&'.join((pair.partition('=')[0] + '=' + _M) if '=' in pair else pair for pair in query.split('&'))

@@ -1268,85 +1268,113 @@
     <include name="Netflix_Genre_Menu_Row">
         <param name="down">noop</param>
         <definition>
-            <control type="button" id="$PARAM[id]">
-                <left>0</left><top>$PARAM[top]</top><width>396</width><height>64</height>
-                <font>font_main</font><textcolor>FFD8D8D8</textcolor><focusedcolor>00FFFFFF</focusedcolor>
-                <align>left</align><aligny>center</aligny><textoffsetx>32</textoffsetx>
-                <label>$PARAM[label]</label>
-                <texturenofocus />
-                <texturefocus border="24">special://skin/extras/netflix-glass-button-focus.png</texturefocus>
-                <onup>$PARAM[up]</onup>
-                <ondown>$PARAM[down]</ondown>
-                <onleft>noop</onleft>
-                <!-- R10.15a: Right opens the views column for this genre (pure skin: five properties and one focus move). ViewGenre is the id the
-                     R10.11a routes take for this tab (TMDb id / company-41077 on Movies, Trakt slug on Shows). -->
-                <onright condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.ViewGenre,$PARAM[show_id],Home)</onright>
-                <onright condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.ViewGenre,$PARAM[movie_id],Home)</onright>
-                <onright>SetProperty(Netflix.GenreMenu.ViewTitle,$PARAM[label],Home)</onright>
-                <onright>SetProperty(Netflix.GenreMenu.Genre,$PARAM[id],Home)</onright>
-                <onright>SetProperty(Netflix.GenreMenu.Views,true,Home)</onright>
-                <onright>SetFocus(3771)</onright>
-                <include>Netflix_Genre_Menu_Close</include>
-                <onclick>SetProperty(Netflix.GenreMenu.Genre,$PARAM[id],Home)</onclick>
-                <!-- staged/genre-over-root: the grid opens over the Movies/Shows root. The page is a Home property
-                     (Netflix.Grid.Shell, same path as the old shell directory), so the menu-grid tokens are set at
-                     once instead of being adopted by the arrival timer once a directory had loaded. -->
-                <onclick>ClearProperty(Netflix.GenreMenu.PendingToken,Home)</onclick>
-                <onclick>ClearProperty(Netflix.GenreMenu.PendingAction,Home)</onclick>
-                <onclick>ClearProperty(Netflix.GenreMenu.PendingGrid,Home)</onclick>
-                <onclick>ClearProperty(Netflix.GenreMenu.PendingTitle,Home)</onclick>
-                <onclick>SetProperty(Netflix.GenreMenu.Title,$PARAM[label],Home)</onclick>
-                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,shows,Home)</onclick>
-                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Token,genre_id=$PARAM[show_id]&amp;,Home)</onclick>
-                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Action,action=netflix_tv_genres&amp;,Home)</onclick>
-                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,movies,Home)</onclick>
-                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Token,genre_id=$PARAM[movie_id]&amp;,Home)</onclick>
-                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Action,action=tmdb_movies_genres&amp;,Home)</onclick>
-                <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
-                <onclick>ClearProperty(Netflix.TabArrival,Home)</onclick>
-                <onclick>ClearProperty(Netflix.Grid.Row,Home)</onclick>
-                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,shows,Home)</onclick>
-                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,movies,Home)</onclick>
-                <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=netflix_tv_genres&amp;genre_id=$PARAM[show_id]&amp;name=$PARAM[label]&amp;netflix_tab_genre=shows&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
-                <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_genres&amp;genre_id=$PARAM[movie_id]&amp;name=$PARAM[label]&amp;netflix_tab_genre=movies&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
-                <onclick>SetFocus(3736)</onclick>
-                <onclick>ClearProperty(Netflix.GenreMenu.Open,Home)</onclick>
-                <onclick>ClearProperty(Netflix.GenreMenu.Window,Home)</onclick>
-                <onclick>ClearProperty(Netflix.GenreMenu.Origin,Home)</onclick>
-                <!-- From another window (Home, Search, My Lists): open the Movies/Shows root under the grid. -->
-                <onclick condition="!Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
-                <onclick condition="!Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
-                <!-- In Videos but not on the root the grid belongs over (a watchlist, page 2, seasons; or, with the tab
-                     swap off, the other type's root): go there first. From the Movies/Shows root nothing loads. -->
-                <onclick condition="Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]] + ![$EXP[Netflix_Movies_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
-                <onclick condition="Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows] + ![$EXP[Netflix_Shows_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
-            </control>
-            <control type="label">
-                <left>32</left><top>$PARAM[top]</top><width>332</width><height>64</height>
-                <align>left</align><aligny>center</aligny>
-                <font>font_main_bold</font><textcolor>FFF5F5F5</textcolor>
-                <label>$PARAM[label]</label>
-                <visible>Control.HasFocus($PARAM[id])</visible>
-            </control>
-            <!-- R10.15a (F3): while the views column is open, the genre it belongs to is a grey filled pill with bold text (focus is in the column). The pill is
-                 opaque, so it covers the row's regular label; the bold label is drawn over it. The drawer's normal focus look is untouched. -->
             <control type="group">
-                <visible>!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),$PARAM[id]) + !Control.HasFocus($PARAM[id])</visible>
+                <width>360</width><height>64</height>
+                <include content="Netflix_Menu_Row_Look">
+                    <param name="id">$PARAM[id]</param>
+                    <param name="top">0</param>
+                    <param name="h">56</param>
+                    <param name="label">$VAR[Netflix_Menu_Label_$PARAM[n]]</param>
+                    <param name="label_top">0</param>
+                    <param name="label_h">56</param>
+                    <param name="label_w">248</param>
+                    <param name="plain_color">$VAR[Netflix_Menu_Tone_$PARAM[n]]</param>
+                    <param name="plain_when">[String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) | !String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),$PARAM[id])]</param>
+                </include>
+                <!-- the genre whose views column is open: a dim pill and a bold white name while focus is in the column -->
+                <control type="group">
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),$PARAM[id]) + !Control.HasFocus($PARAM[id])</visible>
+                    <control type="image">
+                        <left>16</left><top>0</top><width>328</width><height>56</height>
+                        <texture border="30" colordiffuse="FF2B2B31">special://skin/extras/subtitles/av-pill-480.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>36</left><top>0</top><width>248</width><height>56</height>
+                        <aligny>center</aligny><font>font_main_bold</font><textcolor>FFFFFFFF</textcolor>
+                        <label>$VAR[Netflix_Menu_Label_$PARAM[n]]</label>
+                    </control>
+                </control>
                 <control type="image">
-                    <left>0</left><top>$PARAM[top]</top><width>396</width><height>64</height>
-                    <texture border="18" colordiffuse="FF2A2A2A">common/box.png</texture>
+                    <left>296</left><top>16</top><width>24</width><height>24</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FF9C9CA6">special://skin/extras/icons/angle-right.png</texture>
+                    <visible>!Control.HasFocus($PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) | !String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),$PARAM[id])]</visible>
                 </control>
-                <control type="label">
-                    <left>32</left><top>$PARAM[top]</top><width>312</width><height>64</height>
-                    <align>left</align><aligny>center</aligny>
-                    <font>font_main_bold</font><textcolor>FFF5F5F5</textcolor>
-                    <label>$PARAM[label]</label>
+                <control type="image">
+                    <left>296</left><top>16</top><width>24</width><height>24</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FF101012">special://skin/extras/icons/angle-right.png</texture>
+                    <visible>Control.HasFocus($PARAM[id])</visible>
                 </control>
-            </control>
-            <control type="image">
-                <left>352</left><top>$PARAM[top]</top><width>32</width><height>64</height>
-                <aspectratio>keep</aspectratio>
-                <texture colordiffuse="FFA8A8A8">special://skin/extras/icons/angle-right.png</texture>
+                <control type="image">
+                    <left>296</left><top>16</top><width>24</width><height>24</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/angle-right.png</texture>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views)) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Genre),$PARAM[id]) + !Control.HasFocus($PARAM[id])</visible>
+                </control>
+                <control type="button" id="$PARAM[id]">
+                    <left>16</left><top>0</top><width>328</width><height>56</height>
+                    <label />
+                    <texturenofocus />
+                    <texturefocus />
+                    <onup>$PARAM[up]</onup>
+                    <ondown>$PARAM[down]</ondown>
+                    <onleft>noop</onleft>
+                    <!-- R10.15a: Right opens the views column for this genre (pure skin: five properties and one focus move). ViewGenre is the id the
+                         R10.11a routes take for this tab (TMDb id / company-41077 on Movies, Trakt slug on Shows). -->
+                    <onright>SetProperty(Netflix.GenreMenu.ViewGenre,$VAR[Netflix_Menu_Gid_$PARAM[n]],Home)</onright>
+                    <onright>SetProperty(Netflix.GenreMenu.ViewTitle,$VAR[Netflix_Menu_Label_$PARAM[n]],Home)</onright>
+                    <onright>SetProperty(Netflix.GenreMenu.Genre,$PARAM[id],Home)</onright>
+                    <onright>SetProperty(Netflix.GenreMenu.Views,true,Home)</onright>
+                    <onright>SetFocus(3771)</onright>
+                    <include>Netflix_Genre_Menu_Close</include>
+                    <onclick>SetProperty(Netflix.GenreMenu.Genre,$PARAM[id],Home)</onclick>
+                    <!-- staged/genre-over-root: the grid opens over the Movies/Shows root. The page is a Home property
+                         (Netflix.Grid.Shell, same path as the old shell directory), so the menu-grid tokens are set at
+                         once instead of being adopted by the arrival timer once a directory had loaded. -->
+                    <onclick>ClearProperty(Netflix.GenreMenu.PendingToken,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.GenreMenu.PendingAction,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.GenreMenu.PendingGrid,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.GenreMenu.PendingTitle,Home)</onclick>
+                    <onclick>SetProperty(Netflix.GenreMenu.Title,$VAR[Netflix_Menu_Label_$PARAM[n]],Home)</onclick>
+                    <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,shows,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Token,genre_id=$VAR[Netflix_Menu_Gid_$PARAM[n]]&amp;,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_GenreMenu_Shows] + !$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.Action,action=netflix_tv_genres&amp;,Home)</onclick>
+                    <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Grid,movies,Home)</onclick>
+                    <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.GenreMenu.Token,genre_id=$VAR[Netflix_Menu_Gid_$PARAM[n]]&amp;,Home)</onclick>
+                    <onclick condition="!$EXP[Netflix_GenreMenu_Shows] + !$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.Action,action=tmdb_movies_genres&amp;,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.TabArrival,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.Grid.Row,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,shows,Home)</onclick>
+                    <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Tab,movies,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_GenreMenu_Shows] + !$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=netflix_tv_genres&amp;genre_id=$VAR[Netflix_Menu_Gid_$PARAM[n]]&amp;name=$VAR[Netflix_Menu_Label_$PARAM[n]]&amp;netflix_tab_genre=shows&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
+                    <onclick condition="!$EXP[Netflix_GenreMenu_Shows] + !$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=tmdb_movies_genres&amp;genre_id=$VAR[Netflix_Menu_Gid_$PARAM[n]]&amp;name=$VAR[Netflix_Menu_Label_$PARAM[n]]&amp;netflix_tab_genre=movies&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
+                    <!-- R10.19: the Anime row (genre id anime) opens the anime Trending view, exactly what Anime > Trending in the views column opens, so the grid, its header
+                         ("Anime · Trending") and Back (the drawer reopens with the views column on Trending) are that grid's. Set here, after the generic lines above, which skip it. -->
+                    <onclick condition="$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.ViewFocus,3771,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.GridGenre,$PARAM[id],Home)</onclick>
+                    <onclick condition="$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.GridViewGenre,anime,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.GridViewTitle,$VAR[Netflix_Menu_Label_$PARAM[n]],Home)</onclick>
+                    <onclick condition="$EXP[Netflix_GenreMenu_Shows] + $EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.Action,action=netflix_tv_views&amp;,Home)</onclick>
+                    <onclick condition="!$EXP[Netflix_GenreMenu_Shows] + $EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.GenreMenu.Action,action=netflix_movie_views&amp;,Home)</onclick>
+                    <onclick condition="$EXP[Netflix_GenreMenu_Shows] + $EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=netflix_tv_views&amp;view=trending&amp;genre_id=anime&amp;name=$VAR[Netflix_Menu_Label_$PARAM[n]]&amp;netflix_tab_genre=shows&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
+                    <onclick condition="!$EXP[Netflix_GenreMenu_Shows] + $EXP[Netflix_Menu_Anime_$PARAM[n]]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=netflix_movie_views&amp;view=trending&amp;genre_id=anime&amp;name=$VAR[Netflix_Menu_Label_$PARAM[n]]&amp;netflix_tab_genre=movies&amp;accumulate_to=3&amp;netflix_grid_shell=1&amp;y=$INFO[System.Date(yyyy)]",Home)</onclick>
+                    <onclick>SetFocus(3736)</onclick>
+                    <!-- R10.17: with the grid opening over this page, focus goes into the page in this key press (as a row's "More Titles" tile does), so the page list
+                         scrolls the grid to the top at once; parked on 3736 it stayed at the Continue Watching row's offset until the titles arrived (~1.5 s). -->
+                    <onclick condition="Window.IsActive(Videos) + $EXP[Netflix_Movies_Root_Path] + !String.Contains(Container.FolderPath,new_page=) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]]">SetFocus(8593)</onclick>
+                    <onclick>ClearProperty(Netflix.GenreMenu.Open,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.GenreMenu.Window,Home)</onclick>
+                    <onclick>ClearProperty(Netflix.GenreMenu.Origin,Home)</onclick>
+                    <!-- From another window (Home, Search, My Lists): open the Movies/Shows root under the grid. -->
+                    <onclick condition="!Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                    <onclick condition="!Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+                    <!-- In Videos but not on the root the grid belongs over (a watchlist, page 2, seasons; or, with the tab
+                         swap off, the other type's root): go there first. From the Movies/Shows root nothing loads. -->
+                    <onclick condition="Window.IsActive(Videos) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]] + ![$EXP[Netflix_Movies_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onclick>
+                    <onclick condition="Window.IsActive(Videos) + !$EXP[Netflix_Tab_Swap_On] + $EXP[Netflix_GenreMenu_Shows] + ![$EXP[Netflix_Shows_Root_Path] + !String.Contains(Container.FolderPath,new_page=)]">Container.Update("plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458")</onclick>
+                </control>
             </control>
         </definition>
     </include>
@@ -1356,14 +1384,22 @@
          view, Default or check mark. Genre id and title are Home properties set by Right on the row (Netflix.GenreMenu.ViewGenre / ViewTitle). -->
     <include name="Netflix_Genre_Views_Item">
         <definition>
+            <include content="Netflix_Menu_Row_Look">
+                <param name="id">$PARAM[id]</param>
+                <param name="top">$PARAM[top]</param>
+                <param name="h">56</param>
+                <param name="label">$PARAM[label]</param>
+                <param name="label_top">$PARAM[top]</param>
+                <param name="label_h">56</param>
+                <param name="label_w">292</param>
+                <param name="plain_color">FFD8D8D8</param>
+                <param name="plain_when">!Control.HasFocus($PARAM[id])</param>
+            </include>
             <control type="button" id="$PARAM[id]">
-                <left>20</left><top>$PARAM[top]</top><width>460</width><height>64</height>
-                <!-- owner-approved D5 look: the focused view is a white rounded pill with dark text (the drawer's own genre rows keep their glass focus) -->
-                <font>font_main</font><textcolor>FFD8D8D8</textcolor><focusedcolor>FF080808</focusedcolor>
-                <align>left</align><aligny>center</aligny><textoffsetx>32</textoffsetx>
-                <label>$PARAM[label]</label>
+                <left>16</left><top>$PARAM[top]</top><width>328</width><height>56</height>
+                <label />
                 <texturenofocus />
-                <texturefocus border="18" colordiffuse="FFF5F5F5">common/box.png</texturefocus>
+                <texturefocus />
                 <onup>$PARAM[up]</onup>
                 <ondown>$PARAM[down]</ondown>
                 <onright>noop</onright>
@@ -1416,6 +1452,9 @@
                 <onclick condition="$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=netflix_tv_views&amp;view=$PARAM[view_show]&amp;genre_id=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewGenre)]&amp;name=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)]&amp;netflix_tab_genre=shows&amp;accumulate_to=3&amp;netflix_grid_shell=1",Home)</onclick>
                 <onclick condition="!$EXP[Netflix_GenreMenu_Shows]">SetProperty(Netflix.Grid.Shell,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=netflix_movie_views&amp;view=$PARAM[view_movie]&amp;genre_id=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewGenre)]&amp;name=$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)]&amp;netflix_tab_genre=movies&amp;accumulate_to=3&amp;netflix_grid_shell=1&amp;y=$INFO[System.Date(yyyy)]",Home)</onclick>
                 <onclick>SetFocus(3736)</onclick>
+                <!-- R10.17: with the grid opening over this page, focus goes into the page in this key press (as a row's "More Titles" tile does), so the page list
+                     scrolls the grid to the top at once; parked on 3736 it stayed at the Continue Watching row's offset until the titles arrived (~1.5 s). -->
+                <onclick condition="Window.IsActive(Videos) + $EXP[Netflix_Movies_Root_Path] + !String.Contains(Container.FolderPath,new_page=) + [$EXP[Netflix_Tab_Swap_On] | !$EXP[Netflix_GenreMenu_Shows]]">SetFocus(8593)</onclick>
                 <onclick>ClearProperty(Netflix.GenreMenu.Open,Home)</onclick>
                 <onclick>ClearProperty(Netflix.GenreMenu.Window,Home)</onclick>
                 <onclick>ClearProperty(Netflix.GenreMenu.Origin,Home)</onclick>
@@ -1444,6 +1483,53 @@
         <control type="image">
             <texture border="24">special://skin/extras/netflix-glass-button.png</texture>
         </control>
+    </include>
+
+    <!-- R10.19 (design C, "Tile Popover", staged/showing-picker-redesign). ONE component for the showing picker (window 1185), the genre drawer and its views column:
+         a solid panel (FF141418 under the same glass outline, so nothing behind it shows through), the header, and the row look (white focus pill with 101012 text).
+         Geometry (skin px): panel 360 wide, pill inset 16 (328 x 56), text x 36, pitch 64, rows 28, header 22. -->
+    <include name="Netflix_Menu_Solid_Background">
+        <control type="image">
+            <texture border="24" colordiffuse="FF141418">common/box.png</texture>
+        </control>
+        <control type="image">
+            <texture border="24">special://skin/extras/netflix-glass-button.png</texture>
+        </control>
+    </include>
+
+    <include name="Netflix_Menu_Header">
+        <definition>
+            <control type="label">
+                <left>36</left><top>8</top><width>300</width><height>48</height>
+                <aligny>center</aligny><font>font_pick_cap_bold</font><textcolor>FF9C9CA6</textcolor>
+                <label>$PARAM[label]</label>
+            </control>
+        </definition>
+    </include>
+
+    <!-- The row look: the white pill while the button $PARAM[id] has focus, its label in 28 (dark and bold on the pill, $PARAM[plain_color] otherwise, shown
+         while $PARAM[plain_when]). Positions are absolute inside the caller's group: the picker and the views column pass the row's top, the drawer rows (each in
+         its own 64 px group of a grouplist) pass 0. -->
+    <include name="Netflix_Menu_Row_Look">
+        <definition>
+            <control type="image">
+                <left>16</left><top>$PARAM[top]</top><width>328</width><height>$PARAM[h]</height>
+                <texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture>
+                <visible>Control.HasFocus($PARAM[id])</visible>
+            </control>
+            <control type="label">
+                <left>36</left><top>$PARAM[label_top]</top><width>$PARAM[label_w]</width><height>$PARAM[label_h]</height>
+                <aligny>center</aligny><font>font_main</font><textcolor>$PARAM[plain_color]</textcolor>
+                <label>$PARAM[label]</label>
+                <visible>!Control.HasFocus($PARAM[id]) + $PARAM[plain_when]</visible>
+            </control>
+            <control type="label">
+                <left>36</left><top>$PARAM[label_top]</top><width>$PARAM[label_w]</width><height>$PARAM[label_h]</height>
+                <aligny>center</aligny><font>font_main_bold</font><textcolor>FF101012</textcolor>
+                <label>$PARAM[label]</label>
+                <visible>Control.HasFocus($PARAM[id])</visible>
+            </control>
+        </definition>
     </include>
 
     <include name="Netflix_Genre_Menu_Drawer">
@@ -1487,7 +1573,8 @@
                         <param name="color">FF080808</param>
                     </include>
                 </control>
-                <!-- Drop-down anchored under the menu button: same left edge, top 124, 436 wide (right edge 1119 / 1164). -->
+                <!-- R10.19 drop-down anchored under the menu button (design C): same left edge, top 124, 360 wide. The panel is solid (Netflix_Menu_Solid_Background); its height
+                     follows the rows: 94 (switch) + 64 per row + 28 for the divider + 14 = 840 (Movies, divider) / 812 / 776 (Shows, divider) / 748, bottom 964 at most (safe area 1026). -->
                 <control type="group">
                     <include content="Netflix_Genre_Menu_Left" condition="$PARAM[reference]">
                         <param name="value">$PARAM[ref_left]</param>
@@ -1495,158 +1582,264 @@
                     <include content="Netflix_Genre_Menu_Left" condition="![$PARAM[reference]]">
                         <param name="value">$PARAM[left]</param>
                     </include>
-                    <top>124</top><width>436</width><height>904</height>
-                    <include>Netflix_Menu_Glass_Background</include>
+                    <top>124</top><width>360</width><height>840</height>
                     <control type="group">
-                        <left>20</left><top>20</top><width>396</width><height>864</height>
-                        <!-- Movies | Shows switch: Left/Right pick, Select toggles. Glass look: chosen side only. -->
-                        <control type="image">
-                            <left>0</left><top>0</top><width>198</width><height>64</height>
-                            <texture border="24" colordiffuse="$VAR[Netflix_GenreMenu_Chosen_Glass]">special://skin/extras/netflix-glass-button-focus.png</texture>
-                            <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
-                        </control>
-                        <control type="image">
-                            <left>198</left><top>0</top><width>198</width><height>64</height>
-                            <texture border="24" colordiffuse="$VAR[Netflix_GenreMenu_Chosen_Glass]">special://skin/extras/netflix-glass-button-focus.png</texture>
-                            <visible>$EXP[Netflix_GenreMenu_Shows]</visible>
-                        </control>
-                        <control type="label">
-                            <left>0</left><top>0</top><width>198</width><height>64</height>
-                            <align>center</align><aligny>center</aligny>
-                            <font>font_main_bold</font><textcolor>$VAR[Netflix_GenreMenu_Chosen_Text]</textcolor>
-                            <label>Movies</label>
-                            <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
-                        </control>
-                        <control type="label">
-                            <left>0</left><top>0</top><width>198</width><height>64</height>
-                            <align>center</align><aligny>center</aligny>
-                            <font>font_main</font><textcolor>FFD8D8D8</textcolor>
-                            <label>Movies</label>
-                            <visible>$EXP[Netflix_GenreMenu_Shows]</visible>
-                        </control>
-                        <control type="label">
-                            <left>198</left><top>0</top><width>198</width><height>64</height>
-                            <align>center</align><aligny>center</aligny>
-                            <font>font_main_bold</font><textcolor>$VAR[Netflix_GenreMenu_Chosen_Text]</textcolor>
-                            <label>Shows</label>
-                            <visible>$EXP[Netflix_GenreMenu_Shows]</visible>
-                        </control>
-                        <control type="label">
-                            <left>198</left><top>0</top><width>198</width><height>64</height>
-                            <align>center</align><aligny>center</aligny>
-                            <font>font_main</font><textcolor>FFD8D8D8</textcolor>
-                            <label>Shows</label>
-                            <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
-                        </control>
-                        <control type="button" id="3750">
-                            <description>Genre type</description>
-                            <left>0</left><top>0</top><width>396</width><height>64</height>
-                            <label />
-                            <texturefocus />
-                            <texturenofocus />
-                            <onleft>SetProperty(Netflix.GenreMenu.Type,movies,Home)</onleft>
-                            <onright>SetProperty(Netflix.GenreMenu.Type,shows,Home)</onright>
-                            <onup>noop</onup>
-                            <ondown>3751</ondown>
-                            <include>Netflix_Genre_Menu_Close</include>
-                            <onclick>SetProperty(Netflix.GenreMenu.Type,$VAR[Netflix_GenreMenu_Type_Toggled],Home)</onclick>
-                        </control>
+                        <description>panel: movies, divider</description>
+                        <visible>!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.DivAt.M))</visible>
+                        <width>360</width><height>840</height>
+                        <include>Netflix_Menu_Solid_Background</include>
+                    </control>
+                    <control type="group">
+                        <description>panel: movies, no divider</description>
+                        <visible>!$EXP[Netflix_GenreMenu_Shows] + String.IsEmpty(Window(Home).Property(Netflix.Menu.DivAt.M))</visible>
+                        <width>360</width><height>812</height>
+                        <include>Netflix_Menu_Solid_Background</include>
+                    </control>
+                    <control type="group">
+                        <description>panel: shows, divider</description>
+                        <visible>$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.DivAt.S))</visible>
+                        <width>360</width><height>776</height>
+                        <include>Netflix_Menu_Solid_Background</include>
+                    </control>
+                    <control type="group">
+                        <description>panel: shows, no divider</description>
+                        <visible>$EXP[Netflix_GenreMenu_Shows] + String.IsEmpty(Window(Home).Property(Netflix.Menu.DivAt.S))</visible>
+                        <width>360</width><height>748</height>
+                        <include>Netflix_Menu_Solid_Background</include>
+                    </control>
+                    <control type="image">
+                        <left>16</left><top>16</top><width>164</width><height>64</height>
+                        <texture border="30" colordiffuse="FF2B2B31">special://skin/extras/subtitles/av-pill-480.png</texture>
+                        <visible>!$EXP[Netflix_GenreMenu_Shows] + !Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="image">
+                        <left>16</left><top>16</top><width>164</width><height>64</height>
+                        <texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture>
+                        <visible>!$EXP[Netflix_GenreMenu_Shows] + Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="label">
+                        <left>16</left><top>16</top><width>164</width><height>64</height>
+                        <align>center</align><aligny>center</aligny><font>font_main_bold</font><textcolor>FFFFFFFF</textcolor>
+                        <label>Movies</label>
+                        <visible>!$EXP[Netflix_GenreMenu_Shows] + !Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="label">
+                        <left>16</left><top>16</top><width>164</width><height>64</height>
+                        <align>center</align><aligny>center</aligny><font>font_main_bold</font><textcolor>FF101012</textcolor>
+                        <label>Movies</label>
+                        <visible>!$EXP[Netflix_GenreMenu_Shows] + Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="label">
+                        <left>16</left><top>16</top><width>164</width><height>64</height>
+                        <align>center</align><aligny>center</aligny><font>font_main</font><textcolor>FFD8D8D8</textcolor>
+                        <label>Movies</label>
+                        <visible>$EXP[Netflix_GenreMenu_Shows]</visible>
+                    </control>
+                    <control type="image">
+                        <left>180</left><top>16</top><width>164</width><height>64</height>
+                        <texture border="30" colordiffuse="FF2B2B31">special://skin/extras/subtitles/av-pill-480.png</texture>
+                        <visible>$EXP[Netflix_GenreMenu_Shows] + !Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="image">
+                        <left>180</left><top>16</top><width>164</width><height>64</height>
+                        <texture border="30">special://skin/extras/subtitles/av-pill-480.png</texture>
+                        <visible>$EXP[Netflix_GenreMenu_Shows] + Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="label">
+                        <left>180</left><top>16</top><width>164</width><height>64</height>
+                        <align>center</align><aligny>center</aligny><font>font_main_bold</font><textcolor>FFFFFFFF</textcolor>
+                        <label>Shows</label>
+                        <visible>$EXP[Netflix_GenreMenu_Shows] + !Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="label">
+                        <left>180</left><top>16</top><width>164</width><height>64</height>
+                        <align>center</align><aligny>center</aligny><font>font_main_bold</font><textcolor>FF101012</textcolor>
+                        <label>Shows</label>
+                        <visible>$EXP[Netflix_GenreMenu_Shows] + Control.HasFocus(3750)</visible>
+                    </control>
+                    <control type="label">
+                        <left>180</left><top>16</top><width>164</width><height>64</height>
+                        <align>center</align><aligny>center</aligny><font>font_main</font><textcolor>FFD8D8D8</textcolor>
+                        <label>Shows</label>
+                        <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
+                    </control>
+                    <control type="button" id="3750">
+                        <description>Genre type</description>
+                        <left>16</left><top>16</top><width>328</width><height>64</height>
+                        <label />
+                        <texturefocus />
+                        <texturenofocus />
+                        <onleft>SetProperty(Netflix.GenreMenu.Type,movies,Home)</onleft>
+                        <onright>SetProperty(Netflix.GenreMenu.Type,shows,Home)</onright>
+                        <onup>noop</onup>
+                        <ondown>3751</ondown>
+                        <include>Netflix_Genre_Menu_Close</include>
+                        <onclick>SetProperty(Netflix.GenreMenu.Type,$VAR[Netflix_GenreMenu_Type_Toggled],Home)</onclick>
+                    </control>
+                    <!-- The rows: one 64 px group per slot (ids 3751 ... 3760, 3765), in Home order; a hairline group before the first genre hidden at Home. A grouplist lays out what is visible. -->
+                    <control type="grouplist">
+                        <left>0</left><top>94</top><width>360</width><height>740</height>
+                        <orientation>vertical</orientation><itemgap>0</itemgap><usecontrolcoords>false</usecontrolcoords>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3751</param><param name="top">80</param><param name="label">Action</param>
-                            <param name="movie_id">28</param><param name="show_id">action</param>
+                            <param name="n">1</param><param name="id">3751</param>
                             <param name="up">3750</param><param name="down">3752</param>
                         </include>
+                        <control type="group" id="3781">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_2]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3752</param><param name="top">152</param><param name="label">Animation</param>
-                            <param name="movie_id">16</param><param name="show_id">animation</param>
+                            <param name="n">2</param><param name="id">3752</param>
                             <param name="up">3751</param><param name="down">3753</param>
                         </include>
+                        <control type="group" id="3782">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_3]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3753</param><param name="top">224</param><param name="label">Comedy</param>
-                            <param name="movie_id">35</param><param name="show_id">comedy</param>
+                            <param name="n">3</param><param name="id">3753</param>
                             <param name="up">3752</param><param name="down">3754</param>
                         </include>
+                        <control type="group" id="3783">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_4]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3754</param><param name="top">296</param><param name="label">Documentary</param>
-                            <param name="movie_id">99</param><param name="show_id">documentary</param>
+                            <param name="n">4</param><param name="id">3754</param>
                             <param name="up">3753</param><param name="down">3755</param>
                         </include>
+                        <control type="group" id="3784">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_5]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3755</param><param name="top">368</param><param name="label">Drama</param>
-                            <param name="movie_id">18</param><param name="show_id">drama</param>
+                            <param name="n">5</param><param name="id">3755</param>
                             <param name="up">3754</param><param name="down">3756</param>
                         </include>
+                        <control type="group" id="3785">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_6]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3756</param><param name="top">440</param><param name="label">Horror</param>
-                            <param name="movie_id">27</param><param name="show_id">horror</param>
+                            <param name="n">6</param><param name="id">3756</param>
                             <param name="up">3755</param><param name="down">3757</param>
                         </include>
+                        <control type="group" id="3786">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_7]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3757</param><param name="top">512</param><param name="label">Mystery</param>
-                            <param name="movie_id">9648</param><param name="show_id">mystery</param>
+                            <param name="n">7</param><param name="id">3757</param>
                             <param name="up">3756</param><param name="down">3758</param>
                         </include>
+                        <control type="group" id="3787">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_8]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3758</param><param name="top">584</param><param name="label">Romance</param>
-                            <param name="movie_id">10749</param><param name="show_id">romance</param>
+                            <param name="n">8</param><param name="id">3758</param>
                             <param name="up">3757</param><param name="down">3759</param>
                         </include>
+                        <control type="group" id="3788">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_9]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3759</param><param name="top">656</param><param name="label">Sci-Fi</param>
-                            <param name="movie_id">878</param><param name="show_id">science-fiction</param>
+                            <param name="n">9</param><param name="id">3759</param>
                             <param name="up">3758</param><param name="down">3760</param>
                         </include>
+                        <control type="group" id="3789">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_10]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <include content="Netflix_Genre_Menu_Row">
-                            <param name="id">3760</param><param name="top">728</param><param name="label">Thriller</param>
-                            <param name="movie_id">53</param><param name="show_id">thriller</param>
+                            <param name="n">10</param><param name="id">3760</param>
                             <param name="up">3759</param><param name="down">$VAR[Netflix_GenreMenu_Last_Down]</param>
                         </include>
-                        <!-- R10.10: A24 (movies only): TMDb discover by company 41077, through the genre route (genre_id=company-41077), so the grid, the row cache
-                             and Back behave like a genre. Shown only while the drawer lists Movies. -->
+                        <control type="group" id="3790">
+                            <width>360</width><height>28</height>
+                            <visible>$EXP[Netflix_Menu_Div_11]</visible>
+                            <control type="image">
+                                <left>36</left><top>14</top><width>288</width><height>1</height>
+                                <texture colordiffuse="FF3A3A42">common/white.png</texture>
+                            </control>
+                        </control>
                         <control type="group">
                             <visible>!$EXP[Netflix_GenreMenu_Shows]</visible>
+                            <width>360</width><height>64</height>
                             <include content="Netflix_Genre_Menu_Row">
-                                <param name="id">3765</param><param name="top">800</param><param name="label">A24</param>
-                                <param name="movie_id">company-41077</param><param name="show_id">none</param>
-                                <param name="up">3760</param>
+                                <param name="n">11</param><param name="id">3765</param>
+                                <param name="up">3760</param><param name="down">noop</param>
                             </include>
                         </control>
                     </control>
-                    <!-- R10.15a: the views column, right of the drawer panel, sized to its five items (header 20 + 50, five rows at the drawer's 72 px pitch, 20 below).
-                         Right on a genre row opens it (Netflix.GenreMenu.Views); the buttons carry no visible condition of their own, so the focus move in the same key
-                         press lands before this group's next visibility pass (the drawer rows work the same way). Pure skin: no script, no add-on call. -->
+                    <!-- The views column (R10.15a), now the picker's component: 360 wide, 18 right of the drawer, header 22, five rows at the picker's pitch; no Default, no check.
+                         Right on a genre row opens it (Netflix.GenreMenu.Views); pure skin: no script, no add-on call. -->
                     <control type="group">
-                        <left>454</left><top>0</top><width>500</width><height>450</height>
+                        <left>378</left><top>0</top><width>360</width><height>404</height>
                         <visible>!String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Views))</visible>
-                        <include>Netflix_Menu_Glass_Background</include>
-                        <control type="label">
-                            <left>52</left><top>20</top><width>420</width><height>44</height>
-                            <align>left</align><aligny>center</aligny>
-                            <font>font_mini</font><textcolor>FF9C9C9C</textcolor>
-                            <label>[UPPERCASE]$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)] $VAR[Netflix_GenreMenu_Views_Media][/UPPERCASE]</label>
-                        </control>
+                        <include>Netflix_Menu_Solid_Background</include>
+                        <include content="Netflix_Menu_Header">
+                            <param name="label">[UPPERCASE]$INFO[Window(Home).Property(Netflix.GenreMenu.ViewTitle)][/UPPERCASE]</param>
+                        </include>
                         <include content="Netflix_Genre_Views_Item">
-                            <param name="id">3771</param><param name="top">70</param><param name="label">Trending</param>
+                            <param name="id">3771</param><param name="top">64</param><param name="label">Trending</param>
                             <param name="view_movie">trending</param><param name="view_show">trending</param>
                             <param name="up">noop</param><param name="down">3772</param>
                         </include>
                         <include content="Netflix_Genre_Views_Item">
-                            <param name="id">3772</param><param name="top">142</param><param name="label">$VAR[Netflix_GenreMenu_View_2]</param>
+                            <param name="id">3772</param><param name="top">128</param><param name="label">$VAR[Netflix_GenreMenu_View_2]</param>
                             <param name="view_movie">new_releases</param><param name="view_show">new_series</param>
                             <param name="up">3771</param><param name="down">3773</param>
                         </include>
                         <include content="Netflix_Genre_Views_Item">
-                            <param name="id">3773</param><param name="top">214</param><param name="label">$VAR[Netflix_GenreMenu_View_3]</param>
+                            <param name="id">3773</param><param name="top">192</param><param name="label">$VAR[Netflix_GenreMenu_View_3]</param>
                             <param name="view_movie">blockbusters</param><param name="view_show">most_watched</param>
                             <param name="up">3772</param><param name="down">3774</param>
                         </include>
                         <include content="Netflix_Genre_Views_Item">
-                            <param name="id">3774</param><param name="top">286</param><param name="label">$VAR[Netflix_GenreMenu_View_4]</param>
+                            <param name="id">3774</param><param name="top">256</param><param name="label">$VAR[Netflix_GenreMenu_View_4]</param>
                             <param name="view_movie">most_watched</param><param name="view_show">top_rated</param>
                             <param name="up">3773</param><param name="down">3775</param>
                         </include>
                         <include content="Netflix_Genre_Views_Item">
-                            <param name="id">3775</param><param name="top">358</param><param name="label">$VAR[Netflix_GenreMenu_View_5]</param>
+                            <param name="id">3775</param><param name="top">320</param><param name="label">$VAR[Netflix_GenreMenu_View_5]</param>
                             <param name="view_movie">top_rated</param><param name="view_show">complete_series</param>
                             <param name="up">3774</param><param name="down">noop</param>
                         </include>
@@ -1683,6 +1876,255 @@
         <value condition="!$EXP[Netflix_GenreMenu_Shows]">SetFocus(3765)</value>
         <value>noop</value>
     </variable>
+
+    <!-- R10.19: the genre drawer follows the Home layout. extras/netflix_browse_state.py publishes, when Customize Home changes (and once at start), for each drawer row n of each tab
+         (M = Movies, S = Shows): Netflix.Menu.Label / Gid / Hid (1 = hidden at Home) / Div (1 on the first hidden row, when a shown row precedes it) .<M|S>.<n>, and
+         Netflix.Menu.DivAt.<M|S> (the row the divider sits before, empty = no divider). No script runs from the drawer: it only reads these. -->
+    <variable name="Netflix_Menu_Label_1">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.1))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.1)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.1))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.1)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Action</value>
+        <value>Action</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_1">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.1))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.1)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.1))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.1)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">action</value>
+        <value>28</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_1">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.1))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.1))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_1">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.1),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.1),anime)]
+    </expression>
+    <variable name="Netflix_Menu_Label_2">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.2))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.2)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.2))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.2)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Comedy</value>
+        <value>Comedy</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_2">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.2))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.2)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.2))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.2)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">comedy</value>
+        <value>35</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_2">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.2))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.2))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_2">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.2),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.2),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_2">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.2))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.2))]
+    </expression>
+    <variable name="Netflix_Menu_Label_3">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.3))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.3)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.3))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.3)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Drama</value>
+        <value>Drama</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_3">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.3))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.3)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.3))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.3)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">drama</value>
+        <value>18</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_3">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.3))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.3))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_3">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.3),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.3),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_3">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.3))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.3))]
+    </expression>
+    <variable name="Netflix_Menu_Label_4">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.4))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.4)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.4))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.4)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Thriller</value>
+        <value>Thriller</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_4">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.4))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.4)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.4))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.4)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">thriller</value>
+        <value>53</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_4">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.4))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.4))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_4">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.4),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.4),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_4">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.4))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.4))]
+    </expression>
+    <variable name="Netflix_Menu_Label_5">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.5))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.5)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.5))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.5)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Horror</value>
+        <value>Horror</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_5">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.5))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.5)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.5))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.5)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">horror</value>
+        <value>27</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_5">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.5))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.5))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_5">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.5),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.5),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_5">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.5))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.5))]
+    </expression>
+    <variable name="Netflix_Menu_Label_6">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.6))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.6)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.6))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.6)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Sci-Fi</value>
+        <value>Sci-Fi</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_6">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.6))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.6)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.6))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.6)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">science-fiction</value>
+        <value>878</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_6">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.6))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.6))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_6">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.6),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.6),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_6">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.6))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.6))]
+    </expression>
+    <variable name="Netflix_Menu_Label_7">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.7))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.7)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.7))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.7)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Anime</value>
+        <value>Anime</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_7">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.7))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.7)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.7))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.7)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">anime</value>
+        <value>anime</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_7">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.7))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.7))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_7">
+        [$EXP[Netflix_GenreMenu_Shows] + [String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.7),anime) | String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.7))]] | [!$EXP[Netflix_GenreMenu_Shows] + [String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.7),anime) | String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.7))]]
+    </expression>
+    <expression name="Netflix_Menu_Div_7">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.7))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.7))]
+    </expression>
+    <variable name="Netflix_Menu_Label_8">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.8))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.8)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.8))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.8)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Documentary</value>
+        <value>Documentary</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_8">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.8))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.8)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.8))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.8)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">documentary</value>
+        <value>99</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_8">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.8))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.8))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_8">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.8),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.8),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_8">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.8))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.8))]
+    </expression>
+    <variable name="Netflix_Menu_Label_9">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.9))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.9)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.9))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.9)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Mystery</value>
+        <value>Mystery</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_9">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.9))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.9)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.9))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.9)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">mystery</value>
+        <value>9648</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_9">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.9))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.9))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_9">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.9),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.9),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_9">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.9))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.9))]
+    </expression>
+    <variable name="Netflix_Menu_Label_10">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.S.10))">$INFO[Window(Home).Property(Netflix.Menu.Label.S.10)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.10))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.10)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">Romance</value>
+        <value>Romance</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_10">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.S.10))">$INFO[Window(Home).Property(Netflix.Menu.Gid.S.10)]</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.10))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.10)]</value>
+        <value condition="$EXP[Netflix_GenreMenu_Shows]">romance</value>
+        <value>10749</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_10">
+        <value condition="$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.S.10))">FFA4A4AE</value>
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.10))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_10">
+        [$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.S.10),anime)] | [!$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.10),anime)]
+    </expression>
+    <expression name="Netflix_Menu_Div_10">
+        [$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.S.10))] | [!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.10))]
+    </expression>
+    <variable name="Netflix_Menu_Label_11">
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Label.M.11))">$INFO[Window(Home).Property(Netflix.Menu.Label.M.11)]</value>
+        <value>A24</value>
+    </variable>
+    <variable name="Netflix_Menu_Gid_11">
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Gid.M.11))">$INFO[Window(Home).Property(Netflix.Menu.Gid.M.11)]</value>
+        <value>company-41077</value>
+    </variable>
+    <variable name="Netflix_Menu_Tone_11">
+        <value condition="!$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Hid.M.11))">FFA4A4AE</value>
+        <value>FFD8D8D8</value>
+    </variable>
+    <expression name="Netflix_Menu_Anime_11">
+        !$EXP[Netflix_GenreMenu_Shows] + String.IsEqual(Window(Home).Property(Netflix.Menu.Gid.M.11),anime)
+    </expression>
+    <expression name="Netflix_Menu_Div_11">
+        !$EXP[Netflix_GenreMenu_Shows] + !String.IsEmpty(Window(Home).Property(Netflix.Menu.Div.M.11))
+    </expression>
 
     <include name="Netflix_Options_Placement">
         <definition>

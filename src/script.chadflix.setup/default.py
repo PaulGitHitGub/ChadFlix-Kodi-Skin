@@ -10,10 +10,10 @@ What it does, in order:
      skin's own setup wizard (only these skin settings; nothing else in any add-on's data);
   4. switches the skin to Arctic Fuse 3 after asking, and answers Kodi's own "Keep skin?" question
      itself (see _switch_once for why; it answers that question only, never another yes/no dialog);
-  5. copies four remote-control key files into userdata/keymaps and reloads them;
+  5. copies five remote-control key files into userdata/keymaps and reloads them;
   6. offers to close Kodi once so every add-on restarts on its new version.
 
-The first menu also offers "Undo ChadFlix keymaps": it removes the four key files (putting back any file they
+The first menu also offers "Undo ChadFlix Keymaps": it removes the five key files (putting back any file they
 replaced) so Back works normally again in another skin.
 
 Every file it replaces is backed up first under this add-on's own data folder
@@ -189,32 +189,34 @@ KEEP_HEADING, KEEP_TEXT = 13123, 13111   # Kodi's own strings: "Keep skin?" / "W
 
 
 def _dialog_texts():
-    """(heading, text) of the yes/no dialog on screen, '' for a part that cannot be read."""
+    """(heading, text) of the yes/no dialog on screen, '' for a part that cannot be read.
+    The text comes from the dialog's text box (control 9), which Kodi's Python API reads live. The heading is a label:
+    in Kodi 21 the API returns '' for a label's text, so it is read as the info label Control.GetLabel(1), and only
+    while the yes/no dialog is the topmost window (the label is then that dialog's own)."""
     heading = text = ''
     try:
-        window = xbmcgui.Window(YESNO_DIALOG)
-        try:
-            heading = window.getControl(1).getLabel() or ''
-        except Exception:
-            heading = ''
-        try:
-            text = window.getControl(9).getText() or ''
-        except Exception:
-            text = ''
+        text = xbmcgui.Window(YESNO_DIALOG).getControl(9).getText() or ''
     except Exception:
-        pass
+        text = ''
+    try:
+        if xbmc.getCondVisibility('Window.IsTopMost(yesnodialog)'):
+            heading = xbmc.getInfoLabel('Control.GetLabel(1)') or ''
+    except Exception:
+        heading = ''
     return heading.strip(), text.strip()
 
 
 def is_keep_skin_question():
     """True only when the yes/no dialog on screen is Kodi's "Keep skin?" question, compared with Kodi's own strings in
-    the language Kodi is running in. Any other yes/no dialog (another add-on's question, an update prompt), or a
-    dialog whose heading cannot be read, is left for the person to answer: this script never clicks it."""
+    the language Kodi is running in:
+      - its text must be readable and equal string 13111 ("Would you like to keep this change?");
+      - its heading must equal string 13123 ("Keep skin?") or be unreadable (empty).
+    Any other yes/no dialog, and any dialog whose text cannot be read, is left for the person: this script never clicks it."""
     want_heading, want_text = xbmc.getLocalizedString(KEEP_HEADING).strip(), xbmc.getLocalizedString(KEEP_TEXT).strip()
     heading, text = _dialog_texts()
-    if not want_heading or heading != want_heading:
+    if not want_text or not text or text != want_text:
         return False
-    return not text or not want_text or text == want_text
+    return not heading or heading == want_heading
 
 
 def _switch_once():
@@ -308,7 +310,7 @@ def _latest_backup(name, shipped_sha):
 
 
 def undo_keymaps():
-    """Remove the four key files this setup installed and put back any file they replaced."""
+    """Remove the key files this setup installed and put back any file they replaced."""
     removed, restored, kept = [], [], []
     for name in CFG['keymaps']:
         dst = os.path.join(KEYMAPS_DST, name)
@@ -378,7 +380,7 @@ def setup():
 
 def main():
     choice = DIALOG.select(TITLE, ['Set up ChadFlix (sign-ins, keys and watch history are not touched)',
-                                   'Undo ChadFlix keymaps (do this before going back to another skin)'])
+                                   'Undo ChadFlix Keymaps (do this before going back to another skin)'])
     if choice == 0:
         setup()
     elif choice == 1:

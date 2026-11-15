@@ -194,6 +194,23 @@ class Store:
                                    if (i['type'], i['id']) != (item['type'], item['id'])]
         return self.update(change)
 
+    def set_membership(self, item, wanted):
+        """R10.18: the lists (by id) that hold `item` after this call are exactly `wanted`; one locked save, one revision bump."""
+        item = media_item(item)
+        wanted = {list_id(identifier) for identifier in wanted}
+        def change(data):
+            known = {c['id'] for c in data['lists']}
+            if not wanted <= known:
+                raise ListsError('This watchlist no longer exists.')
+            for collection in data['lists']:
+                has = any((i['type'], i['id']) == (item['type'], item['id']) for i in collection['items'])
+                if collection['id'] in wanted and not has:
+                    collection['items'].append(item)
+                elif collection['id'] not in wanted and has:
+                    collection['items'] = [i for i in collection['items']
+                                           if (i['type'], i['id']) != (item['type'], item['id'])]
+        return self.update(change)
+
 
 def notify(message):
     xbmcgui.Dialog().notification('Watchlists', message)
@@ -288,16 +305,64 @@ def is_favorite(api, item):
                for entry in api.local_favorites(None, item['type'], 'all'))
 
 
+# R10.18: the two buttons' labels. Title Case ("from" / "to" between words stay lower case, the last word is capitalised).
+FAVORITE_LABEL, FAVORITE_ON_LABEL = 'Favorite', 'Remove from Favorites'
+BOOKMARK_LABEL, BOOKMARK_MANY_LABEL = 'Add to Watchlist', 'Manage Watchlists'
+NAME_PX = 300          # pixels (at the 30 px label font) a watchlist's name may take in "Remove from <name>": the label box is 560 px wide, "Remove from " is ~200
+_NARROW, _SLIM = set("ilj.,'!:;|`"), set('ftrI()[]- ')
+_WIDE = {'W': 1.0, 'M': 0.9, 'm': 0.9, 'w': 0.78, '@': 1.0, '%': 0.95}
+
+
+def text_px(text, size=30):
+    """Rough pixel width of `text` in the skin's label font (Inter-like proportions, calibrated on Mac renders: NOTES.md)."""
+    total = 0.0
+    for char in text:
+        if char in _WIDE:
+            total += _WIDE[char]
+        elif char in _NARROW:
+            total += 0.27
+        elif char in _SLIM:
+            total += 0.34
+        elif char.isdigit():
+            total += 0.62
+        elif char.isupper():
+            total += 0.72
+        else:
+            total += 0.58
+    return total * size
+
+
+def holds(collection, item):
+    return any((entry['type'], entry['id']) == (item['type'], item['id']) for entry in collection['items'])
+
+
+def label_name(name):
+    """The name as it appears after "Remove from ": whole when it fits NAME_PX, otherwise cut at a letter with an ellipsis."""
+    if text_px(name) <= NAME_PX:
+        return name
+    keep = ''
+    for char in name:
+        if text_px(keep + char + '…') > NAME_PX:
+            break
+        keep += char
+    return keep.rstrip() + '…'
+
+
+def bookmark_label(holding):
+    """The Watchlist button: none = Add to Watchlist; one list = Remove from <its name>; several = Manage Watchlists (a picker)."""
+    if not holding:
+        return BOOKMARK_LABEL
+    if len(holding) == 1:
+        return 'Remove from ' + label_name(holding[0]['name'])
+    return BOOKMARK_MANY_LABEL
+
+
 def saved_properties(item, store=None):
     with pov_api() as api:
         favorite = is_favorite(api, item)
-    bookmarked = any(
-        (entry['type'], entry['id']) == (item['type'], item['id'])
-        for collection in (store or default_store()).read()['lists']
-        for entry in collection['items']
-    )
-    return {'Favorite': 'true' if favorite else '', 'FavoriteLabel': 'Favorite',
-            'Bookmarked': 'true' if bookmarked else '', 'BookmarkLabel': 'Add to Watchlist'}
+    holding = [collection for collection in (store or default_store()).read()['lists'] if holds(collection, item)]
+    return {'Favorite': 'true' if favorite else '', 'FavoriteLabel': FAVORITE_ON_LABEL if favorite else FAVORITE_LABEL,
+            'Bookmarked': 'true' if holding else '', 'BookmarkLabel': bookmark_label(holding)}
 
 
 def sync_movie(store=None):
@@ -308,31 +373,91 @@ def sync_movie(store=None):
         item = current_movie()
     except ListsError:
         return
+    claim = home.getProperty(BUSY)
     properties = saved_properties(item, store)
     if home.getProperty(PREFIX + 'ID') != item['id']:
         return  # A later details page owns the state after local I/O completes.
+    if home.getProperty(BUSY) != claim:
+        return  # R10.18: a Favorite / Watchlist click started or finished while this read ran: its state is the newer one
     for key, value in properties.items():
         home.setProperty(PREFIX + key, value)
 
 
 def favorite_item(item):
+    """R10.18: Favorite toggles. A favorite is removed at once (no confirmation), a new one is added; nothing is announced."""
     with pov_api() as api:
         favorite = is_favorite(api, item)
-        kind = 'movie' if item['type'] == 'movie' else 'show'
-        if favorite and not xbmcgui.Dialog().yesno('My Lists', f'Remove this {kind} from My Lists?'):
-            return False
         action = api.remove_from_sync if favorite else api.add_to_sync
         if not action('favorites', item['type'], item['id'], item['title']):
-            raise ListsError('Could not update My Lists. Try again.')
+            # A second press that raced the first (UNIQUE row): when the table is already in the state this press wanted, it is a success.
+            if is_favorite(api, item) == favorite:
+                raise ListsError('Could not update My Lists. Try again.')
     # Movies and shows have separate rows in My Lists; bump only the one that changed.
     revision = 'Netflix.MyList.Revision' if item['type'] == 'movie' else 'Netflix.MyList.ShowsRevision'
     xbmcgui.Window(10000).setProperty(revision, str(time.time_ns()))
     return True
 
 
+BUSY = 'Netflix.Saved.Busy'      # "run|<token>|<time>" while a click works, "done|<token>|<time>" after it
+BUSY_SECONDS = 15           # a run claim older than this belongs to a killed script
+COOLDOWN = 0.7              # seconds after a click finished in which further clicks (a held OK repeating, the OK that closed the picker) are refused
+KEY_GUARD = 1.0             # ... and never less than this long after the click STARTED: a held key's repeats begin ~0.75 s after the press (Mac EventServer; a script that
+                            # finishes in 0.1 s would otherwise let the first repeat through, measured), so the lock runs to start + KEY_GUARD
+SETTLE = 0.05               # claim, wait, check: two scripts that start in the same instant cannot both pass (netflix_series.py stake / holds)
+
+
+@contextlib.contextmanager
+def one_at_a_time():
+    """R10.18: yields True for one Favorite / Watchlist click at a time. False while another click runs, and for COOLDOWN seconds after one
+    finished: every refused repeat renews the cooldown, so a held OK (the key repeats) is ONE toggle however long it is held, and the OK that
+    picked a list in the picker cannot reach the button behind it. Claim-and-wait like the show page: write our token, wait SETTLE, go on only if it is still ours."""
+    home = xbmcgui.Window(10000)
+    state, _, rest = home.getProperty(BUSY).partition('|')
+    owner, _, stamp = rest.partition('|')
+    try:
+        age = time.time() - float(stamp)
+    except ValueError:
+        age = None
+    if state == 'run' and age is not None and 0 <= age < BUSY_SECONDS:
+        yield False
+        return
+    if state == 'done' and age is not None and age < COOLDOWN:      # a negative age: the lock still runs to start + KEY_GUARD
+        home.setProperty(BUSY, 'done|%s|%s' % (owner, max(float(stamp), time.time())))
+        yield False
+        return
+    token = uuid.uuid4().hex
+    started = time.time()
+    home.setProperty(BUSY, 'run|%s|%s' % (token, started))
+    time.sleep(SETTLE)
+    if home.getProperty(BUSY).split('|')[1:2] != [token]:
+        yield False
+        return
+    try:
+        yield True
+    finally:
+        if home.getProperty(BUSY).split('|')[1:2] == [token]:
+            home.setProperty(BUSY, 'done|%s|%s' % (token, max(time.time(), started + KEY_GUARD - COOLDOWN)))
+
+
+def update_movie_state(item, store=None):
+    """After a Favorite / Watchlist click: recompute both buttons from the sources of truth and write the page's four properties one after the other
+    (no clearing first, so the icons and the labels change in place: a single frame can still show the new icon with the old label). A later page owns the state if the movie changed."""
+    properties = saved_properties(item, store)
+    home = xbmcgui.Window(10000)
+    if home.getProperty(PREFIX + 'ID') != item['id']:
+        return
+    for key, value in properties.items():
+        home.setProperty(PREFIX + key, value)
+
+
 def favorite_movie(store=None):
-    if xbmcgui.getCurrentWindowDialogId() == DETAILS and favorite_item(current_movie()):
-        sync_movie(store)
+    if xbmcgui.getCurrentWindowDialogId() != DETAILS:
+        return
+    with one_at_a_time() as free:
+        if free:
+            item = current_movie()
+            if favorite_item(item):
+                update_movie_state(item, store)
 
 
 def prompt_name(heading, name=''):
@@ -345,8 +470,7 @@ def create_watchlist(store=None):
     name = prompt_name('Create Watchlist')
     if not name:
         return None
-    identifier = store.create(name)
-    notify('Watchlist created')
+    identifier = store.create(name)   # R10.18: no "Watchlist created" notification (errors still notify)
     return identifier
 
 
@@ -379,14 +503,50 @@ def remove_watchlist_item(identifier, kind, item_id, store=None):
     item = next((i for i in collection['items'] if (i['type'], i['id']) == (kind, item_id)), None)
     if item is None:
         return
-    if xbmcgui.Dialog().yesno('Remove Title', 'Remove this title from the Watchlist?'):
-        store.remove(identifier, item)
-        refresh_collection(identifier)
+    store.remove(identifier, item)   # R10.18: straight away, no "Remove this title from the Watchlist?" question
+    refresh_collection(identifier)
+
+
+def choose_watchlists(item, collections, holding, store, heading='Manage Watchlists'):
+    """R10.18: the title is on several watchlists. The picker lists every watchlist with a check on those that hold it; OK saves
+    the checks (adds to newly checked lists, removes from unchecked ones, in one save); Back changes nothing."""
+    ids = [collection['id'] for collection in collections]
+    before = {collection['id'] for collection in holding}
+    chosen = xbmcgui.Dialog().multiselect(
+        heading, [collection['name'] for collection in collections],
+        preselect=[index for index, identifier in enumerate(ids) if identifier in before])
+    if chosen is None:
+        return False
+    after = {ids[index] for index in chosen if 0 <= index < len(ids)}
+    if after == before:
+        return False
+    store.set_membership(item, after)
+    return True
+
+
+def more_watchlists(item, store=None):
+    """R10.18: "Add to Another Watchlist", the Watchlist button's second input (the Menu key, or a long press of OK). A title that is on one or more
+    lists gets the picker with checks (every list, the holders checked); a title on no list gets the ordinary add picker. True when something changed."""
+    store = store or default_store()
+    collections = store.read()['lists']
+    holding = [collection for collection in collections if holds(collection, item)]
+    if not holding:
+        return bookmark_item(item, store)
+    return choose_watchlists(item, collections, holding, store,
+                             'Add to Another Watchlist' if len(holding) == 1 else 'Manage Watchlists')
 
 
 def bookmark_item(item, store=None):
+    """R10.18: the Watchlist button. On no list: pick one (or create one) as before. On exactly one list: remove the title from it
+    at once. On several: choose_watchlists(). True when something changed."""
     store = store or default_store()
     collections = store.read()['lists']
+    holding = [collection for collection in collections if holds(collection, item)]
+    if len(holding) == 1:
+        store.remove(holding[0]['id'], item)
+        return True
+    if holding:
+        return choose_watchlists(item, collections, holding, store)
     create_options = ['Create New Watchlist…']
     choice = xbmcgui.Dialog().select('Add to Watchlist', create_options + [c['name'] for c in collections])
     if choice < 0:
@@ -405,9 +565,24 @@ def bookmark_item(item, store=None):
 
 
 def bookmark_movie(store=None):
-    if xbmcgui.getCurrentWindowDialogId() == DETAILS and bookmark_item(current_movie(), store):
-        sync_movie(store)
-        notify('Added to Watchlist')
+    if xbmcgui.getCurrentWindowDialogId() != DETAILS:
+        return
+    with one_at_a_time() as free:
+        if free:
+            item = current_movie()
+            if bookmark_item(item, store):
+                update_movie_state(item, store)   # R10.18: no "Added to Watchlist" notification
+
+
+def another_movie(store=None):
+    """R10.18: the Menu key / a long press of OK (userdata/keymaps/NetflixWatchlistMore.xml), only while the Watchlist button (18) has focus."""
+    if xbmcgui.getCurrentWindowDialogId() != DETAILS or not xbmc.getCondVisibility('Control.HasFocus(18)'):
+        return
+    with one_at_a_time() as free:
+        if free:
+            item = current_movie()
+            if more_watchlists(item, store):
+                update_movie_state(item, store)
 
 
 def main(command, *arguments):
@@ -421,7 +596,7 @@ def main(command, *arguments):
         if arguments:
             return
         action = {'sync-movie': sync_movie, 'favorite-movie': favorite_movie,
-                  'bookmark-movie': bookmark_movie,
+                  'bookmark-movie': bookmark_movie, 'another-movie': another_movie,
                   'restore-row': restore_collection_row}.get(command)
         if action:
             action()
