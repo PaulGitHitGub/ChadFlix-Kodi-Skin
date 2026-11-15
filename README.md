@@ -42,6 +42,7 @@ the home page opens faster.
 ### Watchlists
 
 Save titles to as many named watchlists as you like. They appear in **My Lists** next to your saved movies and shows.
+Press **Watchlist** again on a title's page to remove it.
 
 <img src="docs/screenshots/08-watchlists.png" alt="Watchlists in My Lists" width="100%">
 

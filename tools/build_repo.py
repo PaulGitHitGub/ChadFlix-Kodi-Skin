@@ -319,8 +319,11 @@ def build_setup_addon(work, versions):
     if bad:
         die('skin settings ids look sensitive: %s' % bad)
     reqs = []
+    # setup_import_pins: keep an unchanged Setup version byte-identical when skin/POV move up (any newer one satisfies
+    # the older minimum)
+    pins = CFG.get('setup_import_pins', {})
     for a in CFG['setup_requires']:
-        v = versions.get(a) or CFG['official_versions'].get(a, '')
+        v = pins.get(a) or versions.get(a) or CFG['official_versions'].get(a, '')
         reqs.append([a, v])
     # hashes of key files that earlier Setup versions shipped: the service replaces only these (never a file the
     # person changed), and Undo removes them like the current ones

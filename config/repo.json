@@ -1,5 +1,5 @@
 {
-  "_comment": "Release 2 (2026-11-14): template with the final snapshot R10.13-republish-compat-2026-11-14 (R10.15a + R10.15b + R10.10.2 + R10.13). Overlays = every shipped set in install order (rolled-back R10.9, R10.9.1, R10.10.1, R10.11b left out; R10.12 MUST stay: its 10 loading images exist only there). MAC1-laptop-layout is NOT in this release (TV-only). Edit repo_slug (and github_user) to rename the GitHub repo; everything else follows. Then run tools/build_repo.py.",
+  "_comment": "Release 3 (2026-11-14): snapshot R10.21.1-no-forced-start-2026-11-14 = release 2 (R10.13) + R10.17 UI polish, R10.18 Favorite/Watchlist toggles, R10.19 option C picker and genre menu, R10.21 grid-freeze fix, R10.21.1 no-forced-start. Not in it: R10.20 (rolled back), R10.23+ and the staged R10.25 security fixes / repository 2.1 patches. Overlays = every shipped set in install order (rolled-back R10.9, R10.9.1, R10.10.1, R10.11b, R10.20 left out; R10.12 MUST stay: its 10 loading images exist only there). MAC1-laptop-layout is NOT in this release (TV-only). Setup stays 1.0.2 (byte-identical zip: setup_import_pins keeps its <import> minimums at the release-2 versions, and keymaps stays the 4 files it ships). Edit repo_slug (and github_user) to rename the GitHub repo; everything else follows. Then run tools/build_repo.py.",
   "github_user": "PaulGitHitGub",
   "repo_slug": "ChadFlix-Kodi-Skin",
   "repository": {
@@ -12,9 +12,9 @@
     "name": "ChadFlix Setup",
     "version": "1.0.2"
   },
-  "btn_revision": 2,
+  "btn_revision": 3,
   "inputs": {
-    "snapshot": "releases/R10.13-republish-compat-2026-11-14",
+    "snapshot": "releases/R10.21.1-no-forced-start-2026-11-14",
     "asset_overlays": [
       "staged/mylists-rail/patched",
       "staged/R8/files",
@@ -52,7 +52,12 @@
       "staged/R10.15a-genre-menu-views/files",
       "staged/R10.15b-showing-tiles/files",
       "staged/R10.10.2-home-fixes-slim/files",
-      "staged/R10.13-republish-compat/files"
+      "staged/R10.13-republish-compat/files",
+      "staged/R10.17-ui-polish/files",
+      "staged/R10.18-list-toggles/files",
+      "staged/R10.19-picker-menu-c/files",
+      "staged/R10.21-grid-gate-fix/files",
+      "staged/R10.21.1-no-forced-start/files"
     ],
     "shield_pull": "mac-kodi/pull",
     "addon_folders": "mac-kodi/home/Library/Application Support/Kodi/addons",
@@ -84,6 +89,11 @@
     "script.texturemaker",
     "plugin.program.autocompletion"
   ],
+  "setup_import_pins": {
+    "skin.arctic.fuse.3": "3.99.418.2",
+    "plugin.video.pov": "6.99.1103.2"
+  },
+  "_comment_setup_import_pins": "Release 3: Setup 1.0.2 is not re-versioned, so its addon.xml / setup.json keep the release-2 <import> minimums (any newer skin/POV satisfies them) and the Setup zip stays byte-identical to release 2. Drop these pins when Setup gets a new version.",
   "official_versions": {
     "plugin.program.autocompletion": "2.1.2"
   },

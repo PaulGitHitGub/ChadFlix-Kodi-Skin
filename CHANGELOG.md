@@ -1,5 +1,24 @@
 # Changelog
 
+## Release 3 (2026-11-14)
+
+Kodi installs this update by itself (or **Add-ons** → **Check for updates**).
+
+**Versions:** Arctic Fuse 3 **3.99.418.3**, POV **6.99.1103.3**. ChadFlix Setup (1.0.2) and ChadFlix Repository
+(1.0.0) are unchanged.
+
+### Changed
+
+- **Favorite** and **Watchlist** buttons toggle, with no confirmations or pop-ups. On a show's page, hold **OK** on
+  **Watchlist** to add the show to another list (movie pages get this in the next update).
+- New look for the **Showing** picker and the genre menu. The genre menu follows your home order.
+
+### Fixed
+
+- Grids no longer get stuck on grey cards after a video.
+- Small fixes: the genre menu grid no longer jumps, **More Like This** shows a grey loading card, and the scrub bar
+  reads **Jump To**.
+
 ## Release 2 (2026-11-14)
 
 Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="skin.arctic.fuse.3" name="Arctic Fuse 3" provider-name="jurialmunkey" version="3.99.418.2">
+<addon id="skin.arctic.fuse.3" name="Arctic Fuse 3" provider-name="jurialmunkey" version="3.99.418.3">
     <requires>
         <import addon="xbmc.gui" version="5.17.0" />
         <import addon="script.skinvariables" version="2.2.12" />
@@ -28,7 +28,7 @@
         <summary lang="de">Ein minimalistisches, zeilenbasiertes Skin</summary>
         <summary lang="zh">简约行式布局皮肤</summary>
         <summary lang="ar">سكن مخفف بقوائم افقية</summary>
-        <description lang="en">Arctic Fuse 3 is a minimal row based skin with customisable widgets[CR][CR]UNOFFICIAL MODIFIED BUILD 3.99.418.2 (ChadFlix, 2026-11), based on skin.arctic.fuse.3 3.4.18. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
+        <description lang="en">Arctic Fuse 3 is a minimal row based skin with customisable widgets[CR][CR]UNOFFICIAL MODIFIED BUILD 3.99.418.3 (ChadFlix, 2026-11), based on skin.arctic.fuse.3 3.4.18. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
         <description lang="es">Arctic Fuse 3 es una skin minimalista de diseño horizontal con widgets personalizables</description>
         <description lang="de">Arctic Fuse 3 ist ein minimalistisches, zeilenbasiertes Skin mit anpassbaren Widgets</description>
         <description lang="zh">Arctic Fuse 3 是一款采用简约行式布局的 Kodi 皮肤，支持小组件自定义功能</description>
@@ -43,7 +43,7 @@
         </assets>
     </extension>
 </addon>
-<addon id="plugin.video.pov" version="6.99.1103.2" name="POV" provider-name="kodifitzwell">
+<addon id="plugin.video.pov" version="6.99.1103.3" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
@@ -58,7 +58,7 @@
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
 		<disclaimer lang="en">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.</disclaimer>
 		<summary>What you like to watch.[CR]</summary>
-		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.[CR][CR]UNOFFICIAL MODIFIED BUILD 6.99.1103.2 (ChadFlix, 2026-11), based on plugin.video.pov 6.11.03. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
+		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.[CR][CR]UNOFFICIAL MODIFIED BUILD 6.99.1103.3 (ChadFlix, 2026-11), based on plugin.video.pov 6.11.03. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
