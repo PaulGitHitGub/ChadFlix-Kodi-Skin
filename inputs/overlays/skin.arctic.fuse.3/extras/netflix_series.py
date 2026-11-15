@@ -33,6 +33,7 @@ MORE_LISTS = 1018   # R10.18: "Add to Another Watchlist" (the Menu key / a long 
 CONTEXT_MENU = 117  # Kodi's ACTION_CONTEXT_MENU (Menu key, long-press OK)
 SAVED_COOLDOWN = 0.7  # seconds after a Favorite / Watchlist action in which another request (a held OK repeating, the OK that closed the picker) is dropped
 SAVED_GUARD = 1.4     # ... and never less than this long after the action STARTED: on the show window (a Python dialog) a held key delivered ONE late repeat ~1.03 s after the press (measured), so the lock runs to start + 1.4
+LANE_FAVORITE, LANE_BOOKMARK = 1, 2   # R10.22 Save Lane: Right from an episode card steps into the icon row inside it (Favorite, then Watchlist); Left steps back
 STAYS = {MORE, RELATED, FAVORITE, BOOKMARK}  # buttons that are on the page from its first frame
 SEASONS, EPISODES, RECOMMENDATIONS, SECONDARY_STATUS = 20, 21, 22, 23
 BACK = {9, 10, 92}
@@ -181,6 +182,21 @@ def capture(source):
     return values
 
 
+def capture_episode(source):
+    """R10.22: a saved-episode card of My Lists (container `source`, ListItem properties set by the POV plugin): the show's fields for a SeriesView plus
+    (season, episode) to open the page on. None when the card does not name a show and an episode."""
+    item = f"Container({source}).ListItem."
+    show_id = number(info(item + "Property(Netflix.Episode.ShowID)"))
+    season = number(info(item + "Property(Netflix.Episode.Season)"), minimum=0)
+    episode = number(info(item + "Property(Netflix.Episode.Number)"))
+    title = info(item + "Property(Netflix.Episode.Show)")
+    if not show_id or season is None or not episode or not title:
+        return None
+    values = show_fields(show_id, title, "", info(item + "Art(thumb)"), "", None, "", None)
+    values["Poster"] = ""
+    return values, (season, episode)
+
+
 def directory(path):
     request = {
         "jsonrpc": "2.0", "id": 1, "method": "Files.GetDirectory",
@@ -311,6 +327,14 @@ def set_primary(view, season, episodes):
         ordinary = [row for row in view.seasons if row["number"] > 0] or view.seasons
         first = next(item for item in episodes if not item["unaired"])
         view.own_text = episode["progress"] > 0 or season is not ordinary[0] or episode is not first
+
+
+def plain_art(url):
+    """Files.GetDirectory answers art as image://<encoded url>/ : a saved episode keeps the plain URL (My Lists draws it without this page's JSON-RPC)."""
+    if isinstance(url, str) and url.startswith("image://"):
+        from urllib.parse import unquote
+        return unquote(url[len("image://"):].rstrip("/"))
+    return url or ""
 
 
 def show_key(tmdb_id):
@@ -453,6 +477,8 @@ class SeriesView:
         self.revalidate = ""      # session-cached data being re-checked: "seasons", then "episodes" if needed
         self.recheck_failed = False
         self.saved = None         # like/watchlist properties, once known
+        self.open_target = None   # R10.22: (season, episode) a saved-episode card asked for: the list opens with that card focused
+        self.episodes_saved = ""  # R10.22: "3 Saved" under More Episodes ("" = none), once known
         self.ratings_until = None
         cache_restore(self)
         known_restore(self)
@@ -506,6 +532,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         self.cover_renewed = float("-inf")
         self.cover_release_at = None
         self.detail_request = None
+        self.lane = 0               # R10.22: 0 = on the episode card, 1 = Favorite, 2 = Watchlist (Series.Lane for the skin; one window property, nothing per key press)
         self.saved_done = float("-inf")   # R10.18: monotonic() when the last Favorite / Watchlist action finished (inf while one runs)
         self.closed = False
         self.ready = False
@@ -551,6 +578,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             "Page": self.view.page,
             "EpisodeStatus": "",
             "EpisodeLoading": "",
+            "EpisodesSaved": self.view.episodes_saved,
         })
         self.show_primary()
 
@@ -585,9 +613,64 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             self.view.saved = saved_properties(item)
             self.properties(**self.view.saved)
             known_store(self.view, saved=remembered(self.view.saved))   # R10.18: adding to a watchlist is not announced (errors below still notify)
+            self.refresh_episodes_saved()
         except (ListsError, OSError, RuntimeError, ImportError, KeyError) as error:
             if action is not None:
                 notify(str(error) if isinstance(error, ListsError) else "Could not update saved titles. Try again.")
+
+    def refresh_episodes_saved(self):
+        """R10.22: "N Saved" for More Episodes: the show's episodes that are a favorite or on a watchlist (one favorites SELECT + one JSON read, local)."""
+        from netflix_saved_lists import episode_saved_count
+        try:
+            count = episode_saved_count(self.view.tmdb_id)
+        except Exception:      # a damaged file etc.: the page shows no count, the saves still report their own errors
+            count = 0
+        self.view.episodes_saved = f"{count} Saved" if count else ""
+        self.properties(EpisodesSaved=self.view.episodes_saved)
+
+    def set_lane(self, lane):
+        if lane != self.lane:
+            self.lane = lane
+            self.properties(Lane=str(lane) if lane else "")
+
+    def episode_save_item(self, episode):
+        """The saved-episode record (netflix_saved_lists.episode_item) for one row of the list."""
+        from netflix_saved_lists import episode_item
+        fields = self.view.fields
+        return episode_item({
+            "type": "episode", "show_id": fields["ID"], "season": episode["season"], "episode": episode["episode"],
+            "show_title": fields.get("Title", ""), "title": episode["label"], "still": plain_art(episode["thumb"]),
+            "poster": plain_art(fields.get("Poster", "")), "plot": (episode["plot"] or "")[:600],
+            "minutes": min(9999, (episode["runtime"] or 0) // 60),
+        })
+
+    def save_episode(self, view, request):
+        """R10.22: one lane press (("episode", kind, season, number)): Favorite / Watchlist / the picker with checks, then that row's four properties and the
+        "N Saved" count are recomputed in place (no list rebuild, no page change). Errors notify; success is silent (R10.18)."""
+        from netflix_saved_lists import (ListsError, bookmark_item, favorite_item, more_watchlists, notify, saved_properties)
+        _, kind, season, number = request
+        episodes = view.episodes.get(season) or []
+        episode = next((row for row in episodes if row["episode"] == number), None)
+        if episode is None:
+            return
+        try:
+            item = self.episode_save_item(episode)
+            if kind == "fav":
+                changed = favorite_item(item)
+            elif kind == "bm":
+                changed = bookmark_item(item)
+            else:
+                changed = more_watchlists(item)
+            if not changed:
+                return
+            properties = saved_properties(item)
+            if view is self.view and self.active == season and self.episode_list.size() == len(episodes):
+                row = self.episode_list.getListItem(episodes.index(episode))
+                for key, value in properties.items():
+                    row.setProperty(key, value)
+            self.refresh_episodes_saved()
+        except (ListsError, OSError, RuntimeError, ImportError, KeyError) as error:
+            notify(str(error) if isinstance(error, ListsError) else "Could not update saved episodes. Try again.")
 
     def restore_focus(self):
         view = self.view
@@ -702,10 +785,19 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         else:
             self.active = season["number"]
             episodes = view.episodes.get(self.active)
+            self.set_lane(0)   # R10.22: a rebuilt list (another season, a reload) starts on the card
             if episodes:
+                from netflix_saved_lists import episode_properties, episode_states
+                try:
+                    favorites, holding = episode_states(view.tmdb_id)   # once per list build: one SELECT, one JSON read
+                except Exception:
+                    favorites, holding = set(), {}
                 items = []
                 for episode in episodes:
                     item = xbmcgui.ListItem(label=episode["label"], offscreen=True)
+                    for key, value in episode_properties((episode["season"], episode["episode"]) in favorites,
+                                                         holding.get((episode["season"], episode["episode"]), [])).items():
+                        item.setProperty(key, value)
                     item.setArt({"thumb": episode["thumb"]})
                     item.getVideoInfoTag().setPlot(episode["plot"])
                     item.setProperty("Code", episode["code"])
@@ -714,6 +806,12 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                         item.setProperty("Duration", f"{max(1, episode['runtime'] // 60)}m")
                     items.append(item)
                 self.episode_list.addItems(items)
+                target = view.open_target
+                if target and target[0] == self.active:
+                    found = next((position for position, row in enumerate(episodes) if row["episode"] == target[1]), None)
+                    if found is not None:
+                        view.episode_positions[self.active] = found
+                    view.open_target = None
                 index = view.episode_positions.get(self.active)
                 if index is None and view.primary in episodes:
                     index = episodes.index(view.primary)
@@ -753,6 +851,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         if page != "related":
             self.properties(RelatedLoading="")
         view.page, view.focus = page, focus
+        self.set_lane(0)
         if page == "episodes":
             view.failed.discard("seasons")
             season = self.current_season()
@@ -793,6 +892,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             self.setFocusId(EPISODES)
 
     def leave_episodes(self):
+        self.set_lane(0)
         self.view.episode_positions[self.active] = self.episode_list.getSelectedPosition()
         self.view.focus = SEASONS
         self.setFocusId(SEASONS)
@@ -808,7 +908,9 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                 stop_loading(self.play_token)  # POV reads it as cancelled; the loop puts the page back
             return
         if action in BACK:
-            if view.page:
+            if view.page == "episodes" and self.lane:
+                self.set_lane(0)   # R10.22: Back leaves the lane first (back to the card), then the usual Back
+            elif view.page:
                 self.set_page("", MORE if view.page == "episodes" else RELATED)
             elif len(self.stack) > 1:
                 self.stack.pop()
@@ -821,8 +923,22 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             focus = self.focus_id()
             if action == RIGHT and focus == SEASONS:
                 self.enter_episodes()
+            elif action == RIGHT and focus == EPISODES:
+                self.set_lane(min(self.lane + 1, LANE_BOOKMARK))   # R10.22: step into the card's icon row: Favorite, then Watchlist
             elif action == LEFT and focus == EPISODES:
-                self.leave_episodes()
+                if self.lane:
+                    self.set_lane(self.lane - 1)
+                else:
+                    self.leave_episodes()
+            elif action == CONTEXT_MENU and focus == EPISODES and self.lane == LANE_BOOKMARK:
+                episode = self.lane_episode()
+                if episode:
+                    self.request_saved(view, ("episode", "more", episode["season"], episode["episode"]))   # Menu key / long-press OK: "Add to Another Watchlist"
+
+    def lane_episode(self):
+        episodes = self.view.episodes.get(self.active) or []
+        index = self.episode_list.getSelectedPosition()
+        return episodes[index] if 0 <= index < len(episodes) else None
 
     def request_saved(self, view, action):
         """R10.18: queue a Favorite / Watchlist action unless one runs, or one finished less than SAVED_COOLDOWN ago (each refused request in the
@@ -855,7 +971,12 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                 if 0 <= index < len(episodes):
                     view.episode_positions[self.active] = index
                     view.focus = EPISODES
-                    self.press_episode(episodes[index])
+                    if self.lane:
+                        # R10.22: OK inside the lane toggles in place (same cooldown as the show page: a held OK is one toggle)
+                        self.request_saved(view, ("episode", "fav" if self.lane == LANE_FAVORITE else "bm",
+                                                  episodes[index]["season"], episodes[index]["episode"]))
+                    else:
+                        self.press_episode(episodes[index])
         elif view.page == "related":
             if control == SECONDARY_STATUS and "related" in view.failed:
                 view.failed.discard("related")
@@ -1242,7 +1363,15 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                         view, action = self.detail_request
                         # Own the modal on this loop. While it is open the
                         # current dialog ID belongs to the picker, not the series.
-                        if view is self.view and not view.page:
+                        if isinstance(action, tuple):      # R10.22: a lane press on an episode card
+                            if view is self.view and view.page == "episodes":
+                                started = monotonic()
+                                self.saved_done = float("inf")
+                                try:
+                                    self.save_episode(view, action)
+                                finally:
+                                    self.saved_done = max(monotonic(), started + SAVED_GUARD - SAVED_COOLDOWN)
+                        elif view is self.view and not view.page:
                             if action == DESCRIPTION:
                                 plot = self.getProperty("Series.Plot")
                                 if plot:
@@ -1371,6 +1500,13 @@ def play_and_wait(player, request, monitor, origin, current_origin, cover=None):
 
 def open_series(source):
     native = source == "native"
+    episode_target = None
+    if source.startswith("episode:"):     # R10.22: OK on a saved episode in My Lists: the show's episode list, that card focused
+        source = source[len("episode:"):]
+        captured = capture_episode(source)
+        if not captured:
+            return
+        episode_target = captured
     if native:
         source = info("System.CurrentControlID")
         if xbmcgui.getCurrentWindowId() != VIDEOS or source not in NATIVE_LISTS:
@@ -1383,7 +1519,7 @@ def open_series(source):
     staked = monotonic()
     cover = None   # R10: the transition cover, from Play until the page is back after the episode
     try:
-        fields = capture(source)
+        fields = episode_target[0] if episode_target else capture(source)
         if not fields:
             if native:
                 xbmc.executebuiltin("Action(Select)")
@@ -1397,6 +1533,12 @@ def open_series(source):
 
         origin = current_origin()
         stack = [SeriesView(fields)]
+        if episode_target:
+            first = stack[0]
+            first.page, first.focus = "episodes", EPISODES
+            first.restore_season, first.open_target = episode_target[1][0], episode_target[1]
+            if first.seasons:   # remembered seasons (this Kodi session): pick the card's season now, the re-check keeps it (restore_season)
+                first.season_index = next((index for index, row in enumerate(first.seasons) if row["number"] == episode_target[1][0]), first.season_index)
         while not monitor.abortRequested():
             dialog = SeriesDialog("Netflix_Series.xml", "special://skin", "Default", "1080i")
             dialog.stack = stack

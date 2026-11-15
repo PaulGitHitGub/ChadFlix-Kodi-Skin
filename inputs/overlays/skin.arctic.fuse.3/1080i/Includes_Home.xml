@@ -2280,6 +2280,22 @@
                 <onback condition="Window.IsActive(Home) + $EXP[Netflix_Tab_Pending]">ClearProperty(Netflix.TabArrival,Home)</onback>
                 <onback condition="Window.IsActive(Home) + Player.HasMedia">SetFocus(3740)</onback>
                 <onback condition="Window.IsActive(Home) + !Player.HasMedia">SetFocus(3733)</onback>
+                <!-- R10.22 My Lists: Back (the key file sends focus to this tab, whatever has focus) while a view is open closes the view instead: the list opened from
+                     See All returns to the tile grid, a list from the cards row, or See All itself, to the card that opened it (SetFocus keeps that container's cursor;
+                     the cover over the page is removed by the View property). Conditions are read before the actions run, so each case has its own set. -->
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">SetProperty(Netflix.MyLists.View,all,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">ClearProperty(Netflix.MyLists.ViewFrom,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">ClearProperty(Netflix.MyLists.Go.list,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">ClearProperty(Netflix.MyLists.Loaded.list,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">SetFocus(535)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + !String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">ClearProperty(Netflix.MyLists.View,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + !String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">ClearProperty(Netflix.MyLists.Go.list,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + !String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">ClearProperty(Netflix.MyLists.Loaded.list,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + !String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">$VAR[Netflix_My_Lists_To_Cards]</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),all)">ClearProperty(Netflix.MyLists.View,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),all)">ClearProperty(Netflix.MyLists.Go.all,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),all)">ClearProperty(Netflix.MyLists.Loaded.all,Home)</onfocus>
+                <onfocus condition="Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),all)">$VAR[Netflix_My_Lists_To_Cards]</onfocus>
                 <onclick>ClearProperty(Netflix.TabDwellTarget,Home)</onclick>
 
                 <onclick condition="![$PARAM[opened]] + ![$PARAM[swap]]">SetProperty(Netflix.TabArrival,$PARAM[id],Home)</onclick>
@@ -2462,9 +2478,17 @@
                     <include content="Netflix_Loading_Poster_Row"><param name="top">62</param><param name="condition">[$PARAM[visible]] + ![$PARAM[grid_hide]] + ![$PARAM[lazy_genre] | $PARAM[loading_button]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Container($PARAM[id]).IsUpdating + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]</param></include>
                 </control>
                 <control type="group">
-                    <visible>[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Control.HasFocus(8$PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</visible>
+                    <visible>[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + [Control.HasFocus(8$PARAM[id]) | Control.HasFocus($PARAM[id])] + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</visible>
                     <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
-                    <include content="Netflix_Loading_Poster_Row"><param name="top">62</param><param name="ring">true</param><param name="ring_left">$PARAM[ring_left]</param><param name="ring_inner">$PARAM[ring_inner]</param><param name="condition">[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + Control.HasFocus(8$PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</param></include>
+                    <include content="Netflix_Loading_Poster_Row"><param name="top">62</param><param name="ring">true</param><param name="ring_left">$PARAM[ring_left]</param><param name="ring_inner">$PARAM[ring_inner]</param><param name="condition">[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + [Control.HasFocus(8$PARAM[id]) | Control.HasFocus($PARAM[id])] + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</param></include>
+                </control>
+                <!-- R10.23: the same flat cards (no ring) while the row waits to load and neither it nor its stand-in has focus: rows parked during playback
+                     come back one at a time, and each shows the loading look until then (as a focused one always did). Above: the ring also when the empty
+                     list itself has focus (the usual return lands on the row) -->
+                <control type="group">
+                    <visible>[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + !Control.HasFocus(8$PARAM[id]) + !Control.HasFocus($PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</visible>
+                    <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
+                    <include content="Netflix_Loading_Poster_Row"><param name="top">62</param><param name="condition">[$PARAM[visible]] + ![$PARAM[grid_hide]] + [$PARAM[lazy_genre] | $PARAM[loading_button]] + $PARAM[catalog_genre] + [Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + Integer.IsEqual(Container($PARAM[id]).NumItems,0) + !Control.HasFocus(8$PARAM[id]) + !Control.HasFocus($PARAM[id]) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.$PARAM[id])) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),$PARAM[id]) | Container($PARAM[id]).IsUpdating]</param></include>
                 </control>
                 <control type="button" id="8$PARAM[id]">
                     <left>80</left>
@@ -2768,11 +2792,14 @@
         </definition>
     </include>
 
-    <!-- My Lists (Option 3, staged/mylists-rail): watchlists in a rail on the left, Saved Movies and Saved Shows as
-         two poster rows on the right, one info line for the focused title at the bottom. Nothing scrolls vertically;
-         the rail scrolls inside itself. List ids 531/532/533, the placeholders 8530-8533 and the three content paths
-         are unchanged, so the row coordinator (extras/netflix_browse_state.py) still loads 533, 531, 532 one at a time.
-         "New Watchlist" is the add-on's create item, now listed last (plugin.video.pov netflix_watchlists.py). -->
+    <!-- My Lists, R10.22 design D "Rows + Cards" (staged/watchlist-page-redesign, OPTIONS.md D): a Watchlists row of collage cards on top (340 x 232, the 12 most
+         recently changed lists, "See All (N)", dashed "New Watchlist" last), Saved Movies and Saved Shows as two poster rows (160 x 240) under it. OK on a card opens
+         the list as a grid INSIDE this window (container 534, 7 columns of 220 x 330); "See All" opens every list as design C's tile grid (container 535). No Videos
+         window swap. Window(Home).Property(Netflix.MyLists.View) = '' (the page) | list | all says which layer is shown; the page's controls stay where they are,
+         a black cover hides them while a view is open, so Back can put focus straight back on the same card (SetFocus(533), its cursor is kept).
+         Generated by staged/R10.22-lists-and-episodes/tools/gen_mylists.py (the card, tile and cell layouts) from tools/mylists_region.xml.in.
+         List ids 531/532/533 and the placeholders 8531-8533 are unchanged, so the row coordinator (extras/netflix_browse_state.py) still loads 533, 531, 532 one at a time;
+         the two views (534 / 535, placeholders 8534 / 8535) load only when the observer opens their gate (Netflix.MyLists.Go.list / Go.all), also one at a time. -->
     <include name="Netflix_My_Lists_Page">
         <!-- Match the Movies and Shows pages: pure black in the compact layout. -->
         <control type="image">
@@ -2783,156 +2810,511 @@
             <texture colordiffuse="FF000000">common/white.png</texture>
             <visible>Skin.HasSetting(Netflix.CompactHome)</visible>
         </control>
-        <control type="image">
-            <left>520</left><top>112</top><width>2</width><height>968</height>
-            <texture colordiffuse="FF161616">common/white.png</texture>
-        </control>
-        <include>Netflix_Watchlists_Rail</include>
-        <!-- Saved Movies -->
-        <control type="group">
+        <!-- ============================== the page: Watchlists, Saved Movies, Saved Shows ============================== -->
+        <control type="grouplist">
+            <left>70</left><top>112</top><width>1500</width><height>40</height>
+            <orientation>horizontal</orientation><itemgap>0</itemgap>
             <control type="label">
-                <left>560</left><top>112</top><width>1300</width><height>40</height>
-                <font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Saved Movies</label>
+                <width max="700">auto</width><height>40</height>
+                <font>font_midi_bold</font><aligny>center</aligny><textcolor>FFF5F5F5</textcolor><label>Watchlists</label>
             </control>
-            <include content="Netflix_My_Lists_Poster_Row">
-                <param name="id">531</param>
-                <param name="top">164</param>
-                <param name="path">$VAR[Netflix_Saved_Movies_Path]</param>
-                <param name="up">3734</param>
-                <param name="down">$VAR[Netflix_My_Lists_After_Movies]</param>
-            </include>
-            <include content="Netflix_My_Lists_Row_Placeholder">
-                <param name="id">531</param>
-                <param name="top">164</param>
-                <param name="loading">$VAR[Netflix_Saved_Movies_Status]</param>
-                <param name="hint">Movies you save will appear here.</param>
-                <param name="hint_width">454</param>
-                <param name="loading_width">346</param>
-                <param name="up">3734</param>
-                <param name="down">$VAR[Netflix_My_Lists_After_Movies]</param>
-            </include>
-            <control type="group">
-                <visible>$EXP[Netflix_My_Lists_No_Favorites]</visible>
-                <include content="Netflix_My_Lists_Hint_Box">
-                    <param name="top">164</param>
-                    <param name="label">Nothing saved yet. Use Favorite on a movie to keep it here.</param>
-                    <param name="width">1012</param>
-                </include>
-                <!-- focus: white 4 px ring around #454545, as the mockup's focused Browse button -->
-                <control type="image">
-                    <left>1300</left><top>176</top><width>260</width><height>52</height>
-                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
-                    <visible>Control.HasFocus(8530)</visible>
-                </control>
-                <control type="image">
-                    <left>1304</left><top>180</top><width>252</width><height>44</height>
-                    <texture border="20" colordiffuse="FF454545">common/box.png</texture>
-                    <visible>Control.HasFocus(8530)</visible>
-                </control>
-                <control type="button" id="8530">
-                    <left>1300</left><top>176</top><width>260</width><height>52</height>
-                    <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
-                    <textcolor>FFFFFFFF</textcolor>
-                    <texturefocus />
-                    <texturenofocus border="24" colordiffuse="FF242424">common/box.png</texturenofocus>
-                    <focusedcolor>FFFFFFFF</focusedcolor>
-                    <label>Browse Movies</label>
-                    <onup>3734</onup><ondown>8536</ondown><onright>noop</onright><onback>3734</onback>
-                    <onleft>SetProperty(Netflix.MyLists.RailFrom,8530,Home)</onleft>
-                    <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
-                    <onclick>SetProperty(Netflix.Tab,movies,Home)</onclick>
-                    <onclick>ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458",return)</onclick>
-                </control>
-            </control>
-        </control>
-        <!-- Saved Shows: moves up under the Saved Movies hint when no movies are saved. -->
-        <control type="group">
-            <animation effect="slide" end="0,-260" time="0" condition="$EXP[Netflix_My_Lists_No_Movies]">Conditional</animation>
             <control type="label">
-                <left>560</left><top>548</top><width>1300</width><height>40</height>
-                <font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Saved Shows</label>
-            </control>
-            <include content="Netflix_My_Lists_Poster_Row">
-                <param name="id">532</param>
-                <param name="top">600</param>
-                <param name="path">$VAR[Netflix_Saved_Shows_Path]</param>
-                <param name="up">$VAR[Netflix_My_Lists_Before_Shows]</param>
-                <param name="down">noop</param>
-            </include>
-            <include content="Netflix_My_Lists_Row_Placeholder">
-                <param name="id">532</param>
-                <param name="top">600</param>
-                <param name="loading">$VAR[Netflix_Saved_Shows_Status]</param>
-                <param name="hint">Shows you save will appear here.</param>
-                <param name="hint_width">448</param>
-                <param name="loading_width">340</param>
-                <param name="up">$VAR[Netflix_My_Lists_Before_Shows]</param>
-                <param name="down">noop</param>
-            </include>
-            <control type="group">
-                <visible>$EXP[Netflix_My_Lists_No_Favorites]</visible>
-                <include content="Netflix_My_Lists_Hint_Box">
-                    <param name="top">600</param>
-                    <param name="label">Nothing saved yet. Use Favorite on a show to keep it here.</param>
-                    <param name="width">1012</param>
-                </include>
-                <!-- Same route as the Shows tab from this window (tab swap on: Movies Trending root + Netflix.Tab=shows). -->
-                <!-- focus: white 4 px ring around #454545, as the mockup's focused Browse button -->
-                <control type="image">
-                    <left>1300</left><top>612</top><width>260</width><height>52</height>
-                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
-                    <visible>Control.HasFocus(8536)</visible>
-                </control>
-                <control type="image">
-                    <left>1304</left><top>616</top><width>252</width><height>44</height>
-                    <texture border="20" colordiffuse="FF454545">common/box.png</texture>
-                    <visible>Control.HasFocus(8536)</visible>
-                </control>
-                <control type="button" id="8536">
-                    <left>1300</left><top>612</top><width>260</width><height>52</height>
-                    <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
-                    <textcolor>FFFFFFFF</textcolor>
-                    <texturefocus />
-                    <texturenofocus border="24" colordiffuse="FF242424">common/box.png</texturenofocus>
-                    <focusedcolor>FFFFFFFF</focusedcolor>
-                    <label>Browse Shows</label>
-                    <onup>8530</onup><ondown>noop</ondown><onright>noop</onright><onback>3734</onback>
-                    <onleft>SetProperty(Netflix.MyLists.RailFrom,8536,Home)</onleft>
-                    <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
-                    <onclick>SetProperty(Netflix.Tab,shows,Home)</onclick>
-                    <onclick condition="$EXP[Netflix_Tab_Swap_On]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458",return)</onclick>
-                    <onclick condition="!$EXP[Netflix_Tab_Swap_On]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458",return)</onclick>
-                </control>
+                <width max="500">auto</width><height>40</height>
+                <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor><label>$VAR[Netflix_Watchlists_Count]</label>
             </control>
         </control>
-        <include>Netflix_My_Lists_Info_Line</include>
-    </include>
-
-    <include name="Netflix_Watchlists_Rail">
-        <control type="label">
-            <left>70</left><top>112</top><width>420</width><height>40</height>
-            <font>font_midi_bold</font><textcolor>FFF5F5F5</textcolor><label>Watchlists</label>
+        <!-- loading: the five cards of the row, flat (Netflix_Loading_Card, no sweep); the first one carries the focus stand-in 8533 -->
+        <control type="group">
+            <visible>Integer.IsEqual(Container(533).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Watchlists.Error))</visible>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">426</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">782</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1138</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1494</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
+            <control type="image">
+                <left>70</left><top>160</top><width>340</width><height>232</height>
+                <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                <visible>Control.HasFocus(8533)</visible>
+            </control>
+            <control type="image">
+                <left>74</left><top>164</top><width>332</width><height>224</height>
+                <texture colordiffuse="FF222222" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                <visible>Control.HasFocus(8533)</visible>
+            </control>
         </control>
-        <!-- 10 rows and a peek of the 11th fit; a longer rail scrolls inside itself. -->
-        <control type="list" id="533">
-            <left>70</left><top>168</top><width>420</width><height>864</height>
-            <orientation>vertical</orientation>
-            <scrolltime tween="quadratic">200</scrolltime>
-            <viewtype label="Watchlists">list</viewtype>
-            <onup>3734</onup><ondown>noop</ondown><onleft>noop</onleft><onback>3734</onback>
-            <onright>$VAR[Netflix_My_Lists_From_Rail]</onright>
+        <control type="group">
+            <visible>Integer.IsEqual(Container(533).NumItems,0) + !String.IsEmpty(Window(Home).Property(Netflix.Watchlists.Error))</visible>
+            <control type="image">
+                <left>70</left><top>238</top><width>1096</width><height>76</height>
+                <texture>special://skin/extras/mylists/dash-1096x76.png</texture>
+            </control>
+            <control type="label">
+                <left>104</left><top>238</top><width>1040</width><height>76</height>
+                <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                <label>$INFO[Window(Home).Property(Netflix.Watchlists.Error)]</label>
+            </control>
+        </control>
+        <control type="button" id="8533">
+            <left>70</left><top>160</top><width>340</width><height>232</height>
+            <font>font_mini</font>
+            <texturefocus /><texturenofocus />
+            <label />
+            <visible>Integer.IsEqual(Container(533).NumItems,0)</visible>
+            <onup>3734</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright><onback>3734</onback>
+        </control>
+        <!-- "none yet": the dashed hint to the right of the one card (New Watchlist) -->
+        <control type="group">
+            <visible>Integer.IsEqual(Container(533).NumItems,1)</visible>
+            <control type="image">
+                <left>426</left><top>238</top><width>1096</width><height>76</height>
+                <texture>special://skin/extras/mylists/dash-1096x76.png</texture>
+            </control>
+            <control type="label">
+                <left>460</left><top>238</top><width>1040</width><height>76</height>
+                <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                <label>No watchlists yet. Choose New Watchlist, or use Add to Watchlist on any title.</label>
+            </control>
+        </control>
+        <control type="fixedlist" id="533">
+            <left>70</left><top>160</top><right>0</right><height>232</height>
+            <orientation>horizontal</orientation><focusposition>0</focusposition><movement>0</movement>
+            <scrolltime tween="quadratic">200</scrolltime><preloaditems>2</preloaditems>
+            <onup>3734</onup><ondown>$VAR[Netflix_My_Lists_After_Cards]</ondown><onleft>noop</onleft><onright>noop</onright><onback>3734</onback>
             <onfocus>ClearProperty(TMDbHelper.WidgetContainer)</onfocus>
             <onfocus>ClearProperty(InfoPanel.FullSwitch,Home)</onfocus>
             <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),create)">RunScript(special://skin/extras/netflix_saved_lists.py,create)</onclick>
-            <onclick condition="!String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),create)">ActivateWindow(Videos,"$INFO[Container(533).ListItem.FileNameAndPath]",return)</onclick>
-            <itemlayout width="420" height="84">
-                <include content="Netflix_Watchlist_Rail_Item"><param name="focused">false</param></include>
+            <!-- OK on a list card or on Saved Episodes: the list opens as a grid in this window (container 534). Every flag of an earlier view is cleared first, and
+                 focus goes to the placeholder 8534 (hidden-focus: the view layer is shown by the property set just above); the observer opens the load gate when no
+                 other add-on call runs, the list arrives, and the netflix_saved_shelf_focus timer moves focus onto the first poster (Rename for an empty list). -->
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.Go.list,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.Loaded.list,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.ViewFrom,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewPath,$INFO[Container(533).ListItem.FileNameAndPath],Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewID,$INFO[Container(533).ListItem.Property(Netflix.Watchlist.ID)],Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.ViewName,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.ViewError,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewIndex,0,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewCount,$INFO[Container(533).ListItem.Property(Netflix.Watchlist.Count)],Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.View,list,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetFocus(8534)</onclick>
+            <!-- "See All (N)": every list as design C's tile grid (container 535) -->
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),all)">ClearProperty(Netflix.MyLists.Go.all,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),all)">ClearProperty(Netflix.MyLists.Loaded.all,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),all)">ClearProperty(Netflix.MyLists.ViewFrom,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),all)">ClearProperty(Netflix.MyLists.ViewID,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),all)">SetProperty(Netflix.MyLists.AllToken,0,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),all)">SetProperty(Netflix.MyLists.View,all,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),all)">SetFocus(8535)</onclick>
+            <itemlayout width="356" height="232">
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <control type="group">
+                            <visible>!Integer.IsGreater(ListItem.Property(Netflix.Watchlist.Posters),0)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>340</width><height>168</height>
+                                <texture colordiffuse="FF222222">common/white.png</texture>
+                            </control>
+                        <control type="image">
+                            <left>146</left><top>60</top><width>48</width><height>48</height>
+                            <texture colordiffuse="FF6A6A6A">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Count),0) + String.IsEqual(ListItem.Property(Netflix.Watchlist.Kind),list)</visible>
+                        </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),1)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>340</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),2)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>168</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>170</left><top>0</top><width>170</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),3)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>111</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>113</left><top>0</top><width>112</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>227</left><top>0</top><width>113</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),4)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>83</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>85</left><top>0</top><width>83</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>170</left><top>0</top><width>83</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>255</left><top>0</top><width>85</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage4)]</texture>
+                            </control>
+                        </control>
+                    </control>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FF000000">special://skin/extras/mylists/card-corners-340x232.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>20</left><top>168</top><width>224</width><height>64</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
+                        <scroll>false</scroll>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                    <control type="label">
+                        <left>256</left><top>168</top><width>64</width><height>64</height>
+                        <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor><align>right</align>
+                        <label>$INFO[ListItem.Property(Netflix.Watchlist.Count)]</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture>special://skin/extras/mylists/dash-340x232.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>146</left><top>64</top><width>48</width><height>48</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/plus.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>130</top><width>340</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>New Watchlist</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),all)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>146</left><top>64</top><width>48</width><height>48</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/table-cells-large.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>130</top><width>340</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                </control>
             </itemlayout>
-            <focusedlayout width="420" height="84" condition="Control.HasFocus(533)">
-                <include content="Netflix_Watchlist_Rail_Item"><param name="focused">true</param></include>
+            <focusedlayout width="356" height="232" condition="Control.HasFocus(533)">
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>332</width><height>224</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>4</left><top>4</top>
+                        <control type="group">
+                            <visible>!Integer.IsGreater(ListItem.Property(Netflix.Watchlist.Posters),0)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>332</width><height>164</height>
+                                <texture colordiffuse="FF222222">common/white.png</texture>
+                            </control>
+                        <control type="image">
+                            <left>142</left><top>58</top><width>48</width><height>48</height>
+                            <texture colordiffuse="FF6A6A6A">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Count),0) + String.IsEqual(ListItem.Property(Netflix.Watchlist.Kind),list)</visible>
+                        </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),1)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>332</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),2)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>164</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>166</left><top>0</top><width>166</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),3)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>109</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>111</left><top>0</top><width>108</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>221</left><top>0</top><width>111</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),4)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>81</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>83</left><top>0</top><width>81</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>166</left><top>0</top><width>81</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>249</left><top>0</top><width>83</width><height>164</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage4)]</texture>
+                            </control>
+                        </control>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>332</width><height>224</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/mylists/card-corners-332x224.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>20</left><top>168</top><width>224</width><height>60</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
+                        <scroll>true</scroll>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                    <control type="label">
+                        <left>256</left><top>168</top><width>64</width><height>60</height>
+                        <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor><align>right</align>
+                        <label>$INFO[ListItem.Property(Netflix.Watchlist.Count)]</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>332</width><height>224</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>146</left><top>64</top><width>48</width><height>48</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/plus.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>130</top><width>340</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><align>center</align>
+                        <label>New Watchlist</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),all)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>332</width><height>224</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>146</left><top>64</top><width>48</width><height>48</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/table-cells-large.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>130</top><width>340</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><align>center</align>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                </control>
             </focusedlayout>
-            <focusedlayout width="420" height="84" condition="!Control.HasFocus(533)">
-                <include content="Netflix_Watchlist_Rail_Item"><param name="focused">false</param></include>
+            <focusedlayout width="356" height="232" condition="!Control.HasFocus(533)">
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <control type="group">
+                            <visible>!Integer.IsGreater(ListItem.Property(Netflix.Watchlist.Posters),0)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>340</width><height>168</height>
+                                <texture colordiffuse="FF222222">common/white.png</texture>
+                            </control>
+                        <control type="image">
+                            <left>146</left><top>60</top><width>48</width><height>48</height>
+                            <texture colordiffuse="FF6A6A6A">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Count),0) + String.IsEqual(ListItem.Property(Netflix.Watchlist.Kind),list)</visible>
+                        </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),1)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>340</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),2)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>168</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>170</left><top>0</top><width>170</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),3)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>111</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>113</left><top>0</top><width>112</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>227</left><top>0</top><width>113</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),4)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>83</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>85</left><top>0</top><width>83</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>170</left><top>0</top><width>83</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>255</left><top>0</top><width>85</width><height>168</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage4)]</texture>
+                            </control>
+                        </control>
+                    </control>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FF000000">special://skin/extras/mylists/card-corners-340x232.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>20</left><top>168</top><width>224</width><height>64</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
+                        <scroll>false</scroll>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                    <control type="label">
+                        <left>256</left><top>168</top><width>64</width><height>64</height>
+                        <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor><align>right</align>
+                        <label>$INFO[ListItem.Property(Netflix.Watchlist.Count)]</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture>special://skin/extras/mylists/dash-340x232.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>146</left><top>64</top><width>48</width><height>48</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/plus.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>130</top><width>340</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>New Watchlist</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),all)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>340</width><height>232</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>146</left><top>64</top><width>48</width><height>48</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/table-cells-large.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>130</top><width>340</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                </control>
             </focusedlayout>
             <include content="Object_ContentDynamic">
                 <param name="content">$VAR[Netflix_Watchlists_Path]</param>
@@ -2940,149 +3322,1023 @@
                 <param name="sortby">playlist</param>
             </include>
         </control>
-        <!-- Fades the peek of the next row while the rail has more below. -->
+        <!-- Saved Movies -->
+        <control type="grouplist">
+            <left>70</left><top>416</top><width>1500</width><height>40</height>
+            <orientation>horizontal</orientation><itemgap>0</itemgap>
+            <control type="label">
+                <width max="700">auto</width><height>40</height>
+                <font>font_midi_bold</font><aligny>center</aligny><textcolor>FFF5F5F5</textcolor><label>Saved Movies</label>
+            </control>
+            <control type="label">
+                <width max="500">auto</width><height>40</height>
+                <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor><label>$VAR[Netflix_Saved_Movies_Count]</label>
+            </control>
+        </control>
+        <control type="group">
+            <visible>!Integer.IsGreater(Container(531).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating]</visible>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">246</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">422</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">598</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">774</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">950</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1126</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1302</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1478</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1654</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1830</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+        </control>
+        <include content="Netflix_My_Lists_Poster_Row">
+            <param name="id">531</param>
+            <param name="top">464</param>
+            <param name="path">$VAR[Netflix_Saved_Movies_Path]</param>
+            <param name="up">$VAR[Netflix_My_Lists_To_Cards]</param>
+            <param name="down">$VAR[Netflix_My_Lists_After_Movies]</param>
+        </include>
+        <include content="Netflix_My_Lists_Row_Placeholder">
+            <param name="id">531</param>
+            <param name="top">464</param>
+            <param name="hint">Movies you save will appear here.</param>
+            <param name="hint_width">454</param>
+            <param name="up">$VAR[Netflix_My_Lists_To_Cards]</param>
+            <param name="down">$VAR[Netflix_My_Lists_After_Movies]</param>
+        </include>
+        <control type="group">
+            <visible>$EXP[Netflix_My_Lists_No_Favorites]</visible>
+            <include content="Netflix_My_Lists_Hint_Box">
+                <param name="top">464</param>
+                <param name="label">Nothing saved yet. Use Favorite on a movie to keep it here.</param>
+                <param name="width">1012</param>
+            </include>
+            <!-- focus: white 4 px ring around #454545, as the mockup's focused Browse button -->
+            <control type="image">
+                <left>810</left><top>476</top><width>260</width><height>52</height>
+                <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
+                <visible>Control.HasFocus(8530)</visible>
+            </control>
+            <control type="image">
+                <left>814</left><top>480</top><width>252</width><height>44</height>
+                <texture border="20" colordiffuse="FF454545">common/box.png</texture>
+                <visible>Control.HasFocus(8530)</visible>
+            </control>
+            <control type="button" id="8530">
+                <left>810</left><top>476</top><width>260</width><height>52</height>
+                <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+                <textcolor>FFFFFFFF</textcolor>
+                <texturefocus />
+                <texturenofocus border="24" colordiffuse="FF242424">common/box.png</texturenofocus>
+                <focusedcolor>FFFFFFFF</focusedcolor>
+                <label>Browse Movies</label>
+                <onup>$VAR[Netflix_My_Lists_To_Cards]</onup><ondown>8536</ondown><onright>noop</onright><onleft>noop</onleft><onback>3734</onback>
+                <onclick>SetProperty(Netflix.Tab,movies,Home)</onclick>
+                <onclick>ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458",return)</onclick>
+            </control>
+        </control>
+        <!-- Saved Shows -->
+        <control type="grouplist">
+            <left>70</left><top>728</top><width>1500</width><height>40</height>
+            <orientation>horizontal</orientation><itemgap>0</itemgap>
+            <control type="label">
+                <width max="700">auto</width><height>40</height>
+                <font>font_midi_bold</font><aligny>center</aligny><textcolor>FFF5F5F5</textcolor><label>Saved Shows</label>
+            </control>
+            <control type="label">
+                <width max="500">auto</width><height>40</height>
+                <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor><label>$VAR[Netflix_Saved_Shows_Count]</label>
+            </control>
+        </control>
+        <control type="group">
+            <visible>!Integer.IsGreater(Container(532).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating]</visible>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">246</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">422</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">598</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">774</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">950</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1126</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1302</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1478</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1654</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1830</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+        </control>
+        <include content="Netflix_My_Lists_Poster_Row">
+            <param name="id">532</param>
+            <param name="top">776</param>
+            <param name="path">$VAR[Netflix_Saved_Shows_Path]</param>
+            <param name="up">$VAR[Netflix_My_Lists_Before_Shows]</param>
+            <param name="down">noop</param>
+        </include>
+        <include content="Netflix_My_Lists_Row_Placeholder">
+            <param name="id">532</param>
+            <param name="top">776</param>
+            <param name="hint">Shows you save will appear here.</param>
+            <param name="hint_width">448</param>
+            <param name="up">$VAR[Netflix_My_Lists_Before_Shows]</param>
+            <param name="down">noop</param>
+        </include>
+        <control type="group">
+            <visible>$EXP[Netflix_My_Lists_No_Favorites]</visible>
+            <include content="Netflix_My_Lists_Hint_Box">
+                <param name="top">776</param>
+                <param name="label">Nothing saved yet. Use Favorite on a show to keep it here.</param>
+                <param name="width">1012</param>
+            </include>
+            <!-- Same route as the Shows tab from this window (tab swap on: Movies Trending root + Netflix.Tab=shows). -->
+            <control type="image">
+                <left>810</left><top>788</top><width>260</width><height>52</height>
+                <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
+                <visible>Control.HasFocus(8536)</visible>
+            </control>
+            <control type="image">
+                <left>814</left><top>792</top><width>252</width><height>44</height>
+                <texture border="20" colordiffuse="FF454545">common/box.png</texture>
+                <visible>Control.HasFocus(8536)</visible>
+            </control>
+            <control type="button" id="8536">
+                <left>810</left><top>788</top><width>260</width><height>52</height>
+                <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+                <textcolor>FFFFFFFF</textcolor>
+                <texturefocus />
+                <texturenofocus border="24" colordiffuse="FF242424">common/box.png</texturenofocus>
+                <focusedcolor>FFFFFFFF</focusedcolor>
+                <label>Browse Shows</label>
+                <onup>8530</onup><ondown>noop</ondown><onright>noop</onright><onleft>noop</onleft><onback>3734</onback>
+                <onclick>SetProperty(Netflix.Tab,shows,Home)</onclick>
+                <onclick condition="$EXP[Netflix_Tab_Swap_On]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458",return)</onclick>
+                <onclick condition="!$EXP[Netflix_Tab_Swap_On]">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=trakt_tv_trending&amp;name=32458",return)</onclick>
+            </control>
+        </control>
+        <!-- ============================== a view is open: the cover hides the page ============================== -->
         <control type="image">
-            <left>70</left><top>1000</top><width>420</width><height>32</height>
-            <texture colordiffuse="FF000000">common/gradient-v.png</texture>
-            <visible>Container(533).HasNext</visible>
+            <texture colordiffuse="FF080808">common/white.png</texture>
+            <visible>$EXP[Netflix_MyLists_View_Any] + !Skin.HasSetting(Netflix.CompactHome)</visible>
         </control>
-        <control type="button" id="8533">
-            <left>70</left><top>168</top><width>420</width><height>72</height>
-            <font>font_mini</font><textoffsetx>22</textoffsetx><aligny>center</aligny>
-            <textcolor>FFBBBBBB</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
-            <texturenofocus border="24" colordiffuse="FF161616">common/box.png</texturenofocus>
-            <texturefocus border="24" colordiffuse="FF2A2A2A">common/box.png</texturefocus>
-            <label>$VAR[Netflix_Watchlists_Status]</label><visible>Integer.IsEqual(Container(533).NumItems,0)</visible>
-            <onup>3734</onup><ondown>noop</ondown><onleft>noop</onleft><onback>3734</onback>
-            <onright>$VAR[Netflix_My_Lists_From_Rail]</onright>
+        <control type="image">
+            <texture colordiffuse="FF000000">common/white.png</texture>
+            <visible>$EXP[Netflix_MyLists_View_Any] + Skin.HasSetting(Netflix.CompactHome)</visible>
+        </control>
+        <!-- ============================== one list, opened (container 534) ============================== -->
+        <control type="group">
+            <visible>$EXP[Netflix_MyLists_View_List]</visible>
+            <control type="grouplist">
+                <left>70</left><top>112</top><width>1300</width><height>40</height>
+                <orientation>horizontal</orientation><itemgap>0</itemgap>
+                <control type="label">
+                    <width max="900">auto</width><height>40</height>
+                    <font>font_midi_bold</font><aligny>center</aligny><textcolor>FFF5F5F5</textcolor>
+                    <label>$VAR[Netflix_MyLists_View_Name]</label>
+                </control>
+                <control type="label">
+                    <width max="400">auto</width><height>40</height>
+                    <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                    <label>$VAR[Netflix_MyLists_View_Count]</label>
+                </control>
+            </control>
+            <control type="label">
+                <left>1060</left><top>112</top><width>440</width><height>52</height>
+                <font>font_mini</font><align>right</align><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                <label>$INFO[Container(534).CurrentItem] / $INFO[Container(534).NumItems]</label>
+                <visible>$EXP[Netflix_MyLists_View_Loaded_List] + Integer.IsGreater(Container(534).NumItems,14)</visible>
+            </control>
+            <control type="button" id="8541">
+                <left>1520</left><top>112</top><width>160</width><height>52</height>
+                <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+                <textcolor>FFFFFFFF</textcolor><focusedcolor>FF101012</focusedcolor>
+                <texturenofocus border="26" colordiffuse="FF242424">common/box.png</texturenofocus>
+                <texturefocus border="26" colordiffuse="FFFFFFFF">common/box.png</texturefocus>
+                <label>Rename</label>
+                <visible>!String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)</visible>
+                <onup>noop</onup><onleft>noop</onleft><onright>8542</onright><ondown>$VAR[Netflix_MyLists_Pills_Down]</ondown><onback>3734</onback>
+                <onclick>RunScript(special://skin/extras/netflix_saved_lists.py,rename,$INFO[Window(Home).Property(Netflix.MyLists.ViewID)])</onclick>
+            </control>
+            <control type="button" id="8542">
+                <left>1692</left><top>112</top><width>158</width><height>52</height>
+                <font>font_main_bold</font><align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+                <textcolor>FFFFFFFF</textcolor><focusedcolor>FF101012</focusedcolor>
+                <texturenofocus border="26" colordiffuse="FF242424">common/box.png</texturenofocus>
+                <texturefocus border="26" colordiffuse="FFFFFFFF">common/box.png</texturefocus>
+                <label>Delete</label>
+                <visible>!String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)</visible>
+                <onup>noop</onup><onleft>8541</onleft><onright>noop</onright><ondown>$VAR[Netflix_MyLists_Pills_Down]</ondown><onback>3734</onback>
+                <onclick>RunScript(special://skin/extras/netflix_saved_lists.py,delete,$INFO[Window(Home).Property(Netflix.MyLists.ViewID)])</onclick>
+            </control>
+            <!-- an empty list (or no saved episodes): the dashed hint -->
+            <control type="group">
+                <visible>$EXP[Netflix_MyLists_View_Loaded_List] + !Container(534).IsUpdating + Integer.IsEqual(Container(534).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.MyLists.ViewError))</visible>
+                <control type="image">
+                    <left>70</left><top>196</top><width>836</width><height>76</height>
+                    <texture>special://skin/extras/mylists/dash-836x76.png</texture>
+                    <visible>!String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)</visible>
+                </control>
+                <control type="label">
+                    <left>104</left><top>196</top><width>780</width><height>76</height>
+                    <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                    <label>This watchlist is empty. Use Add to Watchlist on a title page.</label>
+                    <visible>!String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)</visible>
+                </control>
+                <control type="image">
+                    <left>70</left><top>196</top><width>948</width><height>76</height>
+                    <texture>special://skin/extras/mylists/dash-948x76.png</texture>
+                    <visible>String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)</visible>
+                </control>
+                <control type="label">
+                    <left>104</left><top>196</top><width>890</width><height>76</height>
+                    <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                    <label>No saved episodes yet. Open More Episodes on a show and save one.</label>
+                    <visible>String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)</visible>
+                </control>
+            </control>
+            <!-- the list could not be opened (deleted elsewhere, a damaged file): the plugin's own message instead of flat cards forever -->
+            <control type="group">
+                <visible>$EXP[Netflix_MyLists_View_Loaded_List] + !String.IsEmpty(Window(Home).Property(Netflix.MyLists.ViewError))</visible>
+                <control type="image">
+                    <left>70</left><top>196</top><width>948</width><height>76</height>
+                    <texture>special://skin/extras/mylists/dash-948x76.png</texture>
+                </control>
+                <control type="label">
+                    <left>104</left><top>196</top><width>890</width><height>76</height>
+                    <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                    <label>$INFO[Window(Home).Property(Netflix.MyLists.ViewError)]</label>
+                </control>
+            </control>
+            <control type="panel" id="534">
+                <left>70</left><top>196</top><width>1780</width><height>884</height>
+                <orientation>vertical</orientation>
+                <scrolltime tween="quadratic">200</scrolltime><preloaditems>2</preloaditems>
+                <onup condition="!String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)">8541</onup>
+                <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright><onback>3734</onback>
+                <onclick condition="String.IsEqual(Container(534).ListItem.Property(Netflix.Episode),1)">RunScript(special://skin/extras/netflix_series.py,episode:534)</onclick>
+                <onclick condition="String.StartsWith(Container(534).ListItem.FileNameAndPath,plugin://plugin.video.pov) + String.IsEqual(Container(534).ListItem.DBType,movie)">RunScript(special://skin/extras/netflix_movie_details.py,534)</onclick>
+                <onclick condition="String.StartsWith(Container(534).ListItem.FileNameAndPath,plugin://plugin.video.pov/) + String.IsEqual(Container(534).ListItem.DBType,tvshow) + [Integer.IsGreater(Container(534).ListItem.UniqueID(tmdb),0) | Integer.IsGreater(Container(534).ListItem.Property(tmdb_id),0) | String.Contains(Container(534).ListItem.FileNameAndPath,tmdb_id=)]">RunScript(special://skin/extras/netflix_series.py,534)</onclick>
+                <onfocus>SetProperty(TMDbHelper.WidgetContainer,534)</onfocus>
+                <onfocus>ClearProperty(HomeSwitcher.IsVisible,Home)</onfocus>
+                <onfocus>ClearProperty(InfoPanel.FullSwitch,Home)</onfocus>
+            <itemlayout width="236" height="346">
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <visible>!String.IsEqual(ListItem.Property(Netflix.Episode),1)</visible>
+                        <include content="Netflix_Focus_Rail_Poster"><param name="width">220</param><param name="height">330</param></include>
+                    </control>
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <visible>String.IsEqual(ListItem.Property(Netflix.Episode),1)</visible>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>220</width><height>330</height>
+                            <texture colordiffuse="FF161616" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>220</width><height>124</height>
+                            <aspectratio scalediffuse="false">scale</aspectratio>
+                            <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>80</top><width>220</width><height>44</height>
+                            <texture colordiffuse="CC000000">common/poster_fade.png</texture>
+                        </control>
+                        <control type="label">
+                            <left>14</left><top>90</top><width>120</width><height>30</height>
+                            <font>font_mini_bold</font><aligny>center</aligny><textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Minutes)]</label>
+                        </control>
+                        <control type="textbox">
+                            <left>14</left><top>138</top><width>192</width><height>62</height>
+                            <font>font_mini_bold</font><textcolor>FFFFFFFF</textcolor><autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Show)]</label>
+                        </control>
+                        <control type="label">
+                            <left>14</left><top>204</top><width>192</width><height>30</height>
+                            <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Code)]</label>
+                        </control>
+                        <control type="textbox">
+                            <left>14</left><top>236</top><width>192</width><height>66</height>
+                            <font>font_tiny</font><textcolor>FFBBBBBB</textcolor><autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Label]</label>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>220</width><height>330</height>
+                            <texture colordiffuse="FF000000">special://skin/extras/mylists/still-corners-220x330.png</texture>
+                        </control>
+                    </control>
+            </itemlayout>
+            <focusedlayout width="236" height="346" condition="Control.HasFocus(534)">
+                    <control type="image">
+                        <left>0</left><top>0</top><width>220</width><height>330</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>4</left><top>4</top>
+                        <visible>!String.IsEqual(ListItem.Property(Netflix.Episode),1)</visible>
+                        <include content="Netflix_Focus_Rail_Poster"><param name="width">212</param><param name="height">322</param></include>
+                    </control>
+                    <control type="group">
+                        <left>4</left><top>4</top>
+                        <visible>String.IsEqual(ListItem.Property(Netflix.Episode),1)</visible>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>212</width><height>322</height>
+                            <texture colordiffuse="FF161616" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>212</width><height>120</height>
+                            <aspectratio scalediffuse="false">scale</aspectratio>
+                            <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>76</top><width>212</width><height>44</height>
+                            <texture colordiffuse="CC000000">common/poster_fade.png</texture>
+                        </control>
+                        <control type="label">
+                            <left>10</left><top>86</top><width>120</width><height>30</height>
+                            <font>font_mini_bold</font><aligny>center</aligny><textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Minutes)]</label>
+                        </control>
+                        <control type="textbox">
+                            <left>10</left><top>134</top><width>192</width><height>62</height>
+                            <font>font_mini_bold</font><textcolor>FFFFFFFF</textcolor><autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Show)]</label>
+                        </control>
+                        <control type="label">
+                            <left>10</left><top>200</top><width>192</width><height>30</height>
+                            <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Code)]</label>
+                        </control>
+                        <control type="textbox">
+                            <left>10</left><top>232</top><width>192</width><height>66</height>
+                            <font>font_tiny</font><textcolor>FFBBBBBB</textcolor><autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Label]</label>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>212</width><height>322</height>
+                            <texture colordiffuse="FFFFFFFF">special://skin/extras/mylists/still-corners-220x330.png</texture>
+                        </control>
+                    </control>
+            </focusedlayout>
+            <focusedlayout width="236" height="346" condition="!Control.HasFocus(534)">
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <visible>!String.IsEqual(ListItem.Property(Netflix.Episode),1)</visible>
+                        <include content="Netflix_Focus_Rail_Poster"><param name="width">220</param><param name="height">330</param></include>
+                    </control>
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <visible>String.IsEqual(ListItem.Property(Netflix.Episode),1)</visible>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>220</width><height>330</height>
+                            <texture colordiffuse="FF161616" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>220</width><height>124</height>
+                            <aspectratio scalediffuse="false">scale</aspectratio>
+                            <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>80</top><width>220</width><height>44</height>
+                            <texture colordiffuse="CC000000">common/poster_fade.png</texture>
+                        </control>
+                        <control type="label">
+                            <left>14</left><top>90</top><width>120</width><height>30</height>
+                            <font>font_mini_bold</font><aligny>center</aligny><textcolor>FFF5F5F5</textcolor>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Minutes)]</label>
+                        </control>
+                        <control type="textbox">
+                            <left>14</left><top>138</top><width>192</width><height>62</height>
+                            <font>font_mini_bold</font><textcolor>FFFFFFFF</textcolor><autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Show)]</label>
+                        </control>
+                        <control type="label">
+                            <left>14</left><top>204</top><width>192</width><height>30</height>
+                            <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                            <label>$INFO[ListItem.Property(Netflix.Episode.Code)]</label>
+                        </control>
+                        <control type="textbox">
+                            <left>14</left><top>236</top><width>192</width><height>66</height>
+                            <font>font_tiny</font><textcolor>FFBBBBBB</textcolor><autoscroll>false</autoscroll>
+                            <label>$INFO[ListItem.Label]</label>
+                        </control>
+                        <control type="image">
+                            <left>0</left><top>0</top><width>220</width><height>330</height>
+                            <texture colordiffuse="FF000000">special://skin/extras/mylists/still-corners-220x330.png</texture>
+                        </control>
+                    </control>
+            </focusedlayout>
+                <include content="Object_ContentDynamic">
+                    <param name="content">$VAR[Netflix_MyLists_View_Path]</param>
+                    <param name="target">videos</param><param name="limit">0</param><param name="browse">auto</param>
+                    <param name="sortby">playlist</param>
+                </include>
+            </control>
+            <!-- loading: flat cards in the shape of the posters, drawn OVER the loading panel (a hidden container would never load) -->
+            <control type="group">
+                <visible>!$EXP[Netflix_MyLists_View_Loaded_List]</visible>
+                <control type="image">
+                    <left>0</left><top>180</top><width>1920</width><height>900</height>
+                    <texture colordiffuse="FF080808">common/white.png</texture>
+                    <visible>!Skin.HasSetting(Netflix.CompactHome)</visible>
+                </control>
+                <control type="image">
+                    <left>0</left><top>180</top><width>1920</width><height>900</height>
+                    <texture colordiffuse="FF000000">common/white.png</texture>
+                    <visible>Skin.HasSetting(Netflix.CompactHome)</visible>
+                </control>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">196</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">306</param><param name="top">196</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">542</param><param name="top">196</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">778</param><param name="top">196</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1014</param><param name="top">196</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1250</param><param name="top">196</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1486</param><param name="top">196</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">542</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">306</param><param name="top">542</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">542</param><param name="top">542</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">778</param><param name="top">542</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1014</param><param name="top">542</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1250</param><param name="top">542</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1486</param><param name="top">542</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+                <control type="label">
+                    <left>70</left><top>1000</top><width>1780</width><height>40</height>
+                    <font>font_main</font><aligny>center</aligny><textcolor>FFDDDDDD</textcolor>
+                    <label>Couldn't Load This List. Press Back to Try Again.</label>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.MyLists.Failed))</visible>
+                </control>
+                <control type="image">
+                    <left>70</left><top>196</top><width>220</width><height>330</height>
+                    <texture colordiffuse="FFFFFFFF" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                    <visible>Control.HasFocus(8534)</visible>
+                </control>
+                <control type="image">
+                    <left>74</left><top>200</top><width>212</width><height>322</height>
+                    <texture colordiffuse="FF222222" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                    <visible>Control.HasFocus(8534)</visible>
+                </control>
+            </control>
+        </control>
+        <!-- focus stand-in while the list loads (hidden-focus: it is the target of the click that shows the view). Rename for an empty list: the timer moves it. -->
+        <control type="button" id="8534">
+            <left>70</left><top>196</top><width>220</width><height>330</height>
+            <font>font_mini</font>
+            <texturefocus /><texturenofocus />
+            <label />
+            <visible allowhiddenfocus="true">$EXP[Netflix_MyLists_View_List] + !$EXP[Netflix_MyLists_View_Loaded_List]</visible>
+            <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright><onback>3734</onback>
+        </control>
+        <!-- ============================== See All: every list as design C's tiles (container 535) ============================== -->
+        <control type="group">
+            <visible>$EXP[Netflix_MyLists_View_All] + $EXP[Netflix_MyLists_View_Loaded_All] + !Container(535).IsUpdating + Integer.IsEqual(Container(535).NumItems,0)</visible>
+            <control type="image">
+                <left>70</left><top>112</top><width>836</width><height>76</height>
+                <texture>special://skin/extras/mylists/dash-836x76.png</texture>
+            </control>
+            <control type="label">
+                <left>104</left><top>112</top><width>780</width><height>76</height>
+                <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                <label>$INFO[Window(Home).Property(Netflix.MyLists.ViewError)]</label>
+            </control>
+        </control>
+        <control type="panel" id="535">
+            <left>70</left><top>112</top><width>1804</width><height>968</height>
+            <orientation>vertical</orientation>
+            <scrolltime tween="quadratic">200</scrolltime><preloaditems>2</preloaditems>
+            <visible allowhiddenfocus="true">$EXP[Netflix_MyLists_View_All]</visible>
+            <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright><onback>3734</onback>
+            <onfocus>ClearProperty(TMDbHelper.WidgetContainer)</onfocus>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),create)">RunScript(special://skin/extras/netflix_saved_lists.py,create)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.Go.list,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.Loaded.list,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewPath,$INFO[Container(535).ListItem.FileNameAndPath],Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewID,$INFO[Container(535).ListItem.Property(Netflix.Watchlist.ID)],Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.ViewName,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">ClearProperty(Netflix.MyLists.ViewError,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewIndex,0,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewCount,$INFO[Container(535).ListItem.Property(Netflix.Watchlist.Count)],Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.ViewFrom,all,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetProperty(Netflix.MyLists.View,list,Home)</onclick>
+            <onclick condition="String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(Container(535).ListItem.Property(Netflix.Watchlist.Action),episodes)">SetFocus(8534)</onclick>
+            <itemlayout width="451" height="340">
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <control type="group">
+                            <visible>!Integer.IsGreater(ListItem.Property(Netflix.Watchlist.Posters),0)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>427</width><height>240</height>
+                                <texture colordiffuse="FF222222">common/white.png</texture>
+                            </control>
+                        <control type="image">
+                            <left>189</left><top>96</top><width>48</width><height>48</height>
+                            <texture colordiffuse="FF6A6A6A">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Count),0) + String.IsEqual(ListItem.Property(Netflix.Watchlist.Kind),list)</visible>
+                        </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),1)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>427</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),2)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>212</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>214</left><top>0</top><width>213</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),3)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>140</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>142</left><top>0</top><width>141</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>285</left><top>0</top><width>142</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),4)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>105</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>107</left><top>0</top><width>105</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>214</left><top>0</top><width>104</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>320</left><top>0</top><width>107</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage4)]</texture>
+                            </control>
+                        </control>
+                    </control>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FF000000">special://skin/extras/mylists/tile-corners-427x316.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>22</left><top>262</top><width>28</width><height>28</height>
+                        <texture colordiffuse="FFBBBBBB">special://skin/extras/icons/heart-regular.png</texture>
+                        <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    </control>
+                    <control type="image">
+                        <left>22</left><top>262</top><width>28</width><height>28</height>
+                        <texture colordiffuse="FFBBBBBB">special://skin/extras/icons/bookmark-regular.png</texture>
+                        <visible>!String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    </control>
+                    <control type="label">
+                        <left>64</left><top>248</top><width>262</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                    <control type="label">
+                        <left>64</left><top>282</top><width>262</width><height>28</height>
+                        <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                        <label>$INFO[ListItem.Label2]</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture>special://skin/extras/mylists/dash-427x316.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>183</left><top>100</top><width>60</width><height>60</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/plus.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>186</top><width>427</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>New Watchlist</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),all)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>183</left><top>100</top><width>60</width><height>60</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/table-cells-large.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>186</top><width>427</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                </control>
+            </itemlayout>
+            <focusedlayout width="451" height="340" condition="Control.HasFocus(535)">
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>419</width><height>308</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>4</left><top>4</top>
+                        <control type="group">
+                            <visible>!Integer.IsGreater(ListItem.Property(Netflix.Watchlist.Posters),0)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>419</width><height>236</height>
+                                <texture colordiffuse="FF222222">common/white.png</texture>
+                            </control>
+                        <control type="image">
+                            <left>185</left><top>94</top><width>48</width><height>48</height>
+                            <texture colordiffuse="FF6A6A6A">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Count),0) + String.IsEqual(ListItem.Property(Netflix.Watchlist.Kind),list)</visible>
+                        </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),1)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>419</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),2)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>208</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>210</left><top>0</top><width>209</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),3)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>138</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>140</left><top>0</top><width>137</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>279</left><top>0</top><width>140</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),4)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>103</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>105</left><top>0</top><width>103</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>210</left><top>0</top><width>102</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>314</left><top>0</top><width>105</width><height>236</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage4)]</texture>
+                            </control>
+                        </control>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>419</width><height>308</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/mylists/tile-corners-419x308.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>22</left><top>262</top><width>28</width><height>28</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/heart-regular.png</texture>
+                        <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    </control>
+                    <control type="image">
+                        <left>22</left><top>262</top><width>28</width><height>28</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/bookmark-regular.png</texture>
+                        <visible>!String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    </control>
+                    <control type="label">
+                        <left>64</left><top>248</top><width>262</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                    <control type="label">
+                        <left>64</left><top>282</top><width>262</width><height>28</height>
+                        <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                        <label>$INFO[ListItem.Label2]</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>419</width><height>308</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>183</left><top>100</top><width>60</width><height>60</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/plus.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>186</top><width>427</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><align>center</align>
+                        <label>New Watchlist</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),all)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>4</left><top>4</top><width>419</width><height>308</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>183</left><top>100</top><width>60</width><height>60</height>
+                        <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/table-cells-large.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>186</top><width>427</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor><align>center</align>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                </control>
+            </focusedlayout>
+            <focusedlayout width="451" height="340" condition="!Control.HasFocus(535)">
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),open) | String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="group">
+                        <left>0</left><top>0</top>
+                        <control type="group">
+                            <visible>!Integer.IsGreater(ListItem.Property(Netflix.Watchlist.Posters),0)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>427</width><height>240</height>
+                                <texture colordiffuse="FF222222">common/white.png</texture>
+                            </control>
+                        <control type="image">
+                            <left>189</left><top>96</top><width>48</width><height>48</height>
+                            <texture colordiffuse="FF6A6A6A">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Count),0) + String.IsEqual(ListItem.Property(Netflix.Watchlist.Kind),list)</visible>
+                        </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),1)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>427</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),2)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>212</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>214</left><top>0</top><width>213</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),3)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>140</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>142</left><top>0</top><width>141</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>285</left><top>0</top><width>142</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                        </control>
+                        <control type="group">
+                            <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Posters),4)</visible>
+                            <control type="image">
+                                <left>0</left><top>0</top><width>105</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage1)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>107</left><top>0</top><width>105</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage2)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>214</left><top>0</top><width>104</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage3)]</texture>
+                            </control>
+                            <control type="image">
+                                <left>320</left><top>0</top><width>107</width><height>240</height>
+                                <aspectratio scalediffuse="false">scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(collage4)]</texture>
+                            </control>
+                        </control>
+                    </control>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FF000000">special://skin/extras/mylists/tile-corners-427x316.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>22</left><top>262</top><width>28</width><height>28</height>
+                        <texture colordiffuse="FFBBBBBB">special://skin/extras/icons/heart-regular.png</texture>
+                        <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    </control>
+                    <control type="image">
+                        <left>22</left><top>262</top><width>28</width><height>28</height>
+                        <texture colordiffuse="FFBBBBBB">special://skin/extras/icons/bookmark-regular.png</texture>
+                        <visible>!String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),episodes)</visible>
+                    </control>
+                    <control type="label">
+                        <left>64</left><top>248</top><width>262</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                    <control type="label">
+                        <left>64</left><top>282</top><width>262</width><height>28</height>
+                        <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                        <label>$INFO[ListItem.Label2]</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture>special://skin/extras/mylists/dash-427x316.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>183</left><top>100</top><width>60</width><height>60</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/plus.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>186</top><width>427</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>New Watchlist</label>
+                    </control>
+                </control>
+                <control type="group">
+                    <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),all)</visible>
+                    <control type="image">
+                        <left>0</left><top>0</top><width>427</width><height>316</height>
+                        <texture colordiffuse="FF161616" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                    </control>
+                    <control type="image">
+                        <left>183</left><top>100</top><width>60</width><height>60</height>
+                        <texture colordiffuse="FFD4D4D4">special://skin/extras/icons/table-cells-large.png</texture>
+                    </control>
+                    <control type="label">
+                        <left>0</left><top>186</top><width>427</width><height>40</height>
+                        <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor><align>center</align>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                </control>
+            </focusedlayout>
+            <include content="Object_ContentDynamic">
+                <param name="content">$VAR[Netflix_MyLists_All_Path]</param>
+                <param name="target">videos</param><param name="limit">0</param><param name="browse">auto</param>
+                <param name="sortby">playlist</param>
+            </include>
+        </control>
+        <control type="group">
+            <visible>$EXP[Netflix_MyLists_View_All] + !$EXP[Netflix_MyLists_View_Loaded_All]</visible>
+            <control type="image">
+                <left>0</left><top>112</top><width>1920</width><height>968</height>
+                <texture colordiffuse="FF080808">common/white.png</texture>
+                <visible>!Skin.HasSetting(Netflix.CompactHome)</visible>
+            </control>
+            <control type="image">
+                <left>0</left><top>112</top><width>1920</width><height>968</height>
+                <texture colordiffuse="FF000000">common/white.png</texture>
+                <visible>Skin.HasSetting(Netflix.CompactHome)</visible>
+            </control>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">112</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">521</param><param name="top">112</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">972</param><param name="top">112</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1423</param><param name="top">112</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">452</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">521</param><param name="top">452</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">972</param><param name="top">452</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1423</param><param name="top">452</param><param name="width">427</param><param name="height">316</param><param name="mask">special://skin/extras/mylists/tile-mask-427x316.png</param></include>
+            <control type="label">
+                <left>70</left><top>1000</top><width>1780</width><height>40</height>
+                <font>font_main</font><aligny>center</aligny><textcolor>FFDDDDDD</textcolor>
+                <label>Couldn't Load Your Lists. Press Back to Try Again.</label>
+                <visible>!String.IsEmpty(Window(Home).Property(Netflix.MyLists.Failed))</visible>
+            </control>
+            <control type="image">
+                <left>70</left><top>112</top><width>427</width><height>316</height>
+                <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                <visible>Control.HasFocus(8535)</visible>
+            </control>
+            <control type="image">
+                <left>74</left><top>116</top><width>419</width><height>308</height>
+                <texture colordiffuse="FF222222" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                <visible>Control.HasFocus(8535)</visible>
+            </control>
+        </control>
+        <control type="button" id="8535">
+            <left>70</left><top>112</top><width>427</width><height>316</height>
+            <font>font_mini</font>
+            <texturefocus /><texturenofocus />
+            <label />
+            <visible allowhiddenfocus="true">$EXP[Netflix_MyLists_View_All] + !$EXP[Netflix_MyLists_View_Loaded_All]</visible>
+            <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright><onback>3734</onback>
         </control>
     </include>
 
-    <include name="Netflix_Watchlist_Rail_Item">
-        <definition>
-            <control type="group">
-                <visible>!String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
-                <control type="image">
-                    <width>420</width><height>72</height>
-                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
-                    <visible>$PARAM[focused]</visible>
-                </control>
-                <control type="image">
-                    <left>4</left><top>4</top><width>412</width><height>64</height>
-                    <texture border="20" colordiffuse="FF2A2A2A">common/box.png</texture>
-                    <visible>$PARAM[focused]</visible>
-                </control>
-                <control type="image">
-                    <width>420</width><height>72</height>
-                    <texture border="24" colordiffuse="FF161616">common/box.png</texture>
-                    <visible>![$PARAM[focused]]</visible>
-                </control>
-                <control type="image">
-                    <left>8</left><top>10</top><width>52</width><height>52</height>
-                    <aspectratio>keep</aspectratio>
-                    <texture colordiffuse="FFBBBBBB">special://skin/extras/icons/bookmark-regular.png</texture>
-                    <visible>![$PARAM[focused]]</visible>
-                </control>
-                <control type="image">
-                    <left>8</left><top>10</top><width>52</width><height>52</height>
-                    <aspectratio>keep</aspectratio>
-                    <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/bookmark-regular.png</texture>
-                    <visible>$PARAM[focused]</visible>
-                </control>
-                <control type="label">
-                    <left>64</left><top>16</top><width>266</width><height>40</height>
-                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
-                    <label>$INFO[ListItem.Label]</label>
-                    <visible>![$PARAM[focused]]</visible>
-                </control>
-                <control type="label">
-                    <left>64</left><top>16</top><width>266</width><height>40</height>
-                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
-                    <scroll>true</scroll>
-                    <label>$INFO[ListItem.Label]</label>
-                    <visible>$PARAM[focused]</visible>
-                </control>
-                <control type="label">
-                    <left>338</left><top>16</top><width>62</width><height>40</height>
-                    <font>font_mini</font><align>right</align><aligny>center</aligny>
-                    <textcolor>FFBBBBBB</textcolor>
-                    <label>$INFO[ListItem.Property(Netflix.Watchlist.Count)]</label>
-                </control>
-            </control>
-            <control type="group">
-                <visible>String.IsEqual(ListItem.Property(Netflix.Watchlist.Action),create)</visible>
-                <control type="image">
-                    <width>420</width><height>72</height>
-                    <texture>special://skin/extras/mylists/dash-420x72.png</texture>
-                    <visible>![$PARAM[focused]]</visible>
-                </control>
-                <control type="image">
-                    <width>420</width><height>72</height>
-                    <texture border="24" colordiffuse="FFFFFFFF">common/box.png</texture>
-                    <visible>$PARAM[focused]</visible>
-                </control>
-                <control type="image">
-                    <left>4</left><top>4</top><width>412</width><height>64</height>
-                    <texture border="20" colordiffuse="FF2A2A2A">common/box.png</texture>
-                    <visible>$PARAM[focused]</visible>
-                </control>
-                <control type="image">
-                    <left>8</left><top>10</top><width>52</width><height>52</height>
-                    <aspectratio>keep</aspectratio>
-                    <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/plus.png</texture>
-                </control>
-                <control type="label">
-                    <left>64</left><top>16</top><width>336</width><height>40</height>
-                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFD4D4D4</textcolor>
-                    <label>New Watchlist</label>
-                    <visible>![$PARAM[focused]]</visible>
-                </control>
-                <control type="label">
-                    <left>64</left><top>16</top><width>336</width><height>40</height>
-                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
-                    <label>New Watchlist</label>
-                    <visible>$PARAM[focused]</visible>
-                </control>
-            </control>
-        </definition>
-    </include>
-
-    <!-- A saved-titles row: 220 x 330 posters, 16 apart, focus held at the left edge like the catalogue rails. -->
+    <!-- A saved-titles row: 160 x 240 posters, 16 apart, focus held at the left edge like the catalogue rails. -->
     <include name="Netflix_My_Lists_Poster_Row">
         <definition>
             <control type="fixedlist" id="$PARAM[id]">
-                <left>560</left><top>$PARAM[top]</top><right>0</right><height>330</height>
+                <left>70</left><top>$PARAM[top]</top><right>0</right><height>240</height>
                 <orientation>horizontal</orientation><focusposition>0</focusposition><movement>0</movement>
                 <scrolltime tween="quadratic">200</scrolltime><preloaditems>2</preloaditems>
-                <onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown><onright>noop</onright>
-                <onleft>SetProperty(Netflix.MyLists.RailFrom,$PARAM[id],Home)</onleft>
-                <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
+                <onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown><onright>noop</onright><onleft>noop</onleft>
                 <onback>3734</onback>
                 <onclick condition="String.StartsWith(Container($PARAM[id]).ListItem.FileNameAndPath,plugin://plugin.video.pov) + String.IsEqual(Container($PARAM[id]).ListItem.DBType,movie)">RunScript(special://skin/extras/netflix_movie_details.py,$PARAM[id])</onclick>
                 <onclick condition="String.StartsWith(Container($PARAM[id]).ListItem.FileNameAndPath,plugin://plugin.video.pov/) + String.IsEqual(Container($PARAM[id]).ListItem.DBType,tvshow) + [Integer.IsGreater(Container($PARAM[id]).ListItem.UniqueID(tmdb),0) | Integer.IsGreater(Container($PARAM[id]).ListItem.Property(tmdb_id),0) | String.Contains(Container($PARAM[id]).ListItem.FileNameAndPath,tmdb_id=)]">RunScript(special://skin/extras/netflix_series.py,$PARAM[id])</onclick>
                 <onfocus>SetProperty(TMDbHelper.WidgetContainer,$PARAM[id])</onfocus>
                 <onfocus>ClearProperty(HomeSwitcher.IsVisible,Home)</onfocus>
                 <onfocus>ClearProperty(InfoPanel.FullSwitch,Home)</onfocus>
-                <itemlayout width="236" height="330">
+                <itemlayout width="176" height="240">
                     <include content="Netflix_Focus_Rail_Poster">
-                        <param name="width">220</param><param name="height">330</param>
+                        <param name="width">160</param><param name="height">240</param>
                     </include>
                 </itemlayout>
-                <focusedlayout width="236" height="330" condition="Control.HasFocus($PARAM[id])">
+                <focusedlayout width="176" height="240" condition="Control.HasFocus($PARAM[id])">
                     <control type="image">
-                        <width>220</width><height>330</height>
+                        <width>160</width><height>240</height>
                         <texture colordiffuse="FFFFFFFF" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
                     </control>
                     <control type="group">
                         <left>4</left><top>4</top>
                         <include content="Netflix_Focus_Rail_Poster">
-                            <param name="width">212</param><param name="height">322</param>
+                            <param name="width">152</param><param name="height">232</param>
                         </include>
                     </control>
                 </focusedlayout>
-                <focusedlayout width="236" height="330" condition="!Control.HasFocus($PARAM[id])">
+                <focusedlayout width="176" height="240" condition="!Control.HasFocus($PARAM[id])">
                     <include content="Netflix_Focus_Rail_Poster">
-                        <param name="width">220</param><param name="height">330</param>
+                        <param name="width">160</param><param name="height">240</param>
                     </include>
                 </focusedlayout>
                 <!-- sortby playlist (R9.1-bursts): Kodi re-runs every unsorted list on playback start/stop, so the three
@@ -3097,21 +4353,29 @@
         </definition>
     </include>
 
-    <!-- 8531/8532: focusable stand-in while a row loads (the coordinator also counts it as the row being on screen).
+    <!-- 8531/8532: focusable stand-in while a row loads (the coordinator also counts it as the row being on screen); the flat cards are drawn by the page.
          Loaded and empty while the other row has titles: a plain hint, not focusable, skipped by Up/Down/Right. -->
     <include name="Netflix_My_Lists_Row_Placeholder">
         <definition>
             <control type="button" id="8$PARAM[id]">
-                <left>560</left><top>$PARAM[top]</top><width>$PARAM[loading_width]</width><height>76</height>
-                <font>font_mini</font><textoffsetx>34</textoffsetx><aligny>center</aligny>
-                <textcolor>FFBBBBBB</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
-                <texturenofocus>special://skin/extras/mylists/dash-$PARAM[loading_width]x76.png</texturenofocus>
-                <texturefocus border="24" colordiffuse="FF242424">common/box.png</texturefocus>
-                <label>$PARAM[loading]</label>
+                <left>70</left><top>$PARAM[top]</top><width>160</width><height>240</height>
+                <font>font_mini</font>
+                <texturefocus /><texturenofocus />
+                <label />
                 <visible>!Integer.IsGreater(Container($PARAM[id]).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id])) | Container($PARAM[id]).IsUpdating]</visible>
-                <onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown><onright>noop</onright><onback>3734</onback>
-                <onleft>SetProperty(Netflix.MyLists.RailFrom,$PARAM[id],Home)</onleft>
-                <onleft>$VAR[Netflix_My_Lists_To_Rail]</onleft>
+                <onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown><onright>noop</onright><onleft>noop</onleft><onback>3734</onback>
+            </control>
+            <control type="group">
+                <left>70</left><top>$PARAM[top]</top>
+                <visible>Control.HasFocus(8$PARAM[id])</visible>
+                <control type="image">
+                    <width>160</width><height>240</height>
+                    <texture colordiffuse="FFFFFFFF" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                </control>
+                <control type="image">
+                    <left>4</left><top>4</top><width>152</width><height>232</height>
+                    <texture colordiffuse="FF222222" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                </control>
             </control>
             <control type="group">
                 <visible>!Integer.IsGreater(Container($PARAM[id]).NumItems,0) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id])) + !Container($PARAM[id]).IsUpdating + !$EXP[Netflix_My_Lists_No_Favorites]</visible>
@@ -3126,104 +4390,77 @@
 
     <!-- Dashed boxes hug their text: about 33 px of black between the border and the text ink on each side (text
          advance from the Inter metrics, tools/textwidth.py, + 68, checked in captures). The two "Nothing saved yet"
-         boxes stack, so they share one width (longer text + 34 + Browse button 260 + 12). Kodi cannot stretch a dashed border without
+         boxes stack, so they share one width. Kodi cannot stretch a dashed border without
          stretching the dashes, so each width has its own texture (extras/mylists/dash-WIDTHx76.png). -->
     <include name="Netflix_My_Lists_Hint_Box">
         <definition>
             <control type="image">
-                <left>560</left><top>$PARAM[top]</top><width>$PARAM[width]</width><height>76</height>
+                <left>70</left><top>$PARAM[top]</top><width>$PARAM[width]</width><height>76</height>
                 <texture>special://skin/extras/mylists/dash-$PARAM[width]x76.png</texture>
             </control>
             <control type="label">
-                <left>594</left><top>$PARAM[top]</top><width>700</width><height>76</height>
+                <left>104</left><top>$PARAM[top]</top><width>700</width><height>76</height>
                 <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
                 <label>$PARAM[label]</label>
             </control>
         </definition>
     </include>
 
-    <!-- One line at the bottom: the focused title from the focused row (no ratings on this page), or the focused
-         watchlist's name and count. Nothing for "New Watchlist", the placeholders or the tab. -->
-    <include name="Netflix_My_Lists_Info_Line">
-        <include content="Netflix_My_Lists_Info">
-            <param name="id">531</param>
-        </include>
-        <include content="Netflix_My_Lists_Info">
-            <param name="id">532</param>
-        </include>
-        <control type="grouplist">
-            <left>560</left><top>988</top><width>1300</width><height>40</height>
-            <orientation>horizontal</orientation><itemgap>0</itemgap>
-            <visible>Control.HasFocus(533) + !String.IsEqual(Container(533).ListItem.Property(Netflix.Watchlist.Action),create) + !String.IsEmpty(Container(533).ListItem.Label)</visible>
-            <control type="label">
-                <width max="900">auto</width><height>40</height>
-                <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Container(533).ListItem.Label]</label>
-            </control>
-            <control type="label">
-                <width max="400">auto</width><height>40</height>
-                <font>font_main</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
-                <label>$INFO[Container(533).ListItem.Label2,  •  ]</label>
-            </control>
-        </control>
-    </include>
-
-    <include name="Netflix_My_Lists_Info">
-        <definition>
-            <control type="grouplist">
-                <left>560</left><top>988</top><width>1300</width><height>40</height>
-                <orientation>horizontal</orientation><itemgap>0</itemgap>
-                <visible>Control.HasFocus($PARAM[id]) + Integer.IsGreater(Container($PARAM[id]).NumItems,0) + !Container($PARAM[id]).ListItem.IsParentFolder + !String.IsEqual(Container($PARAM[id]).ListItem.Property(node.type),target_folder) + ![Container($PARAM[id]).ListItem.IsFolder + String.Contains(Container($PARAM[id]).ListItem.FolderPath,new_page=)]</visible>
-                <control type="label">
-                    <width max="700">auto</width><height>40</height>
-                    <font>font_main_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
-                    <label>$INFO[Container($PARAM[id]).ListItem.Label]</label>
-                </control>
-                <control type="label">
-                    <width max="1000">auto</width><height>40</height>
-                    <font>font_main</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
-                    <label>$INFO[Container($PARAM[id]).ListItem.Genre,  •  ]$INFO[Container($PARAM[id]).ListItem.Year,  •  ]$VAR[Netflix_My_Lists_Length_$PARAM[id]]$INFO[Container($PARAM[id]).ListItem.MPAA,  •  ]</label>
-                </control>
-            </control>
-        </definition>
-    </include>
-
-    <variable name="Netflix_My_Lists_Length_531">
-        <value condition="Integer.IsGreater(Container(531).ListItem.Duration(mins),59)">$INFO[Container(531).ListItem.Duration(h),  •  ,h ]$INFO[Container(531).ListItem.Duration(m),,m]</value>
-        <value>$INFO[Container(531).ListItem.Duration(mins),  •  ,m]</value>
-    </variable>
-    <variable name="Netflix_My_Lists_Length_532">
-        <value condition="Integer.IsEqual(Container(532).ListItem.Property(TotalSeasons),1)">  •  1 season</value>
-        <value>$INFO[Container(532).ListItem.Property(TotalSeasons),  •  , seasons]</value>
-    </variable>
-
-    <variable name="Netflix_Watchlists_Status">
-        <value condition="!String.IsEmpty(Window(Home).Property(Netflix.Watchlists.Error))">$INFO[Window(Home).Property(Netflix.Watchlists.Error)]</value>
-        <value>Loading Watchlists…</value>
-    </variable>
-
     <expression name="Netflix_My_Lists_No_Favorites">
         !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) +
         !Integer.IsGreater(Container(531).NumItems,0) + !Integer.IsGreater(Container(532).NumItems,0) + !Container(531).IsUpdating + !Container(532).IsUpdating
     </expression>
-    <expression name="Netflix_My_Lists_No_Movies">
-        !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) + !Integer.IsGreater(Container(531).NumItems,0) + !Container(531).IsUpdating
-    </expression>
+    <expression name="Netflix_MyLists_View_Any">!String.IsEmpty(Window(Home).Property(Netflix.MyLists.View))</expression>
+    <expression name="Netflix_MyLists_View_List">String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list)</expression>
+    <expression name="Netflix_MyLists_View_All">String.IsEqual(Window(Home).Property(Netflix.MyLists.View),all)</expression>
+    <expression name="Netflix_MyLists_View_Loaded_List">!String.IsEmpty(Window(Home).Property(Netflix.MyLists.Loaded.list)) + !String.IsEmpty(Window(Home).Property(Netflix.MyLists.Go.list))</expression>
+    <expression name="Netflix_MyLists_View_Loaded_All">!String.IsEmpty(Window(Home).Property(Netflix.MyLists.Loaded.all)) + !String.IsEmpty(Window(Home).Property(Netflix.MyLists.Go.all))</expression>
+
+    <!-- The count after a header: nothing until the row has loaded; "none yet" / "1 list" / "5 lists" (the plugin publishes the total as a container property). -->
+    <variable name="Netflix_Watchlists_Count">
+        <value condition="!Integer.IsGreater(Container(533).NumItems,0)"></value>
+        <value condition="Integer.IsEqual(Container(533).ListItemAbsolute(0).Property(Netflix.Watchlists.Total),0)">  •  none yet</value>
+        <value condition="Integer.IsEqual(Container(533).ListItemAbsolute(0).Property(Netflix.Watchlists.Total),1)">  •  1 list</value>
+        <value>$INFO[Container(533).ListItemAbsolute(0).Property(Netflix.Watchlists.Total),  •  , lists]</value>
+    </variable>
+    <variable name="Netflix_Saved_Movies_Count">
+        <value condition="Integer.IsEqual(Container(531).NumItems,1)">  •  1 title</value>
+        <value condition="Integer.IsGreater(Container(531).NumItems,1)">$INFO[Container(531).NumItems,  •  , titles]</value>
+    </variable>
+    <variable name="Netflix_Saved_Shows_Count">
+        <value condition="Integer.IsEqual(Container(532).NumItems,1)">  •  1 title</value>
+        <value condition="Integer.IsGreater(Container(532).NumItems,1)">$INFO[Container(532).NumItems,  •  , titles]</value>
+    </variable>
+    <!-- An opened list's name: the plugin sets Netflix.MyLists.ViewName when it answers (and the rename script) from Python, so a name with commas or quotes never goes through a builtin's
+         parameters; until then the card (or tile) that was pressed names it. -->
+    <variable name="Netflix_MyLists_View_Name">
+        <value condition="!String.IsEmpty(Window(Home).Property(Netflix.MyLists.ViewName))">$INFO[Window(Home).Property(Netflix.MyLists.ViewName)]</value>
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewFrom),all)">$INFO[Container(535).ListItem.Label]</value>
+        <value>$INFO[Container(533).ListItem.Label]</value>
+    </variable>
+    <!-- An opened list's count: the container's own number once it has loaded, else the card's (kept when the card was pressed). -->
+    <variable name="Netflix_MyLists_View_Count">
+        <value condition="$EXP[Netflix_MyLists_View_Loaded_List] + String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes) + Integer.IsEqual(Container(534).NumItems,1)">  •  1 episode</value>
+        <value condition="$EXP[Netflix_MyLists_View_Loaded_List] + String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)">$INFO[Container(534).NumItems,  •  , episodes]</value>
+        <value condition="$EXP[Netflix_MyLists_View_Loaded_List] + Integer.IsEqual(Container(534).NumItems,1)">  •  1 title</value>
+        <value condition="$EXP[Netflix_MyLists_View_Loaded_List]">$INFO[Container(534).NumItems,  •  , titles]</value>
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes) + Integer.IsEqual(Window(Home).Property(Netflix.MyLists.ViewCount),1)">  •  1 episode</value>
+        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)">$INFO[Window(Home).Property(Netflix.MyLists.ViewCount),  •  , episodes]</value>
+        <value condition="Integer.IsEqual(Window(Home).Property(Netflix.MyLists.ViewCount),1)">  •  1 title</value>
+        <value>$INFO[Window(Home).Property(Netflix.MyLists.ViewCount),  •  , titles]</value>
+    </variable>
+
     <!-- Focus. Every target is a visible control with something in it; the loading stand-ins 8531/8532/8533 count
-         as their row (Timers.xml moves focus into 531/532 when titles arrive). The rail remembers where Left came
-         from in Window(Home).Property(Netflix.MyLists.RailFrom); it is only read on the next key press. -->
-    <variable name="Netflix_My_Lists_To_Rail">
+         as their row (Timers.xml moves focus into 531/532/533 when titles arrive). -->
+    <variable name="Netflix_My_Lists_To_Cards">
         <value condition="Integer.IsGreater(Container(533).NumItems,0)">SetFocus(533)</value>
         <value>SetFocus(8533)</value>
     </variable>
-    <variable name="Netflix_My_Lists_From_Rail">
-        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.RailFrom),532) + Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</value>
-        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.RailFrom),532) + Control.IsVisible(8532)">SetFocus(8532)</value>
-        <value condition="String.IsEqual(Window(Home).Property(Netflix.MyLists.RailFrom),8536) + Control.IsVisible(8536)">SetFocus(8536)</value>
+    <variable name="Netflix_My_Lists_After_Cards">
         <value condition="Integer.IsGreater(Container(531).NumItems,0)">SetFocus(531)</value>
-        <value condition="Control.IsVisible(8531)">SetFocus(8531)</value>
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating">SetFocus(8531)</value>
         <value condition="Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</value>
-        <value condition="Control.IsVisible(8532)">SetFocus(8532)</value>
+        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating">SetFocus(8532)</value>
         <value condition="Control.IsVisible(8530)">SetFocus(8530)</value>
         <value>noop</value>
     </variable>
@@ -3235,26 +4472,22 @@
     <variable name="Netflix_My_Lists_Before_Shows">
         <value condition="Integer.IsGreater(Container(531).NumItems,0)">SetFocus(531)</value>
         <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating">SetFocus(8531)</value>
-        <value>SetFocus(3734)</value>
-    </variable>
-
-    <!-- Down from the My Lists tab: Saved Movies, else Saved Shows, else the first watchlist, else "New Watchlist"
-         (the rail's first item is "New Watchlist" only when there are no watchlists). -->
-    <variable name="Netflix_My_List_Body">
-        <value condition="Integer.IsGreater(Container(531).NumItems,0)">SetFocus(531)</value>
-        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating">SetFocus(8531)</value>
-        <value condition="Integer.IsGreater(Container(532).NumItems,0)">SetFocus(532)</value>
-        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating">SetFocus(8532)</value>
-        <value condition="Integer.IsGreater(Container(533).NumItems,0)">SetFocus(533,0,absolute)</value>
+        <value condition="Integer.IsGreater(Container(533).NumItems,0)">SetFocus(533)</value>
         <value>SetFocus(8533)</value>
     </variable>
-    <variable name="Netflix_Saved_Movies_Status">
-        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating">Loading Saved Movies…</value>
-        <value>Movies you save in POV will appear here.</value>
+    <variable name="Netflix_MyLists_Pills_Down">
+        <value condition="Integer.IsGreater(Container(534).NumItems,0)">SetFocus(534,0,absolute)</value>
+        <value>noop</value>
     </variable>
-    <variable name="Netflix_Saved_Shows_Status">
-        <value condition="String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating">Loading Saved Shows…</value>
-        <value>Shows you save in POV will appear here.</value>
+
+    <!-- Down from the My Lists tab: the remembered card (the first one the first time; "New Watchlist" when there are no lists). -->
+    <variable name="Netflix_My_List_Body">
+        <value condition="Integer.IsGreater(Container(533).NumItems,0)">SetFocus(533)</value>
+        <value>SetFocus(8533)</value>
+    </variable>
+    <variable name="Netflix_Watchlists_Status">
+        <value condition="!String.IsEmpty(Window(Home).Property(Netflix.Watchlists.Error))">$INFO[Window(Home).Property(Netflix.Watchlists.Error)]</value>
+        <value>Loading Watchlists…</value>
     </variable>
     <!-- My Lists rows load one at a time (533, 531, 532): each path is empty until the row coordinator
          (extras/netflix_browse_state.py) enables it, so opening My Lists never starts several add-on
@@ -3262,9 +4495,17 @@
          copies from the matching revision property, one row at a time, so a changed row refetches alone.
          Window(1165).Property(Netflix.Browse.Window) is a marker the coordinator sets on this window: it
          survives a normal close and is lost when the skin reloads (window rebuilt empty), so a rebuilt
-         window starts with empty paths and is loaded serially again instead of all three at once. -->
+         window starts with empty paths and is loaded serially again instead of all three at once.
+         R10.22: the two views (an opened list 534, See All 535) follow the same rule: their paths stay empty until the observer sets the gate
+         Netflix.MyLists.Go.list / Go.all, which it does only when no other add-on call is running; the token is bumped by the scripts that change an open list. -->
     <variable name="Netflix_Watchlists_Path">
         <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Enabled.533))">plugin://plugin.video.pov/?mode=netflix_watchlists&amp;revision=$INFO[Window(Home).Property(Netflix.Browse.Token.533)]</value>
+    </variable>
+    <variable name="Netflix_MyLists_View_Path">
+        <value condition="!String.IsEmpty(Window(Home).Property(Netflix.MyLists.Go.list)) + String.IsEqual(Window(Home).Property(Netflix.MyLists.View),list) + !String.IsEmpty(Window(Home).Property(Netflix.MyLists.ViewPath))">$INFO[Window(Home).Property(Netflix.MyLists.ViewPath)]&amp;netflix_view=page&amp;token=$INFO[Window(Home).Property(Netflix.MyLists.ViewToken)]&amp;netflix_open=$INFO[Window(Home).Property(Netflix.MyLists.OpenSeq.list)]</value>
+    </variable>
+    <variable name="Netflix_MyLists_All_Path">
+        <value condition="!String.IsEmpty(Window(Home).Property(Netflix.MyLists.Go.all)) + !String.IsEmpty(Window(Home).Property(Netflix.MyLists.View))">plugin://plugin.video.pov/?mode=netflix_watchlists&amp;view=all&amp;token=$INFO[Window(Home).Property(Netflix.MyLists.AllToken)]&amp;netflix_open=$INFO[Window(Home).Property(Netflix.MyLists.OpenSeq.all)]</value>
     </variable>
     <variable name="Netflix_Saved_Movies_Path">
         <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Enabled.531))">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=favorites_movies&amp;name=342&amp;netflix_saved_revision=$INFO[Window(Home).Property(Netflix.Browse.Token.531)]</value>

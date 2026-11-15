@@ -1,26 +1,28 @@
 # Changelog
 
-## Release 4 (security fixes; staged 2026-11-15, not published yet)
+## Release 4 (2026-11-15)
 
-Kodi installs this update by itself. **Restart Kodi once afterwards.** You don't need to run ChadFlix Setup again.
+Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
+don't need to run ChadFlix Setup again.
 
 **Versions:** Arctic Fuse 3 **3.99.418.4**, POV **6.99.1103.4**, ChadFlix Setup **1.0.3**, ChadFlix Repository **1.0.1**.
 
-Fixes from the 2026-11-14 security audits. Nothing changes in how the app looks or is used, except the TMDb Lists sign-in
-screen (it shows a QR code and the site name instead of a short link).
+### Changed
 
-- Sign-in secrets are masked in Kodi's log, and the optional log upload is cleaned before it is sent.
-- Sign-in QR codes are drawn on the device; no link or code goes to a QR image service, and the TMDb sign-in link no
-  longer goes through a link shortener over plain HTTP.
-- Playable links are no longer kept on disk after a source check; old ones are deleted. Sign-in values are no longer
-  copied into a Kodi window property.
-- Calls to debrid and list services give up after a few tries when the service is unreachable.
-- ChadFlix Setup answers only Kodi's own "Keep skin?" question.
-- ChadFlix Setup installs a fifth key file (the Watchlist menu key added in release 3). If you already have ChadFlix, it
-  is added by itself at the next Kodi start. The menu entry is now **Undo ChadFlix Keymaps**.
-- Kodi now verifies every download from this repository with SHA-256.
-- After installing, set **Update official add-ons from** back to **Official repositories only (default)**, then turn
-  **Unknown sources** off (README, Install step 6).
+- New **My Lists**: your lists as cards, with **Saved Movies** and **Saved Shows** rows. Save single episodes from a
+  show's episode list; they show under **Saved Episodes**.
+- Grids load faster.
+- Hold **OK** on **Watchlist** on a movie page to add the movie to another list.
+
+### Fixed
+
+- Grids no longer stall after a video ends.
+
+### Security
+
+- Security hardening: sign-in secrets are masked in Kodi's log, sign-in QR codes are drawn on the device (TMDb Lists
+  now shows a QR code), playable links are no longer kept on disk, and Kodi checks every download from this repository
+  with SHA-256.
 
 ## Release 3 (2026-11-14)
 

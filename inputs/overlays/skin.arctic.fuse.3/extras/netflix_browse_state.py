@@ -52,6 +52,28 @@ SAVED_MARKER = 'Netflix.Browse.Window'
 # skin scripts bump into that token, one row at a time, so changed rows never refetch together.
 SAVED_TOKENS = {533: 'Netflix.Watchlists.Revision', 531: 'Netflix.MyList.Revision', 532: 'Netflix.MyList.ShowsRevision'}
 SAVED_FOCUS = (531, 532)  # rows whose focus is remembered/restored (unchanged: 533 has its own restore-row)
+# R10.22 My Lists views: OK on a card opens that list as a grid inside the page (container 534), "See All" the tile grid (535). Each view's path is empty until
+# this observer sets its gate (the skin's Netflix_MyLists_View_Path / _All_Path), so the user's click never starts an add-on call beside another one: the gate
+# opens once nothing of this observer is in flight or updating, no foreign POV call is running or ran for the quiet window (the POV marker, pov_quiet, whose
+# own 60 s cap is the only limit), and no dropped job is still running. NOTHING IS EVER FORCED (R10.21.1): a click that waits MYLISTS_FAIL_SECONDS shows
+# "Couldn't Load ... Press Back to Try Again" (Netflix.MyLists.Failed) and keeps waiting; Back cancels it. While the gate is open and the view has not answered
+# (its Loaded flag set by the plugin for THIS request, its container no longer updating, MYLISTS_GRACE seconds after the gate opened or the token changed so
+# Kodi has started the job) every other start of this observer waits too: the next saved row and a saved refresh never run beside the view's call.
+# The player's start parks an open list (534 holds video items: Kodi would refetch it at the post-stop re-init beside the rows, as R10.23 parks the Movies /
+# Shows rows): its gate closes, the post-stop re-open goes through the same serial gate.
+MYLISTS_VIEW = 'Netflix.MyLists.View'
+MYLISTS_GO = {'list': 'Netflix.MyLists.Go.list', 'all': 'Netflix.MyLists.Go.all'}
+MYLISTS_LOADED = {'list': 'Netflix.MyLists.Loaded.list', 'all': 'Netflix.MyLists.Loaded.all'}
+MYLISTS_BOX = {'list': 534, 'all': 535}
+MYLISTS_TOKEN = {'list': 'Netflix.MyLists.ViewToken', 'all': 'Netflix.MyLists.AllToken'}   # each view's own: a script reload of an open list never reloads the hidden See All grid (delta review 3, E1)
+MYLISTS_FAILED = 'Netflix.MyLists.Failed'
+MYLISTS_INDEX = 'Netflix.MyLists.ViewIndex'
+MYLISTS_FAIL_SECONDS = 20.0
+MYLISTS_GRACE = 1.0
+MYLISTS_PENDING_CAP = 25.0
+MYLISTS_OPEN = {'list': 'Netflix.MyLists.OpenSeq.list', 'all': 'Netflix.MyLists.OpenSeq.all'}   # each view's own path number, for the same reason (535 stays loaded and keeps re-reading its path while a list is open)
+MYLISTS_STUCK_SECONDS = 3.0   # the fallback: a view whose container holds the requested list's items, not updating, this long after its gate opened, is answered (Kodi does not refetch an unchanged path)
+MYLISTS_CANCEL_GRACE = 2.0   # after a Back / cancel of a view whose call had not answered: the abandoned call may not have set POV's marker yet (ORPHAN_START_GRACE's idea)
 ROWS = {'movies': MOVIES, 'shows': SHOWS, 'saved': SAVED}
 # Tab swap (staged/tabs-no-reload step 1). With skin bool Netflix.TabSwap on (CompactHome only) the
 # Videos directory stays on the Movies Trending root, Window(Home).Property(Netflix.Tab) names the
@@ -653,6 +675,8 @@ REFRESH_QUIET_SECONDS = 1.0   # the page must be settled (no loading, dialog, pl
 REFRESH_GAP_SECONDS = .3      # between the end of one refresh call and the start of the next
 # The last request this observer took (Window(Home)), so a request sent while it restarts is still taken (review L3).
 REFRESH_TAKEN = PREFIX + 'RefreshTaken'
+# R10.23 post-stop park (see Coordinator.park): the rows still parked, space-separated (empty: none). Diagnostics only; the skin does not read it.
+PARKED = PREFIX + 'Parked'
 
 PROFILES_REPEAT_SECONDS = 5.0
 _profiles_published = [float('-inf')]
@@ -808,6 +832,12 @@ class Coordinator:
         self.zero_since = {}
         self.saved_ready = None
         self.saved_quiet = None
+        self.view_since = None
+        self.view_open_at = self.view_token = None
+        self.view_player = False
+        self.view_pending, self.view_pending_for = False, ''
+        self.view_index = 0
+        self.view_cancel_until = float('-inf')
         self.grid_return = None
         # The grid page last shown in the Videos window, '' once that window has shown another page. A grid
         # page that comes up with this still set was only covered for a while (details page, Search, playback)
@@ -845,6 +875,13 @@ class Coordinator:
         self.pov_token_since = 0.0              # and since when it is held (any running interpreter blocks a start)
         self.pov_waiting = None                 # R10.5.1 review 3: when a gated start began to wait (for one log line)
         self.pov_last_foreign = ''              # R10.5.1 review 3: the last other POV call's marker (for that line)
+        self.parked = set()                     # R10.23: rows parked when a player came up, not loaded again since
+        self.park_player = False                # R10.23: a player was up on the previous tick
+        self.park_at = 0.0                      # R10.23: when the rows were last parked
+        self.park_started = {}                  # R10.23: mode -> when its first parked row was asked for again
+        self.park_loaded = {}                   # R10.23: row -> when its parked row was last asked for again (refresh_steps)
+        self.refresh_seen_at = float('-inf')    # R10.23: when the last refresh request was taken
+        self.park_move = None                   # R10.23 review F8: (row, index) of a selection move waiting for the grid page to be in front
 
     def home_reset(self, tab, slot, stale=True):
         """A slot is about to hold another entry (or the same one coming back on): forget everything about its old content.
@@ -1073,9 +1110,103 @@ class Coordinator:
             return
         if row in (590, 591) and mode == 'shows' and self.api.swap():
             return  # hidden while the Shows tab is swapped in; the skin focuses the remembered row directly
+        if row in self.parked and (self.api.count(row) == 0 or (self.inflight and self.inflight['row'] == row and not self.inflight.get('refresh'))):
+            return  # R10.23: empty, or reloading from empty (Kodi then selects tile 1): keep the tile it had (park_settled goes back to it)
         self.api.put(PREFIX + mode + '.Row', row)
         self.api.put(PREFIX + mode + '.Index.%d' % row,
                      max(0, self.api.number('Container(%d).CurrentItem' % row) - 1))
+
+    def view_busy(self, now):
+        """R10.22 (delta review D1): True while an open My Lists view's own call is still to answer (gate open, its request-tied Loaded flag not set, its container
+        still updating, MYLISTS_GRACE s after the gate opened or its token changed, MYLISTS_PENDING_CAP at most), or for MYLISTS_CANCEL_GRACE s after a view that had not
+        answered was left. Read-only. Everything that can start a POV call in My Lists respects it: the saved rows and saved refresh (after view_tick in the tick) and
+        refresh_settled (before it: a refresh must not start in the tick after the gate opened)."""
+        api = self.api
+        view = api.prop(MYLISTS_VIEW)
+        gate = MYLISTS_GO.get(view)
+        if gate and api.prop(gate):
+            if self.view_open_at is None or api.prop(MYLISTS_TOKEN[view]) != self.view_token:
+                return True    # opened before this observer looked, or just reloaded: view_tick has not stamped it yet
+            waited = now - self.view_open_at
+            answered = bool(api.prop(MYLISTS_LOADED[view])) and not api.updating(MYLISTS_BOX[view]) and waited >= MYLISTS_GRACE
+            return not (answered or waited >= MYLISTS_PENDING_CAP)
+        return now < self.view_cancel_until
+
+    def view_stuck_answer(self, view, now):
+        """Fallback for the case Kodi serves the open view from its old items without a fetch (nothing is updating, the plugin is never called, its loaded flag never
+        comes): the view counts as answered when its container is not updating and its first item belongs to the list that was asked for (the plugin stamps every item with
+        Netflix.Watchlist.ID), MYLISTS_STUCK_SECONDS after the gate opened. Sets only the flag the plugin would set: no call is made. A different list's items never match."""
+        api = self.api
+        if api.prop(MYLISTS_LOADED[view]) or self.view_open_at is None or now - self.view_open_at < MYLISTS_STUCK_SECONDS:
+            return
+        box = MYLISTS_BOX[view]
+        if api.updating(box) or api.count(box) <= 0:
+            return
+        first = xbmc.getInfoLabel('Container(%d).ListItemAbsolute(0).Property(Netflix.Watchlist.ID)' % box)
+        if first and (view == 'all' or first == api.prop('Netflix.MyLists.ViewID')):
+            api.put(MYLISTS_LOADED[view], 'true')
+            api.log('mylists view=%s: not fetched again (unchanged items of %s); counted as answered' % (view, first))
+
+    def view_tick(self, now):
+        """R10.22: open the load gate of the My Lists view that was asked for (Netflix.MyLists.View = list | all) when it is safe, and hold every other start of
+        this observer while an open view's own call runs or an abandoned one may still be starting (view_busy). True = nothing else may start in this tick.
+        Never forces (R10.21.1)."""
+        api = self.api
+        view = api.prop(MYLISTS_VIEW)
+        gate = MYLISTS_GO.get(view)
+        if self.view_pending and (not gate or view != self.view_pending_for or not api.prop(gate)):
+            self.view_cancel_until = now + MYLISTS_CANCEL_GRACE    # a Back / cancel (or a park) while the view's call had not answered
+            self.view_pending = False
+        if not gate:
+            self.view_since = self.view_open_at = None
+            if api.prop(MYLISTS_FAILED):
+                api.clear(MYLISTS_FAILED)
+            return now < self.view_cancel_until
+        box, token = MYLISTS_BOX[view], api.prop(MYLISTS_TOKEN[view])
+        if api.prop(gate):
+            self.view_since = None
+            if self.view_open_at is None or token != self.view_token:
+                self.view_open_at, self.view_token = now, token   # opened before this observer looked, or a script reloaded the open view (new token)
+            self.view_stuck_answer(view, now)
+            busy = self.view_busy(now)
+            self.view_pending, self.view_pending_for = busy, view
+            if view == 'list' and not busy:
+                self.view_index = max(0, api.number('Container(534).CurrentItem') - 1)   # the selection, kept while the list is up: read after a player came up it is gone (the window changed)
+            return busy
+        if self.view_since is None:
+            self.view_since = now
+        own = bool(self.inflight) or any(api.updating(row) for row in SAVED)
+        foreign = (self.orphan_running(now) or not self.pov_quiet(now) or now < self.view_cancel_until
+                   or any(self.row_busy(row, 'saved', now) for row in ALL_ROWS))
+        if own or foreign:
+            if now - self.view_since >= MYLISTS_FAIL_SECONDS and api.prop(MYLISTS_FAILED) != view:
+                api.put(MYLISTS_FAILED, view)
+                api.log('mylists view=%s still waiting after %.0f s (%s)' % (view, now - self.view_since, 'own job' if own else 'POV busy'))
+            return True
+        api.clear(MYLISTS_FAILED)
+        api.clear(MYLISTS_LOADED[view])      # (delta review D3) an answer that arrived while the gate was closed never counts
+        # (Shield verify) a path that equals the last one is never fetched again by Kodi (a quick Back + reopen sets '' and the same path within a frame): every open has its
+        # own path, by this value (an unknown parameter POV ignores), set BEFORE the gate; the plugin's answer must carry it
+        api.put(MYLISTS_OPEN[view], str(time.time_ns()))
+        api.put(gate, 'true')
+        self.view_open_at, self.view_token = now, token
+        self.view_pending, self.view_pending_for = True, view
+        api.log('mylists view=%s gate opened after %.2fs' % (view, now - self.view_since))
+        self.view_since = None
+        return True
+
+    def view_park(self, now):
+        """R10.22 (review F5): a video player comes up while a list is open in My Lists: that list holds video items, so Kodi would fetch it again at the
+        post-stop re-init beside the saved rows. Its gate closes now (an empty path: no job for it, the post-stop refetch is an empty-path one); the selection is
+        remembered, and the serial gate opens again on the return (View stays), the timer puts focus back on that poster."""
+        api = self.api
+        playing = api.visible('Player.HasVideo')
+        if playing and not self.view_player and api.prop(MYLISTS_VIEW) == 'list' and api.prop(MYLISTS_GO['list']):
+            api.put(MYLISTS_INDEX, self.view_index)
+            api.clear(MYLISTS_GO['list'])
+            api.clear(MYLISTS_LOADED['list'])
+            api.log('mylists: the open list is parked while a player is up')
+        self.view_player = playing
 
     def saved_refresh(self, now):
         """Refetch one loaded My Lists row whose content changed. True while a refresh is running or was started."""
@@ -1103,6 +1234,8 @@ class Coordinator:
     def refresh_settled(self, mode, window, now=None):
         now = time.monotonic() if now is None else now
         api = self.api
+        if self.view_busy(now):
+            return False   # R10.22 (delta review D1): never beside an open My Lists view's own call
         if not mode or window != MODE_WINDOW[mode] or self.inflight or self.grid_busy:
             return False
         if api.prop(BOOT_PENDING) == 'true' or api.prop(GRID_SHELL) or api.prop('Netflix.TabDwellTarget') \
@@ -1141,6 +1274,11 @@ class Coordinator:
             rows.remove(focused)
             rows.insert(0, focused)
         first = [row for row in api.rows(mode) if row in CONTINUE_ROWS and self.completed(row) and api.present(row)]
+        fresh = [row for row in first + rows if self.park_loaded.get(row, float('-inf')) >= self.refresh_seen_at]
+        if fresh:
+            # R10.23: these rows were parked and asked for again after the request (the post-stop return): they already show it
+            first, rows = [row for row in first if row not in fresh], [row for row in rows if row not in fresh]
+            api.log('park: the refresh skips rows loaded after the request (%s)' % ' '.join(str(row) for row in fresh))
         return first + steps + rows
 
     def holds(self, row, titles):
@@ -1178,6 +1316,7 @@ class Coordinator:
                 elif self.refresh_titles[page] is not None:
                     self.refresh_titles[page].add(title)
             self.refresh_pending = set(ROWS)
+            self.refresh_seen_at = now      # R10.23: parked rows asked for again after this are not refreshed for it (refresh_steps)
             self.refresh_due = now + REFRESH_DELAY_SECONDS
             self.refresh_queue = None
             self.refresh_quiet = None
@@ -1233,6 +1372,8 @@ class Coordinator:
         if not steps:
             self.refresh_pending.discard(mode)
             self.refresh_titles.pop(mode, None)
+            for other in api.rows(mode):
+                self.park_loaded.pop(other, None)   # R10.23 review F1: these reload times served this request only
             self.refresh_queue = None
             api.log('refresh finished mode=%s' % mode)
             return False
@@ -1292,6 +1433,163 @@ class Coordinator:
             else:
                 xbmc.executebuiltin('SetFocus(%d)' % (3732 if row == CONTINUE_SHOWS else 3733))
             api.log('continue watching emptied under focus: focus to Trending')
+
+    def park_tick(self, now):
+        """R10.23: park the Movies / Shows rows on the tick a video player comes up (a title or a trailer, started from any window). Video only
+        (review F9): audio or a player that saves no video resume point invalidates nothing, so parking for it would only cost calls."""
+        playing = self.api.visible('Player.HasVideo')
+        if playing and not self.park_player and self.api.prop(BOOT_PENDING) != 'true':
+            self.park(now)
+        self.park_player = playing
+
+    def park(self, now):
+        """R10.23 (notes/owner-y2k-back-2026-11-14 fix 1): after a stop Kodi saves the resume point and announces a library update; every list
+        holding video items is invalidated and fetched again at the Videos window's next init, hidden ones included (22-24 POV calls, 2-3 at a
+        time). Parked now, a row's content path is empty: Kodi starts no job for it while the title page / player is in front (the titles stay
+        listed), and its post-stop refetch is an empty-path one (no POV call; the list empties to the loading look). The serial queue loads the
+        shown tab's parked rows again, one at a time, once the page is back and settled (tick: park_pick; park_settled). Only Enabled and
+        Completed go: retry tokens, the focus memory and the per-row answer state stay (unlike home_reset). Nothing is called here."""
+        api = self.api
+        parked = []
+        for row in dict.fromkeys(api.rows('movies') + api.rows('shows')):
+            if not api.enabled(row):
+                continue   # never asked for, or parked already: its path is empty
+            api.clear('Netflix.CatalogGenre.Enabled.%d' % row)
+            api.clear(PREFIX + 'Completed.%d' % row)
+            parked.append(row)
+        if not parked:
+            return
+        job = self.inflight
+        if job and job['row'] in parked:
+            # its settle must not mark the row Completed with an empty path: drop the lease (its Kodi job may still run: the orphan rule)
+            self.dropped[job['row']] = now
+            if api.prop('Netflix.CatalogGenre.Loading') == str(job['row']):
+                api.clear('Netflix.CatalogGenre.Loading')
+            self.inflight = None
+            api.log('park: dropped the job of row %d' % job['row'])
+        self.parked.update(parked)
+        self.park_at = now
+        self.refresh_queue = None   # a deferred refresh builds its steps again once the page is back (refresh_steps skips rows loaded since)
+        for mode in ('movies', 'shows'):
+            api.clear(PREFIX + mode + '.Complete')
+            self.complete_modes.discard(mode)
+            self.park_started.pop(mode, None)
+        api.put(PARKED, ' '.join(str(row) for row in sorted(self.parked)))
+        api.log('park: %d rows parked while a player is up (%s); they load again one at a time on return' %
+                (len(parked), ' '.join(str(row) for row in parked)))
+
+    def park_pick(self, mode, remaining, early):
+        """R10.23: the next parked row to load: the focused row (or its loading stand-in 8xxx / view tile 7xxx), the row a grid page was opened
+        from (Back lands there), the remembered row, then Continue Watching, then page order. Continue Watching is skipped while `early` (under
+        CONTINUE_AFTER_STOP_SECONDS after the player; POV writes the resume point then); the other rows do not wait for it. None: nothing yet."""
+        api = self.api
+        allowed = [row for row in remaining if not (early and row in CONTINUE_ROWS)]
+        if not allowed:
+            return None
+        focused = api.number('System.CurrentControlID')
+        wanted = [focused, focused - 8000, focused - 7000]
+        ret = self.grid_return
+        if ret and ret.get('origin') and ret['origin'][0] == mode:
+            wanted.append(ret['origin'][1])
+        try:
+            wanted.append(int(api.prop(PREFIX + mode + '.Row')))
+        except ValueError:
+            pass
+        wanted += [row for row in allowed if row in CONTINUE_ROWS]
+        return next((row for row in wanted if row in allowed), allowed[0])
+
+    def park_settled(self, row, now, job=None):
+        """R10.23: a parked row is loaded again. Kodi lost its selection (the list was empty): put it back on the tile it had, as before the park
+        (Continue Watching: the first, the title just watched; the row a grid page was opened from: that page's More Titles tile).
+        - loaded under the grid page (park_under_grid): only the selection moves (Control.Move, no focus): Back focuses the row (the skin's onback);
+        - focus on the row or its loading stand-in: focus to that tile;
+        - Back from the grid page came before the row was back (focus on the tab or nowhere, within GRID_RETURN_SECONDS): focus to that tile."""
+        if row not in self.parked:
+            return
+        api = self.api
+        self.parked.discard(row)
+        api.put(PARKED, ' '.join(str(r) for r in sorted(self.parked))) if self.parked else api.clear(PARKED)
+        if api.count(row) == 0 or (job or {}).get('refresh'):
+            return   # review F3: titles were still listed during the reload: Kodi kept the selection, and the viewer may have moved since
+        mode = ROW_MODE[row]
+        try:
+            index = int(api.prop(PREFIX + mode + '.Index.%d' % row))
+        except ValueError:
+            index = 0
+        ret = self.grid_return
+        origin = (self.grid or {}).get('origin') or (ret or {}).get('origin')
+        if origin and origin[0] == mode and origin[1] == row:
+            index = origin[2]
+        index = 0 if row in CONTINUE_ROWS else max(0, min(index, api.count(row) - 1))
+        focused = api.number('System.CurrentControlID')
+        current = api.number('Container(%d).CurrentItem' % row) - 1
+        if (job or {}).get('under_grid') and self.grid:
+            if current != index:
+                self.park_move = (row, index)   # review F8: Control.Move goes to the focused window: applied by park_move_apply on a dialog-free tick
+                self.park_move_apply()
+            return
+        back = bool(ret and ret.get('origin') and ret['origin'][1] == row) and focused in (0, 590, 591, 592, 3732 if mode == 'shows' else 3733)
+        if focused in (row, row + 8000) or back:
+            if focused != row or current != index:
+                api.focus(row, index)
+                api.log('park: row %d back with focus, item %d%s' % (row, index + 1, ' (Back from the grid page)' if back else ''))
+
+    def park_move_apply(self):
+        """R10.23 review F8: move the origin row's selection under the grid page, only while that page is in front (no dialog): Kodi sends
+        Control.Move to the focused window. Dropped once the grid page is gone."""
+        move, api = self.park_move, self.api
+        if not move:
+            return
+        if not self.grid:
+            self.park_move = None
+            return
+        if api.window() != 10025 or api.visible('System.HasActiveModalDialog'):
+            return
+        row, index = move
+        self.park_move = None
+        current = api.number('Container(%d).CurrentItem' % row) - 1
+        if api.count(row) > index and current != index:
+            xbmc.executebuiltin('Control.Move(%d,%d)' % (row, index - current))
+            api.log('park: row %d back under the grid page, selection to item %d' % (row, index + 1))
+
+    def park_under_grid(self, now, window):
+        """R10.23: a grid page is in front and the row it was opened from is parked (the page was covered by a title / a player): load that row
+        now, under the page (the rows stay "visible" to Kodi there), so Back lands on its tile as before. Only once the page has loaded, with no
+        dialog, no player, no load-more step, no row busy and POV quiet (the page's load-more steps wait while a row job runs: grid_shown).
+        One row; the others wait for the Movies / Shows page as usual."""
+        self.park_move_apply()
+        grid = self.grid
+        if self.inflight or window != 10025 or not grid or grid['phase'] != 'ready' or grid['step'] or not grid.get('origin'):
+            return
+        api = self.api
+        tab, row = grid['origin'][0], grid['origin'][1]
+        if row not in self.parked or row not in api.rows(tab) or self.completed(row) or api.prop(BOOT_PENDING) == 'true':
+            return
+        if (api.visible('Player.HasMedia') or api.visible('System.HasActiveModalDialog') or api.visible('Container.IsUpdating')
+                or api.updating(GRID) or api.prop('Netflix.GenreMenu.Open')):
+            return
+        if any(self.row_busy(other, tab, now) for other in ALL_ROWS) or self.orphan_running(now) or not self.pov_quiet(now):
+            return
+        job = self.lease(row, now)
+        job['under_grid'] = True
+        job['refresh'] = api.count(row) > 0   # review F2: titles still listed (no library update): settle on the refetch itself, not at once
+        self.inflight = job
+        self.park_started.setdefault(tab, now)
+        self.park_loaded[row] = now
+        api.put('Netflix.CatalogGenre.Loading', row)
+        api.enable(row)
+        api.log('park: row %d (where the grid page was opened) loads under the page' % row)
+
+    def park_done(self, mode, now):
+        """R10.23: every row of a page is loaded again (one log line; rows Customize Home took off the page are not waited for)."""
+        started = self.park_started.pop(mode, None)
+        if started is None:
+            return
+        api = self.api
+        shown = set(api.rows('movies') + api.rows('shows'))
+        self.parked &= shown   # a row Customize Home took off the page is not waited for
+        api.put(PARKED, ' '.join(str(r) for r in sorted(self.parked))) if self.parked else api.clear(PARKED)
+        api.log('park: %s rows back, %.1f s after the park (the first asked for after %.1f s)' % (mode, now - self.park_at, started - self.park_at))
 
     def row_busy(self, row, mode, now):
         """R10.5 (re-review F1/F3): is a row's directory job still running in Kodi?
@@ -1394,6 +1692,8 @@ class Coordinator:
         if now - loaded < CONTINUE_STALE_SECONDS or mode in self.refresh_pending:
             return
         self.continue_loaded[row] = now
+        for other in self.api.rows(mode):
+            self.park_loaded.pop(other, None)   # R10.23 review F1: no request is pending here: an older park reload must not cancel this refetch
         self.refresh_pending.add(mode)
         self.refresh_titles[mode] = {'continue-watching'}   # no row holds this: only the Continue Watching row runs
         self.refresh_due = now
@@ -1972,6 +2272,8 @@ class Coordinator:
         self.home_tick(now)  # R10.10: Customize Home changes, applied between row calls
         self.boot.tick(now)  # Also observe the expected busy/Home landing bridge.
         api = self.api
+        self.park_tick(now)  # R10.23: park the rows when a player comes up
+        self.view_park(now)  # R10.22: and an open My Lists list
         self.pov_watch(now)
         mode, window = api.mode(), api.window()
         owner = (mode, window)
@@ -2000,6 +2302,7 @@ class Coordinator:
         self.rescue_hidden_focus(mode, window)
         self.grid_tick(now, window)
         self.focus_net(mode, window, now)
+        self.park_under_grid(now, window)   # R10.23
         if self.inflight:
             job = self.inflight
             row = job['row']
@@ -2010,7 +2313,7 @@ class Coordinator:
                     api.clear('Netflix.CatalogGenre.Loading')
                 api.log('dropped mode=%s row=%d (tab swap off)' % (job['mode'], row))
                 self.inflight = None
-            elif mode != job['mode'] or window != job['window']:
+            elif (mode != job['mode'] and not (job.get('under_grid') and not mode and self.grid)) or window != job['window']:   # R10.23: under_grid
                 # A window/tab switch can cancel a widget job. Its absent
                 # controls report zero items and not-updating; neither is a
                 # completion signal. Keep its enabled URL and retry ownership
@@ -2090,6 +2393,7 @@ class Coordinator:
                     api.put(PREFIX + 'Completed.%d' % row, 'true')
                     api.clear(HOME_STALE + str(row))   # R10.10
                     self.dropped.pop(row, None)   # R10.10: its own job finished: no orphan left for this row
+                    self.park_settled(row, now, job)   # R10.23
                 api.log('settled row=%d items=%d elapsed=%.3f observed_update=%s' %
                         (row, api.count(row), now - job['started'], job['seen_updating']))
                 if self.home_custom.get(row) and not reason and api.count(row) == 0:
@@ -2122,11 +2426,15 @@ class Coordinator:
                 for key in ('Enabled.533', 'Enabled.531', 'SavedShowsEnabled', 'Completed.533',
                             'Completed.531', 'Completed.532', 'saved.Complete'):
                     api.clear(PREFIX + key)
+                for key in ('View', 'ViewFrom', 'ViewID', 'ViewPath', 'ViewName', 'ViewError', 'ViewIndex', 'OpenSeq.list', 'OpenSeq.all', 'AllToken', 'Failed', 'Go.list', 'Go.all', 'Loaded.list', 'Loaded.all'):
+                    api.clear('Netflix.MyLists.' + key)   # R10.22: a rebuilt window shows the page, not a view whose lists are gone
                 self.complete_modes.discard('saved')
                 self.pending.pop('saved', None)
                 self.saved_ready = None
                 api.saved_marker('true')
                 api.log('saved window is new; rows will load one at a time')
+            if self.view_tick(now):
+                return   # R10.22: a My Lists view is waiting for its load gate (or just got it): nothing else starts in this tick
             if self.saved_quiet is None:
                 self.saved_quiet = now
             if now - self.saved_quiet >= SAVED_QUIET_SECONDS and self.saved_refresh(now):
@@ -2151,6 +2459,7 @@ class Coordinator:
             self.complete_modes.add(mode)
             self.complete_rows[mode] = rows
             self.pending.pop(mode, None)
+            self.park_done(mode, now)   # R10.23
             self.validate_retained(mode, now)
             return
         self.complete_modes.discard(mode)
@@ -2158,7 +2467,7 @@ class Coordinator:
             api.clear(PREFIX + mode + '.Complete')
         if self.inflight:
             return
-        if mode != self.last_mode or now - self.last_scan >= 1:
+        if mode != self.last_mode or now - self.last_scan >= (.25 if self.parked.intersection(remaining) else 1):   # R10.23: parked rows wait less
             self.any_busy = any(self.row_busy(row, mode, now) for row in ALL_ROWS)
             self.last_scan, self.last_mode = now, mode
         if self.any_busy:
@@ -2176,7 +2485,11 @@ class Coordinator:
                 return
             if self.orphan_running(now):
                 return   # R10.5 re-review F2
-        if remaining[0] in CONTINUE_ROWS and now - self.player_last < CONTINUE_AFTER_STOP_SECONDS:
+        early = now - self.player_last < CONTINUE_AFTER_STOP_SECONDS
+        parked = [row for row in remaining if row in self.parked]   # R10.23
+        pend = self.pending.get(mode)
+        if early and ((remaining[0] in CONTINUE_ROWS and not parked) or (parked and all(row in CONTINUE_ROWS for row in remaining))
+                      or (parked and pend and pend['row'] in CONTINUE_ROWS and pend['row'] in remaining)):
             return
         if self.pending.get(mode, {}).get('not_before', 0) > now:
             return   # R10.5 re-review F5
@@ -2194,12 +2507,28 @@ class Coordinator:
             if retry_reason:
                 job['retry_reason'] = retry_reason
                 event = 'retry'
+        elif parked:
+            # R10.23: the rows parked while a player was up come back in park_pick's order (Continue Watching not before 3 s after the player)
+            row = self.park_pick(mode, remaining, early)
+            if row is None:
+                return
+            job = self.lease(row, now)
+            event = 'resume' if api.enabled(row) else 'start'
         else:
             focused = api.number('System.CurrentControlID')
             preferred = focused - 8000
             row = preferred if preferred in remaining else remaining[0]
             job = self.lease(row, now)
             event = 'resume' if api.enabled(row) else 'start'
+        if row in self.parked:
+            self.park_started.setdefault(mode, now)   # R10.23: the page's restore has started (park_done)
+            self.park_loaded[row] = now
+            if row in CONTINUE_ROWS and api.count(row) > 0:
+                # review F4: a parked CW row that kept its titles: a new token and the refresh rule (as refresh_tick), so it cannot settle on them
+                job['refresh'] = True
+                job['focus'] = api.number('System.CurrentControlID')
+                job['first'] = self.first_title(row)
+                api.put(PREFIX + 'Token.%d' % row, str(time.time()))
         api.put(PREFIX + mode + '.Started', 'true')
         api.put('Netflix.CatalogGenre.Loading', row)
         if row not in CONTINUE_ROWS and api.count(row) > 0:

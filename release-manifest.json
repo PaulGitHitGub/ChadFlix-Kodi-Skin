@@ -1,0 +1,226 @@
+{
+ "addons": [
+  {
+   "added": 11,
+   "changed": 36,
+   "content_sha256": "92f1428b784654162251f88ea058b29c6f2ef0d685966236ea13f568c707cce7",
+   "files": 222,
+   "id": "plugin.video.pov",
+   "overlay": "inputs/overlays/plugin.video.pov",
+   "overlay_sha256": "013248a3cedd58cf867b240d5fad11a1e0f0997ce3386a3dd7b20681fa654c10",
+   "removed": 0,
+   "sha256": "2163ace3d64c95cc1db1b1168ca57e6628da400418892e08076ffca57ff42516",
+   "size": 853648,
+   "source": "upstream+overlay",
+   "upstream": {
+    "file": "plugin.video.pov-6.11.03.zip",
+    "sha256": "9ac93ad045910774503cbfeeb45b63bbd9b23837c9e76749885076c9b11edfba",
+    "url": "https://raw.githubusercontent.com/kodifitzwell/repo/2c8390c6e65213853a862a00044597946b946132/plugin.video.pov/plugin.video.pov-6.11.03.zip"
+   },
+   "version": "6.99.1103.4",
+   "zip": "zips/plugin.video.pov/plugin.video.pov-6.99.1103.4.zip"
+  },
+  {
+   "carried_from": "zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip",
+   "content_sha256": "c5fab1fd7ef63dace1997206684f636d469c9eb4a8a4e0965f2c65fb77b5f800",
+   "files": 666,
+   "id": "plugin.video.themoviedb.helper",
+   "sha256": "5c1a7d8e6cb89366fe9226db4f9e632e6413829f73cc836e705a7e0f61b736d1",
+   "size": 9569600,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "dd50ba2a474cf040cb960397bd1973e21750477e6d32158ccb78e24f4bc36d6e",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip"
+   },
+   "version": "6.20.8",
+   "zip": "zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip"
+  },
+  {
+   "content_sha256": "832a91a0daeee708572165556cb6a31cc8e3230dee819ae2fdeda8dff988e05f",
+   "files": 3,
+   "id": "repository.chadflix",
+   "sha256": "06ebf40be07af7822b0bafed484c654c285bbdc3e38ca3c82f7462d879b6171e",
+   "size": 14026,
+   "source": "tree",
+   "tree": "src/repository.chadflix",
+   "tree_sha256": "832a91a0daeee708572165556cb6a31cc8e3230dee819ae2fdeda8dff988e05f",
+   "version": "1.0.1",
+   "zip": "zips/repository.chadflix/repository.chadflix-1.0.1.zip"
+  },
+  {
+   "carried_from": "zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip",
+   "content_sha256": "6bb5f53588590ad7d1ea7c2671bc2b6d8df4cba1770aab66ac7cb908c86d36e5",
+   "files": 11,
+   "id": "resource.font.robotocjksc",
+   "sha256": "c125af8cc180b4a57f6f41be4affbc37be59c9a6ce0423e556491d86d690747e",
+   "size": 51487529,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "58c3e32cafbbf0984896c4ab317c820e555f3deacae977598e4a03a0f8139743",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip"
+   },
+   "version": "0.0.3",
+   "zip": "zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip"
+  },
+  {
+   "carried_from": "zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip",
+   "content_sha256": "761f8a33af2aa270c598763a95d68c71524500ef33e19deb3fc3986c469d5469",
+   "files": 2956,
+   "id": "resource.images.arctic.splash",
+   "sha256": "e7288ecb941c8b84eac669a041867c7b82243b8911c59ffa2ea05707822328bf",
+   "size": 70320656,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "3d5f377f4c0c1e0459948b1b1fc635038fa9a5a8fffbc1d60aed505b62d34714",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip"
+   },
+   "version": "1.1.0",
+   "zip": "zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip"
+  },
+  {
+   "carried_from": "zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip",
+   "content_sha256": "37cddc7715eb7211d473a7b21f5856d834c59c331a86d8ec0eabc294d5853692",
+   "files": 1036,
+   "id": "resource.images.arctic.weather",
+   "sha256": "c67e224f8e2f18c7fd8006e574345bef532eb209056e83570232777457c11f68",
+   "size": 59035048,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "a7e84af8747611c8517bfb278b7610053653c95107a10307dc48ee15e6cef0c4",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
+   },
+   "version": "1.0.4",
+   "zip": "zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
+  },
+  {
+   "content_sha256": "436127d987667c7231a7238229ca36c60701cb171681c79aa682622086f5ef0f",
+   "files": 11,
+   "id": "script.chadflix.setup",
+   "sha256": "8cbb29d90d260872f067b3dfd2f764c6b2f601f6cb1c29dc45c9d66a0a07d80e",
+   "size": 27996,
+   "source": "tree",
+   "tree": "src/script.chadflix.setup",
+   "tree_sha256": "436127d987667c7231a7238229ca36c60701cb171681c79aa682622086f5ef0f",
+   "version": "1.0.3",
+   "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.3.zip"
+  },
+  {
+   "carried_from": "zips/script.module.infotagger/script.module.infotagger-0.1.0.zip",
+   "content_sha256": "20e5a5bd74ff87ec42ec96074f75c77ae7d894839cd6439a28cae9eb5bbc47c0",
+   "files": 4,
+   "id": "script.module.infotagger",
+   "sha256": "7af295508d29b7682587567824be57eb02220018ba469045f08278e420e7be3a",
+   "size": 23756,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "82bf72ad2e8184e4a560135d7fa2ea1f37d95a0a7524100554da527f816ca876",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.infotagger/script.module.infotagger-0.1.0.zip"
+   },
+   "version": "0.1.0",
+   "zip": "zips/script.module.infotagger/script.module.infotagger-0.1.0.zip"
+  },
+  {
+   "carried_from": "zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip",
+   "content_sha256": "1d5776f6d5a0ff682b14264b2aeb7e1d76c4e94a5bbd7f62f2f98a55f63a13f0",
+   "files": 23,
+   "id": "script.module.jurialmunkey",
+   "sha256": "d4fc3dcc512fc164c616c1a0975cd4ccafd397531db8b28c5db051b386da28a9",
+   "size": 57131,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "80302314cdbc5a75611b0c2866eb1c7b4e93ccadaf20208ef7eb79b79c1fb749",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip"
+   },
+   "version": "0.2.35",
+   "zip": "zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip"
+  },
+  {
+   "carried_from": "zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip",
+   "content_sha256": "67d3ceba2018d126f2899ce95b18af6d92c07f4a05a4993ef020aa4efbcfb891",
+   "files": 84,
+   "id": "script.module.tmdbhelper.sync.mdblist",
+   "sha256": "20ec3e8f9f0a852b478e13bab264aa2e3e5e75fe31d80a3fb11c267fa9d08e01",
+   "size": 483953,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "b8175017513f7540af1a4f4d33af3967b59527f187b5d69060d98f8286faf572",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip"
+   },
+   "version": "1.1.4",
+   "zip": "zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip"
+  },
+  {
+   "carried_from": "zips/script.skinvariables/script.skinvariables-2.2.12.zip",
+   "content_sha256": "0c0688ca64016b9b36cfa552e5957d8540929feb342820b67396b4e9c449c4b9",
+   "files": 49,
+   "id": "script.skinvariables",
+   "sha256": "7e62ea8d9e259927b3cccff4d2fdf027e7962338091ab2f754ea4906146f1c52",
+   "size": 240583,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "caa15464788667aed0f8dea5942bbe8c6fb93c6df11b46dad02ed42b256304fe",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.skinvariables/script.skinvariables-2.2.12.zip"
+   },
+   "version": "2.2.12",
+   "zip": "zips/script.skinvariables/script.skinvariables-2.2.12.zip"
+  },
+  {
+   "carried_from": "zips/script.texturemaker/script.texturemaker-0.2.11.zip",
+   "content_sha256": "b0377da207eec83aaee014ad8b46b1e83517dc34e2b5fa3246edbe6af838b79e",
+   "files": 14,
+   "id": "script.texturemaker",
+   "sha256": "15fa05a9192ec88a90984a9354f0e49e29fb227c2fad2fcacfb12b4458ccdcd1",
+   "size": 172494,
+   "source": "carry",
+   "upstream": {
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "sha256": "051bca651c467901b12fcae56ca430402427149d801fa7a7cfd1254d386a738b",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.texturemaker/script.texturemaker-0.2.11.zip"
+   },
+   "version": "0.2.11",
+   "zip": "zips/script.texturemaker/script.texturemaker-0.2.11.zip"
+  },
+  {
+   "added": 91,
+   "changed": 45,
+   "content_sha256": "883d62dc9cc31315fc7fa59843484f5c1ccd70e356df11c1d1c0f6f798d8e05a",
+   "files": 3828,
+   "id": "skin.arctic.fuse.3",
+   "overlay": "inputs/overlays/skin.arctic.fuse.3",
+   "overlay_sha256": "7897957e637bfdde729b33640802232b3bf355604daec9869b03ea6e3daee7a7",
+   "removed": 2,
+   "sha256": "708d79f10cb65257b4f00fb195adb7c0fb6b7f82b3a76000f346c55a3ebfebf3",
+   "size": 60414025,
+   "source": "upstream+overlay",
+   "upstream": {
+    "file": "skin.arctic.fuse.3-3.4.18.zip",
+    "sha256": "ed7ec6ba9845bc3ae4a07b9ab6577b41617c6c32705b3ccbdbca343cba545e1a",
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/dbecc1eab3384007e8ff36a9dde2fec1336a96e6/omega/zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.4.18.zip"
+   },
+   "version": "3.99.418.4",
+   "zip": "zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.99.418.4.zip"
+  }
+ ],
+ "base_url": "https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/",
+ "built_with": {
+  "builder_sha256": "a0676e464679534336981266770cceae79e01989ef2acbc86e31554d45fe4d6c",
+  "python": "3.9.6",
+  "zlib": "1.2.12"
+ },
+ "index": {
+  "file": "zips/addons.xml",
+  "md5": "0ca8a97b3bf709d790509da732be1abe",
+  "sha256": "e7544764927f33a95fc83c3f05e7927811584c48a1aa0448bcf18ec515184a19"
+ },
+ "lock_sha256": "d976145f561f73e04660930e83e6bdb489733a5d7dbea61d125ba73687dbdefa",
+ "release": "4 (release 3 + R10.23, R10.24, R10.25 security fixes, R10.22 My Lists; Setup 1.0.3, repository 1.0.1)",
+ "repository_zip": "repository.chadflix-1.0.1.zip"
+}

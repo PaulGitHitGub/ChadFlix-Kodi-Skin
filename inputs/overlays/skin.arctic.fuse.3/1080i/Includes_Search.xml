@@ -2411,6 +2411,12 @@
                     <label>No titles available.</label>
                     <visible>$EXP[Netflix_Shows_Swap] + !Integer.IsGreater(Container(592).NumItems,0) + !Container(592).IsUpdating + String.IsEqual(Window(Home).Property(Netflix.Browse.Completed.592),true)</visible>
                 </control>
+                <!-- R10.23: Shows Trending waiting to load (parked during playback, or not asked for yet): the flat cards, as the tab-switch overlay draws this row -->
+                <control type="group">
+                    <visible>$EXP[Netflix_Shows_Swap] + !$EXP[Netflix_Grid_Over] + Integer.IsEqual(Container(592).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.592)) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),592) | Container(592).IsUpdating]</visible>
+                    <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
+                    <include content="Netflix_Loading_Poster_Row"><param name="top">61</param><param name="condition">$EXP[Netflix_Shows_Swap] + !$EXP[Netflix_Grid_Over] + Integer.IsEqual(Container(592).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.CatalogGenre.Enabled.592)) | String.IsEqual(Window(Home).Property(Netflix.CatalogGenre.Loading),592) | Container(592).IsUpdating]</param></include>
+                </control>
                 <!-- Tab swap: Shows Trending as a static list beside 591, so a Movies/Shows switch only
                      changes which of the two is visible. Same geometry and layouts as 591. Select goes
                      through the keymap's native check (not 590/591, so it falls back to Action(Select))

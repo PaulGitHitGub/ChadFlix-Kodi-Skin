@@ -1,52 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="skin.arctic.fuse.3" name="Arctic Fuse 3" provider-name="jurialmunkey" version="3.99.418.3">
-    <requires>
-        <import addon="xbmc.gui" version="5.17.0" />
-        <import addon="script.skinvariables" version="2.2.12" />
-        <import addon="script.texturemaker" version="0.2.9" />
-        <import addon="plugin.video.themoviedb.helper" version="6.19.2" />
-        <import addon="resource.images.weathericons.white" version="0.0.1" />
-        <import addon="resource.images.arctic.splash" version="1.1.0" />
-        <import addon="resource.images.arctic.weather" version="1.0.4" />
-        <import addon="resource.images.studios.coloured" version="0.0.1" />
-        <import addon="resource.font.robotocjksc" version="0.0.3" />
-    </requires>
-    <extension debugging="false" defaultthemename="Textures.xbt" effectslowdown="1" point="xbmc.gui.skin">
-        <res aspect="16:9" default="true" folder="1080i" width="1920" height="1080" />
-        <res aspect="3:2" default="false" folder="1080i" width="1620" height="1080" />
-        <res aspect="4:3" default="false" folder="1080i" width="1440" height="1080" />
-        <res aspect="16:10" default="false" folder="1080i" width="1728" height="1080" />
-        <res aspect="17:9" default="false" folder="1080i" width="2040" height="1080" />
-        <res aspect="21:9" default="false" folder="1080i" width="2520" height="1080" />
-        <res aspect="19.5:9" default="false" folder="1080i" width="2340" height="1080" />
-        <res aspect="18:9" default="false" folder="1080i" width="2160" height="1080" />
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">A minimal row based skin</summary>
-        <summary lang="es">Una skin minimalista de diseño horizontal</summary>
-        <summary lang="de">Ein minimalistisches, zeilenbasiertes Skin</summary>
-        <summary lang="zh">简约行式布局皮肤</summary>
-        <summary lang="ar">سكن مخفف بقوائم افقية</summary>
-        <description lang="en">Arctic Fuse 3 is a minimal row based skin with customisable widgets[CR][CR]UNOFFICIAL MODIFIED BUILD 3.99.418.3 (ChadFlix, 2026-11), based on skin.arctic.fuse.3 3.4.18. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
-        <description lang="es">Arctic Fuse 3 es una skin minimalista de diseño horizontal con widgets personalizables</description>
-        <description lang="de">Arctic Fuse 3 ist ein minimalistisches, zeilenbasiertes Skin mit anpassbaren Widgets</description>
-        <description lang="zh">Arctic Fuse 3 是一款采用简约行式布局的 Kodi 皮肤，支持小组件自定义功能</description>
-        <description lang="ar">Arctic Fuse 3 سكن مخفف بقوائم افقية وبامكانية تخصيص الاختصارات</description>
-        <platform>all</platform>
-        <license>Creative Commons Attribution Non-Commercial Share-Alike 4.0</license>
-        <forum />
-        <source />
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
-</addon>
-<addon id="plugin.video.pov" version="6.99.1103.3" name="POV" provider-name="kodifitzwell">
+<addon id="plugin.video.pov" version="6.99.1103.4" name="POV" provider-name="kodifitzwell">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0" />
 		<import addon="script.module.requests" />
+		<import addon="script.module.qrcode" version="6.1.0" />
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="resources/lib/router.py">
 		<provides>video</provides>
@@ -58,7 +16,7 @@
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
 		<disclaimer lang="en">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers.[CR]The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.</disclaimer>
 		<summary>What you like to watch.[CR]</summary>
-		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.[CR][CR]UNOFFICIAL MODIFIED BUILD 6.99.1103.3 (ChadFlix, 2026-11), based on plugin.video.pov 6.11.03. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
+		<description lang="en">This is a Non-profit resource, organized solely for educational purposes which is protected under the Fair-Use doctrine of the Copyright Act, Specifically section 107, which does promote freedom of expression, by permitting the unlicensed use of copyright-protected works.[CR][CR]UNOFFICIAL MODIFIED BUILD 6.99.1103.4 (ChadFlix, 2026-11), based on plugin.video.pov 6.11.03. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
 		<news>INFO: For latest changes see Changelog within add-on.</news>
 		<assets><icon>pov.png</icon><fanart>pov_fanart.png</fanart></assets>
 	</extension>
@@ -111,6 +69,134 @@ provider-name="jurialmunkey">
     <screenshot>resources/screenshot-02.jpg</screenshot>
   </assets>
 </extension>
+</addon>
+<addon id="repository.chadflix" name="ChadFlix Repository" version="1.0.1" provider-name="ChadFlix">
+    <extension point="xbmc.addon.repository" name="ChadFlix Repository">
+        <dir>
+            <info compressed="false">https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/zips/addons.xml</info>
+            <checksum verify="sha256">https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/zips/addons.xml.sha256</checksum>
+            <datadir zip="true">https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/zips/</datadir>
+            <hashes>sha256</hashes>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">ChadFlix: unofficial modified Arctic Fuse 3 and POV for Kodi 21</summary>
+        <description lang="en_GB">Holds ChadFlix Setup and the add-ons it needs: a modified Arctic Fuse 3 skin, a modified POV, and the jurialmunkey add-ons the skin depends on. Unofficial: not made or supported by the original authors. See NOTICE.md at https://github.com/PaulGitHitGub/ChadFlix-Kodi-Skin</description>
+        <disclaimer lang="en_GB">Unofficial modified builds. Report problems to this repository, not to the original authors.</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0-or-later (repository add-on); see NOTICE.md for each add-on</license>
+        <source>https://github.com/PaulGitHitGub/ChadFlix-Kodi-Skin</source>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+<addon id="resource.font.robotocjksc" name="Roboto CJKSC" version="0.0.3" provider-name="jurialmunkey">
+    <requires>
+        <import addon="kodi.resource" version="1.0.0"/>
+    </requires>
+    
+    <extension point="kodi.resource.font" compile="false" />
+    
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Roboto CJKSC fonts</summary>
+        <description lang="en_GB"></description>
+        <language></language>
+        <platform>all</platform>
+        <license>Apache-2.0</license>
+        <forum></forum>
+        <email></email>
+        <source></source>
+        <news></news>
+        <disclaimer></disclaimer>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+<addon id="resource.images.arctic.splash" name="Arctic Splash" version="1.1.0" provider-name="jurialmunkey">
+    <requires>
+        <import addon="kodi.resource" version="1.0.0" />
+    </requires>
+    <extension point="kodi.resource.images" compile="false" type="skinbackgrounds" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Three seasonal splash scenes for Arctic</summary>
+        <description lang="en_GB">Fuji, Japanese countryside and Tokyo street artwork with four seasons, hourly lighting, weather effects and native skin animation recipes. Shared lossless transparency masks and mixed WebP compression keep the complete resource below 100 MB. Requires a skin implementing the version 2 diffuse-mask contract.</description>
+        <platform>all</platform>
+    </extension>
+</addon>
+<addon id="resource.images.arctic.weather" name="Arctic Weather" version="1.0.4" provider-name="jurialmunkey">
+    <requires>
+        <import addon="kodi.resource" version="1.0.0" />
+    </requires>
+    <extension point="kodi.resource.images" compile="false" type="weather" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Japanese weather artwork for Arctic</summary>
+        <description lang="en_GB">Japanese weather cards at 320 x 720: original illustrations, simplified watercolours, minimal woodblock prints and a layered animated woodblock set. Static landscape woodblock artwork at 1280 x 720 is available for weather dialogs. Each set covers Kodi weather codes 0-47 and na. Animated artwork uses static plates and up to five single-frame PNGs per effect.</description>
+        <platform>all</platform>
+    </extension>
+</addon>
+<addon id="script.chadflix.setup" name="ChadFlix Setup" version="1.0.3" provider-name="ChadFlix">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+        <import addon="skin.arctic.fuse.3" version="3.99.418.4" />
+        <import addon="plugin.video.pov" version="6.99.1103.4" />
+        <import addon="plugin.video.themoviedb.helper" version="6.20.8" />
+        <import addon="script.module.tmdbhelper.sync.mdblist" version="1.1.4" />
+        <import addon="script.skinvariables" version="2.2.12" />
+        <import addon="script.texturemaker" version="0.2.11" />
+        <import addon="plugin.program.autocompletion" version="2.1.2" />
+    </requires>
+    <extension point="xbmc.python.script" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">One-time setup for the ChadFlix look</summary>
+        <description lang="en_GB">Run once after installing. Installs and enables the add-ons the look needs, applies the ChadFlix layout settings to Arctic Fuse 3 (skipping its setup wizard), switches to the skin and adds four remote-control key files. Its first menu also has "Undo ChadFlix Keymaps" for going back to another skin. Safe to run again. Never touches sign-ins, keys or watch history; backs up any file it replaces.</description>
+        <disclaimer lang="en_GB">Unofficial. The setup answers Kodi's "Keep skin?" question itself after switching the skin (that question only).</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0-or-later</license>
+        <source>https://github.com/PaulGitHitGub/ChadFlix-Kodi-Skin</source>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+<addon id="script.module.infotagger" name="InfoTagger" provider-name="jurialmunkey" version="0.1.0">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1"/>
+  </requires>
+  <extension point="xbmc.python.module" library="resources/modules" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary lang="en_GB">Python wrapper for setInfo on Nexus InfoTags</summary>
+    <description lang="en_GB">Python wrapper for setInfo on Nexus InfoTags</description>
+    <license>GPL-3.0-or-later</license>
+    <website>https://github.com/jurialmunkey/script.module.infotagger</website>
+    <source>https://github.com/jurialmunkey/script.module.infotagger</source>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+  </extension>
+
+</addon>
+<addon id="script.module.jurialmunkey" name="jurialmunkey common" provider-name="jurialmunkey" version="0.2.35">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1"/>
+    <import addon="script.module.requests" version="2.9.1"/>
+    <import addon="script.module.infotagger" version="0.0.5" />
+  </requires>
+  <extension point="xbmc.python.module" library="resources/modules" />
+  <extension point="xbmc.addon.metadata">
+    <description lang="en_GB">Common code required by TMDbHelper and other related jurialmunkey add-ons</description>
+    <description lang="zh_CN">TMDb 助手及其他相关 jurialmunkey 插件所需的通用代码</description>
+    <license>GPL-3.0-or-later</license>
+    <website>https://github.com/jurialmunkey/script.module.jurialmunkey</website>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+  </extension>
 </addon>
 <addon id="script.module.tmdbhelper.sync.mdblist" version="1.1.4" name="TMDbHelper Sync - MDbList" provider-name="jurialmunkey">
     <requires>
@@ -188,130 +274,46 @@ provider-name="jurialmunkey">
   </assets>
 </extension>
 </addon>
-<addon id="script.module.jurialmunkey" name="jurialmunkey common" provider-name="jurialmunkey" version="0.2.35">
-  <requires>
-    <import addon="xbmc.python" version="3.0.1"/>
-    <import addon="script.module.requests" version="2.9.1"/>
-    <import addon="script.module.infotagger" version="0.0.5" />
-  </requires>
-  <extension point="xbmc.python.module" library="resources/modules" />
-  <extension point="xbmc.addon.metadata">
-    <description lang="en_GB">Common code required by TMDbHelper and other related jurialmunkey add-ons</description>
-    <description lang="zh_CN">TMDb 助手及其他相关 jurialmunkey 插件所需的通用代码</description>
-    <license>GPL-3.0-or-later</license>
-    <website>https://github.com/jurialmunkey/script.module.jurialmunkey</website>
-    <assets>
-      <icon>icon.png</icon>
-    </assets>
-  </extension>
-</addon>
-<addon id="script.module.infotagger" name="InfoTagger" provider-name="jurialmunkey" version="0.1.0">
-  <requires>
-    <import addon="xbmc.python" version="3.0.1"/>
-  </requires>
-  <extension point="xbmc.python.module" library="resources/modules" />
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <summary lang="en_GB">Python wrapper for setInfo on Nexus InfoTags</summary>
-    <description lang="en_GB">Python wrapper for setInfo on Nexus InfoTags</description>
-    <license>GPL-3.0-or-later</license>
-    <website>https://github.com/jurialmunkey/script.module.infotagger</website>
-    <source>https://github.com/jurialmunkey/script.module.infotagger</source>
-    <assets>
-      <icon>icon.png</icon>
-    </assets>
-  </extension>
-
-</addon>
-<addon id="resource.images.arctic.splash" name="Arctic Splash" version="1.1.0" provider-name="jurialmunkey">
+<addon id="skin.arctic.fuse.3" name="Arctic Fuse 3" provider-name="jurialmunkey" version="3.99.418.4">
     <requires>
-        <import addon="kodi.resource" version="1.0.0" />
-    </requires>
-    <extension point="kodi.resource.images" compile="false" type="skinbackgrounds" />
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">Three seasonal splash scenes for Arctic</summary>
-        <description lang="en_GB">Fuji, Japanese countryside and Tokyo street artwork with four seasons, hourly lighting, weather effects and native skin animation recipes. Shared lossless transparency masks and mixed WebP compression keep the complete resource below 100 MB. Requires a skin implementing the version 2 diffuse-mask contract.</description>
-        <platform>all</platform>
-    </extension>
-</addon>
-<addon id="resource.images.arctic.weather" name="Arctic Weather" version="1.0.4" provider-name="jurialmunkey">
-    <requires>
-        <import addon="kodi.resource" version="1.0.0" />
-    </requires>
-    <extension point="kodi.resource.images" compile="false" type="weather" />
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">Japanese weather artwork for Arctic</summary>
-        <description lang="en_GB">Japanese weather cards at 320 x 720: original illustrations, simplified watercolours, minimal woodblock prints and a layered animated woodblock set. Static landscape woodblock artwork at 1280 x 720 is available for weather dialogs. Each set covers Kodi weather codes 0-47 and na. Animated artwork uses static plates and up to five single-frame PNGs per effect.</description>
-        <platform>all</platform>
-    </extension>
-</addon>
-<addon id="resource.font.robotocjksc" name="Roboto CJKSC" version="0.0.3" provider-name="jurialmunkey">
-    <requires>
-        <import addon="kodi.resource" version="1.0.0"/>
-    </requires>
-    
-    <extension point="kodi.resource.font" compile="false" />
-    
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">Roboto CJKSC fonts</summary>
-        <description lang="en_GB"></description>
-        <language></language>
-        <platform>all</platform>
-        <license>Apache-2.0</license>
-        <forum></forum>
-        <email></email>
-        <source></source>
-        <news></news>
-        <disclaimer></disclaimer>
-        <assets>
-            <icon>icon.png</icon>
-        </assets>
-    </extension>
-</addon>
-<addon id="script.chadflix.setup" name="ChadFlix Setup" version="1.0.2" provider-name="ChadFlix">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0" />
-        <import addon="skin.arctic.fuse.3" version="3.99.418.2" />
-        <import addon="plugin.video.pov" version="6.99.1103.2" />
-        <import addon="plugin.video.themoviedb.helper" version="6.20.8" />
-        <import addon="script.module.tmdbhelper.sync.mdblist" version="1.1.4" />
+        <import addon="xbmc.gui" version="5.17.0" />
         <import addon="script.skinvariables" version="2.2.12" />
-        <import addon="script.texturemaker" version="0.2.11" />
-        <import addon="plugin.program.autocompletion" version="2.1.2" />
+        <import addon="script.texturemaker" version="0.2.9" />
+        <import addon="plugin.video.themoviedb.helper" version="6.19.2" />
+        <import addon="resource.images.weathericons.white" version="0.0.1" />
+        <import addon="resource.images.arctic.splash" version="1.1.0" />
+        <import addon="resource.images.arctic.weather" version="1.0.4" />
+        <import addon="resource.images.studios.coloured" version="0.0.1" />
+        <import addon="resource.font.robotocjksc" version="0.0.3" />
     </requires>
-    <extension point="xbmc.python.script" library="default.py">
-        <provides>executable</provides>
-    </extension>
-    <extension point="xbmc.service" library="service.py"/>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">One-time setup for the ChadFlix look</summary>
-        <description lang="en_GB">Run once after installing. Installs and enables the add-ons the look needs, applies the ChadFlix layout settings to Arctic Fuse 3 (skipping its setup wizard), switches to the skin and adds four remote-control key files. Its first menu also has "Undo ChadFlix keymaps" for going back to another skin. Safe to run again. Never touches sign-ins, keys or watch history; backs up any file it replaces.</description>
-        <disclaimer lang="en_GB">Unofficial. The setup answers Kodi's "Keep this change?" question itself after switching the skin.</disclaimer>
-        <platform>all</platform>
-        <license>GPL-3.0-or-later</license>
-        <source>https://github.com/PaulGitHitGub/ChadFlix-Kodi-Skin</source>
-        <assets>
-            <icon>icon.png</icon>
-        </assets>
-    </extension>
-</addon>
-<addon id="repository.chadflix" name="ChadFlix Repository" version="1.0.0" provider-name="ChadFlix">
-    <extension point="xbmc.addon.repository" name="ChadFlix Repository">
-        <dir>
-            <info compressed="false">https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/zips/addons.xml</info>
-            <checksum>https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/zips/addons.xml.md5</checksum>
-            <datadir zip="true">https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/zips/</datadir>
-        </dir>
+    <extension debugging="false" defaultthemename="Textures.xbt" effectslowdown="1" point="xbmc.gui.skin">
+        <res aspect="16:9" default="true" folder="1080i" width="1920" height="1080" />
+        <res aspect="3:2" default="false" folder="1080i" width="1620" height="1080" />
+        <res aspect="4:3" default="false" folder="1080i" width="1440" height="1080" />
+        <res aspect="16:10" default="false" folder="1080i" width="1728" height="1080" />
+        <res aspect="17:9" default="false" folder="1080i" width="2040" height="1080" />
+        <res aspect="21:9" default="false" folder="1080i" width="2520" height="1080" />
+        <res aspect="19.5:9" default="false" folder="1080i" width="2340" height="1080" />
+        <res aspect="18:9" default="false" folder="1080i" width="2160" height="1080" />
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">ChadFlix: unofficial modified Arctic Fuse 3 and POV for Kodi 21</summary>
-        <description lang="en_GB">Holds ChadFlix Setup and the add-ons it needs: a modified Arctic Fuse 3 skin, a modified POV, and the jurialmunkey add-ons the skin depends on. Unofficial: not made or supported by the original authors. See NOTICE.md at https://github.com/PaulGitHitGub/ChadFlix-Kodi-Skin</description>
-        <disclaimer lang="en_GB">Unofficial modified builds. Report problems to this repository, not to the original authors.</disclaimer>
+        <summary lang="en">A minimal row based skin</summary>
+        <summary lang="es">Una skin minimalista de diseño horizontal</summary>
+        <summary lang="de">Ein minimalistisches, zeilenbasiertes Skin</summary>
+        <summary lang="zh">简约行式布局皮肤</summary>
+        <summary lang="ar">سكن مخفف بقوائم افقية</summary>
+        <description lang="en">Arctic Fuse 3 is a minimal row based skin with customisable widgets[CR][CR]UNOFFICIAL MODIFIED BUILD 3.99.418.4 (ChadFlix, 2026-11), based on skin.arctic.fuse.3 3.4.18. Not made or supported by the original author. See CHADFLIX-CHANGES.txt.</description>
+        <description lang="es">Arctic Fuse 3 es una skin minimalista de diseño horizontal con widgets personalizables</description>
+        <description lang="de">Arctic Fuse 3 ist ein minimalistisches, zeilenbasiertes Skin mit anpassbaren Widgets</description>
+        <description lang="zh">Arctic Fuse 3 是一款采用简约行式布局的 Kodi 皮肤，支持小组件自定义功能</description>
+        <description lang="ar">Arctic Fuse 3 سكن مخفف بقوائم افقية وبامكانية تخصيص الاختصارات</description>
         <platform>all</platform>
-        <license>GPL-3.0-or-later (repository add-on); see NOTICE.md for each add-on</license>
-        <source>https://github.com/PaulGitHitGub/ChadFlix-Kodi-Skin</source>
+        <license>Creative Commons Attribution Non-Commercial Share-Alike 4.0</license>
+        <forum />
+        <source />
         <assets>
             <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
 </addon>

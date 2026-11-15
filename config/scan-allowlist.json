@@ -54,6 +54,30 @@
    "rule": "jwt",
    "fingerprint": "6c593c376eaafe92",
    "reason": "upstream TMDb Helper 6.20.8 application key; unmodified upstream add-on carried by pinned zip sha256 (config/release.lock.json); public application identifier, not a personal sign-in"
+  },
+  {
+   "where": "zip!skin.arctic.fuse.3/extras/netflix_saved_lists.py",
+   "rule": "assignment",
+   "fingerprint": "c77092e740f6f4d2",
+   "reason": "R10.22 (release 4): the value is the name of a Kodi window property (Netflix.MyLists.*Token, a counter that reloads a My Lists view), assigned to a Python constant whose name ends in TOKEN (line 333); no credential, reviewed 2026-11-15"
+  },
+  {
+   "where": "zip!skin.arctic.fuse.3/extras/netflix_saved_lists.py",
+   "rule": "assignment",
+   "fingerprint": "e10ee1bad03ca687",
+   "reason": "R10.22 (release 4): the value is the name of a Kodi window property (Netflix.MyLists.*Token, a counter that reloads a My Lists view), assigned to a Python constant whose name ends in TOKEN (line 334); no credential, reviewed 2026-11-15"
+  },
+  {
+   "where": "inputs/overlays/skin.arctic.fuse.3/extras/netflix_saved_lists.py",
+   "rule": "assignment",
+   "fingerprint": "c77092e740f6f4d2",
+   "reason": "R10.22 (release 4): the value is the name of a Kodi window property (Netflix.MyLists.*Token, a counter that reloads a My Lists view), assigned to a Python constant whose name ends in TOKEN (line 333); no credential, reviewed 2026-11-15"
+  },
+  {
+   "where": "inputs/overlays/skin.arctic.fuse.3/extras/netflix_saved_lists.py",
+   "rule": "assignment",
+   "fingerprint": "e10ee1bad03ca687",
+   "reason": "R10.22 (release 4): the value is the name of a Kodi window property (Netflix.MyLists.*Token, a counter that reloads a My Lists view), assigned to a Python constant whose name ends in TOKEN (line 334); no credential, reviewed 2026-11-15"
   }
  ]
 }

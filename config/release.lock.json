@@ -1,6 +1,6 @@
 {
  "_comment": "Every input of a release build. tools/build_release.py reads nothing else. Change a version here and in the overlay addon.xml together.",
- "release": "4 (security fixes on release 3)",
+ "release": "4 (release 3 + R10.23, R10.24, R10.25 security fixes, R10.22 My Lists; Setup 1.0.3, repository 1.0.1)",
  "previous_release": "3",
  "github_user": "PaulGitHitGub",
  "repo_slug": "ChadFlix-Kodi-Skin",

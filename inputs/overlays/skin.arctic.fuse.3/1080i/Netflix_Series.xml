@@ -511,6 +511,19 @@
                             <visible>!Control.HasFocus(12)</visible>
                             <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/clone-regular.png</texture>
                         </control>
+                        <!-- R10.22: how many of this show's episodes are saved (a favorite or on a watchlist): quiet, right-aligned -->
+                        <control type="label">
+                            <left>356</left><top>0</top><width>186</width><height>62</height>
+                            <font>font_mini</font><align>right</align><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
+                            <label>$INFO[Window.Property(Series.EpisodesSaved)]</label>
+                            <visible>!Control.HasFocus(12)</visible>
+                        </control>
+                        <control type="label">
+                            <left>356</left><top>0</top><width>186</width><height>62</height>
+                            <font>font_mini</font><align>right</align><aligny>center</aligny><textcolor>FF404040</textcolor>
+                            <label>$INFO[Window.Property(Series.EpisodesSaved)]</label>
+                            <visible>Control.HasFocus(12)</visible>
+                        </control>
                     </control>
                     <control type="group" id="43">
                         <width>566</width>
@@ -853,7 +866,7 @@
                             <label>$INFO[ListItem.Label]</label>
                             <left>474</left>
                             <top>28</top>
-                            <width>598</width>
+                            <width>420</width>
                             <height>43</height>
                         </control>
                         <control type="textbox">
@@ -870,10 +883,23 @@
                             <font>font_mini</font>
                             <textcolor>FFCCCCCC</textcolor>
                             <label>$INFO[ListItem.Property(Duration)]</label>
-                            <left>474</left>
-                            <top>186</top>
-                            <width>552</width>
+                            <left>900</left>
+                            <top>31</top>
+                            <width>140</width>
                             <height>36</height>
+                            <align>right</align>
+                        </control>
+                        <control type="image">
+                            <left>474</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/thumbs-up.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Fav),true)</visible>
+                        </control>
+                        <control type="image">
+                            <left>554</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/bookmark.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Bm),true)</visible>
                         </control>
                     </itemlayout>
                     <focusedlayout width="1080" height="272">
@@ -899,8 +925,17 @@
                             <top>0</top>
                             <width>443</width>
                             <height>253</height>
-                            <visible>Control.HasFocus(21)</visible>
+                            <visible>Control.HasFocus(21) + String.IsEmpty(Window.Property(Series.Lane))</visible>
                             <texture border="14" colordiffuse="FFF5F5F5">common/box.png</texture>
+                        </control>
+                        <!-- R10.22 Save Lane: inside the lane the card keeps a quiet ring (85858D) so "I am inside this card" reads -->
+                        <control type="image">
+                            <left>0</left>
+                            <top>0</top>
+                            <width>443</width>
+                            <height>253</height>
+                            <visible>Control.HasFocus(21) + !String.IsEmpty(Window.Property(Series.Lane))</visible>
+                            <texture border="14" colordiffuse="FF85858D">common/box.png</texture>
                         </control>
                         <control type="image">
                             <left>4</left>
@@ -951,7 +986,7 @@
                             <label>$INFO[ListItem.Label]</label>
                             <left>474</left>
                             <top>28</top>
-                            <width>598</width>
+                            <width>420</width>
                             <height>43</height>
                         </control>
                         <control type="textbox">
@@ -968,10 +1003,81 @@
                             <font>font_mini</font>
                             <textcolor>FFCCCCCC</textcolor>
                             <label>$INFO[ListItem.Property(Duration)]</label>
-                            <left>474</left>
-                            <top>186</top>
-                            <width>552</width>
+                            <left>900</left>
+                            <top>31</top>
+                            <width>140</width>
                             <height>36</height>
+                            <align>right</align>
+                        </control>
+                        <control type="image">
+                            <left>474</left><top>186</top><width>56</width><height>56</height>
+                            <texture colordiffuse="FFF5F5F5">common/circle.png</texture>
+                            <visible>Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),1)</visible>
+                        </control>
+                        <control type="image">
+                            <left>554</left><top>186</top><width>56</width><height>56</height>
+                            <texture colordiffuse="FFF5F5F5">common/circle.png</texture>
+                            <visible>Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),2)</visible>
+                        </control>
+                        <control type="image">
+                            <left>474</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/thumbs-up.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Fav),true) + Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),1)</visible>
+                        </control>
+                        <control type="image">
+                            <left>474</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/thumbs-up.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Fav),true) + ![Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),1)]</visible>
+                        </control>
+                        <control type="image">
+                            <left>474</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/thumbs-up-regular.png</texture>
+                            <visible>!String.IsEqual(ListItem.Property(Fav),true) + Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),1)</visible>
+                        </control>
+                        <control type="image">
+                            <left>474</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFD0D0D6">special://skin/extras/icons/thumbs-up-regular.png</texture>
+                            <visible>!String.IsEqual(ListItem.Property(Fav),true) + Control.HasFocus(21) + !String.IsEqual(Window.Property(Series.Lane),1)</visible>
+                        </control>
+                        <control type="image">
+                            <left>554</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/bookmark.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Bm),true) + Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),2)</visible>
+                        </control>
+                        <control type="image">
+                            <left>554</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFFFFFFF">special://skin/extras/icons/bookmark.png</texture>
+                            <visible>String.IsEqual(ListItem.Property(Bm),true) + ![Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),2)]</visible>
+                        </control>
+                        <control type="image">
+                            <left>554</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>!String.IsEqual(ListItem.Property(Bm),true) + Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),2)</visible>
+                        </control>
+                        <control type="image">
+                            <left>554</left><top>186</top><width>56</width><height>56</height>
+                            <aspectratio>keep</aspectratio>
+                            <texture colordiffuse="FFD0D0D6">special://skin/extras/icons/bookmark-regular.png</texture>
+                            <visible>!String.IsEqual(ListItem.Property(Bm),true) + Control.HasFocus(21) + !String.IsEqual(Window.Property(Series.Lane),2)</visible>
+                        </control>
+                        <control type="label">
+                            <left>634</left><top>186</top><width>440</width><height>56</height>
+                            <font>font_main</font><aligny>center</aligny><textcolor>FFE7E7E7</textcolor>
+                            <label>$INFO[ListItem.Property(FavLabel)]</label>
+                            <visible>Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),1)</visible>
+                        </control>
+                        <control type="label">
+                            <left>634</left><top>186</top><width>440</width><height>56</height>
+                            <font>font_main</font><aligny>center</aligny><textcolor>FFE7E7E7</textcolor>
+                            <label>$INFO[ListItem.Property(BmLabel)]</label>
+                            <visible>Control.HasFocus(21) + String.IsEqual(Window.Property(Series.Lane),2)</visible>
                         </control>
                     </focusedlayout>
                 </control>

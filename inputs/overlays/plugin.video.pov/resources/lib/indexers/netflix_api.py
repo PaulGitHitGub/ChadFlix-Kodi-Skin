@@ -75,7 +75,7 @@ TRENDING_MIN = 10          # a Trakt Trending list that ends below this is toppe
 BLOCKBUSTER_PAGES = 2      # revenue order turns into zero-revenue filler after ~40 titles (DESIGN.md "quality trap")
 TMDB_MAX_PAGES = 500       # TMDb discover refuses page > 500
 THIN_TITLES = 10           # fewer titles than this, and no further page: state "thin" (the skin shows "Only N titles")
-VIEW_CACHE_HOURS = 24
+VIEW_CACHE_HOURS = 48      # R10.24 (option B): was 24; 48 h like the route it replaced (tmdb_movies_genres) and the Trakt lists
 _view_started = [0.0]
 
 
@@ -155,14 +155,16 @@ def _trakt_call(request):
     return result
 
 
+def _trakt_key(media, view, slug, page_no):
+    if media == 'shows' and view == 'trending' and slug in TV_GENRES:
+        return 'netflix_tv_genres_v1_%s_%s' % (slug, page_no)   # the same request and cache key as netflix_tv_genres (today's Shows rows)
+    return 'netflix_views_v1_%s_%s_%s_%s' % (media, view, slug, page_no)
+
+
 def _trakt_page(media, view, slug, page_no):
     request = {'path': '/%s/%s' % (media, TRAKT_VIEWS[view]), 'params': {'limit': PAGE_SIZE, 'page': page_no, 'genres': slug},
                'with_auth': False, 'pagination': True}
-    if media == 'shows' and view == 'trending' and slug in TV_GENRES:
-        key = 'netflix_tv_genres_v1_%s_%s' % (slug, page_no)   # the same request and cache key as netflix_tv_genres (today's Shows rows)
-    else:
-        key = 'netflix_views_v1_%s_%s_%s_%s' % (media, view, slug, page_no)
-    return cache_object(_trakt_call, key, request, expiration=EXPIRES_2_DAYS)
+    return cache_object(_trakt_call, _trakt_key(media, view, slug, page_no), request, expiration=EXPIRES_2_DAYS)
 
 
 def _trakt_ids(media, result):
@@ -262,6 +264,74 @@ def view_page(media, view, genre_id, page_no, fallback=False):
     return [i['id'] for i in data['results']], total, 'tmdb_id'
 
 
+# R10.24: required grid pages only, ids not metadata. No speculative ahead
+# requests: they cannot delay listing or outlive this one serialized POV call.
+GRID_STEP, GRID_MAX_PAGES = 3, 10
+WARM_THREADS, WARM_JOIN_SECONDS = 4, 10.0
+
+
+def _page_key(media, view, genre_id, page_no):
+    source, slug, genre_filter = view_spec(media, view, genre_id)
+    if source == 'trakt': return _trakt_key(media, view, slug, page_no)
+    return 'netflix_views_v1_' + view_query(media, view, genre_filter, view_today(), page_no)
+
+
+def _warm_pages(media, view, genre_id, accumulate_to, total):
+    """Fetch missing required pages; never schedule speculative lookahead.
+    Ten seconds limits scheduling, not request wall time. Drain every started
+    worker before listing. After thread-start failure only unattempted pages
+    fall back to serial accumulation; successes and failures are never retried."""
+    from threading import Lock, Thread
+    from time import monotonic
+    from caches.main_cache import MainCache
+    started = monotonic()
+    now = list(range(2, min(accumulate_to, total, GRID_MAX_PAGES) + 1))
+    needed = [p for p in now if not MainCache().get(_page_key(media, view, genre_id, p))]
+    todo, results, attempted, errors, lock = list(needed), {}, set(), set(), Lock()
+    deadline = started + WARM_JOIN_SECONDS
+    start_failed = False
+
+    def work():
+        while True:
+            with lock:
+                if not todo or monotonic() >= deadline: return
+                page = todo.pop(0)
+                attempted.add(page)
+            try:
+                value = view_page(media, view, genre_id, page)
+                with lock: results[page] = value[:2]
+            except Exception:
+                # Never log exception payloads or retry a failed request here.
+                with lock:
+                    errors.add(page)
+                    todo[:] = []
+    if needed:
+        _fail_fast()   # mount bounded adapters before any worker starts
+        threads = []
+        try:
+            for _ in range(min(WARM_THREADS, len(needed))):
+                try:
+                    thread = Thread(target=work)
+                    thread.start()
+                except RuntimeError:
+                    start_failed = True
+                    with lock: todo[:] = []
+                    break
+                threads.append(thread)
+            for thread in threads: thread.join(max(0.0, deadline - monotonic()))
+        finally:
+            with lock: todo[:] = []
+            # Join before any serial fallback or directory listing can begin.
+            for thread in threads: thread.join()
+    skipped = set(needed) - attempted
+    blocked = errors if start_failed else errors | skipped
+    span = lambda pages: '%d-%d' % (pages[0], pages[-1]) if pages else '-'
+    xbmc.log('Netflix View: pages media=%s genre=%s now=%s ahead=- fetched=%d failed=%d skipped=%d serial=%d elapsed=%.3f' % (
+        media, genre_id, span(now), len(results), len(errors), len(skipped), len(skipped) if start_failed else 0,
+        monotonic() - started), xbmc.LOGINFO)
+    return results, blocked
+
+
 def netflix_movie_views(view, genre_id, page_no):
     return view_page('movies', view, genre_id, page_no)
 
@@ -288,7 +358,12 @@ def view_list(media, params, page_no, parse_accumulate_to, accumulate, trakt_key
         accumulate_to = parse_accumulate_to(params.get('accumulate_to')) if page_no == 1 else None
         if accumulate_to:
             if view == 'blockbusters': accumulate_to = min(accumulate_to, BLOCKBUSTER_PAGES)
+            first = view_page(media, view, genre_id, 1)   # R10.24: page 1 first (almost always the row's warm page): it gives total
+            warmed, failed = _warm_pages(media, view, genre_id, accumulate_to, first[1])
             def fetch(page):
+                if page == 1: return first[0], first[1]
+                if page in failed: raise ViewError('page %d failed in the parallel fetch' % page)
+                if page in warmed: return warmed[page]
                 ids, total, _ = view_page(media, view, genre_id, page)
                 return ids, total
             ids, more = accumulate(fetch, key, accumulate_to)

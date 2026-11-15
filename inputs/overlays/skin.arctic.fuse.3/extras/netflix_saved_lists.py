@@ -18,6 +18,7 @@ import xbmcvfs
 VERSION = 1
 MAX_BYTES = 2 * 1024 * 1024
 MAX_LISTS, MAX_ITEMS, MAX_TOTAL = 100, 500, 2000
+CARD_LISTS = 12          # R10.22: the My Lists cards row shows this many lists (the most recently changed), then "See All (N)"
 PREFIX = 'Netflix.Movie.'
 DETAILS = 11167
 
@@ -63,6 +64,64 @@ def media_item(item):
     return result
 
 
+def season_number(value):
+    if type(value) is not int or not 0 <= value <= 999:
+        raise ListsError('This episode has no valid season.')
+    return value
+
+
+def episode_number(value):
+    if type(value) is not int or not 1 <= value <= 9999:
+        raise ListsError('This episode has no valid number.')
+    return value
+
+
+def episode_item(item):
+    """R10.22: one saved episode of a watchlist (the list's separate `episodes` array: never an entry of `items`, whose validator would reject the whole
+    file after a rollback to R10.13 - R10.18). Key: (show_id, season, episode)."""
+    if not isinstance(item, dict) or item.get('type', 'episode') != 'episode':
+        raise ListsError('Invalid watchlist episode.')
+    minutes = item.get('minutes', 0)
+    if type(minutes) is not int or not 0 <= minutes <= 9999:
+        raise ListsError('Invalid watchlist episode.')
+    result = {'type': 'episode', 'show_id': media_id(item.get('show_id')), 'season': season_number(item.get('season')),
+              'episode': episode_number(item.get('episode')), 'show_title': clean_text(item.get('show_title', ''), 300),
+              'title': clean_text(item.get('title'), 300, True)}
+    for key, limit in (('still', 2048), ('poster', 2048), ('plot', 600)):
+        result[key] = clean_text(item.get(key, ''), limit)
+    result['minutes'] = minutes
+    return result
+
+
+def episode_key(item):
+    return (item['show_id'], item['season'], item['episode'])
+
+
+def is_episode(item):
+    return isinstance(item, dict) and item.get('type') == 'episode'
+
+
+def any_item(item):
+    """A movie / show (media_item) or an episode (episode_item), validated."""
+    return episode_item(item) if is_episode(item) else media_item(item)
+
+
+def episode_id(show_id, season, episode):
+    """The favorites table's tmdb_id text for an episode: '<show>:<season>:<episode>' (POV's column is TEXT; every POV reader filters by db_type)."""
+    return '%s:%d:%d' % (media_id(str(show_id)), season_number(season), episode_number(episode))
+
+
+def touch(collection):
+    """R10.22: when a list last changed (the cards row shows the 12 most recent). An extra key: the R10.13 validator ignores it and an old write keeps it."""
+    collection['updated'] = int(time.time())
+
+
+def recent(lists):
+    """Newest change first; lists without a stamp (made before R10.22) follow in reverse file order (the last created first)."""
+    stamped = [(collection.get('updated') if type(collection.get('updated')) is int else 0, index, collection) for index, collection in enumerate(lists)]
+    return [entry[2] for entry in sorted(stamped, key=lambda entry: (entry[0], entry[1]), reverse=True)]
+
+
 def validate(data):
     if not isinstance(data, dict) or type(data.get('version')) is not int or data['version'] != VERSION:
         raise ListsError('Unsupported or damaged watchlist file. Your file was left unchanged.')
@@ -91,6 +150,18 @@ def validate(data):
             if key in seen:
                 raise ListsError('Duplicate watchlist title.')
             seen.add(key)
+        episodes = collection.get('episodes', [])
+        if not isinstance(episodes, list) or len(items) + len(episodes) > MAX_ITEMS:
+            raise ListsError('Watchlist capacity exceeded.')
+        total += len(episodes)
+        if total > MAX_TOTAL:
+            raise ListsError('Watchlist capacity exceeded.')
+        shown = set()
+        for episode in episodes:
+            key = episode_key(episode_item(episode))
+            if key in shown:
+                raise ListsError('Duplicate watchlist episode.')
+            shown.add(key)
     return data
 
 
@@ -164,13 +235,17 @@ class Store:
         name = clean_text(name, 80, True)
         identifier = str(uuid.uuid4())
         def change(data):
-            data['lists'].append({'id': identifier, 'name': name, 'items': []})
+            data['lists'].append({'id': identifier, 'name': name, 'items': [], 'updated': int(time.time())})
             return identifier
         return self.update(change)
 
     def rename(self, identifier, name):
         name = clean_text(name, 80, True)
-        return self.update(lambda data: self.find(data, identifier).update(name=name))
+        def change(data):
+            collection = self.find(data, identifier)
+            collection.update(name=name)
+            touch(collection)
+        return self.update(change)
 
     def delete(self, identifier):
         def change(data):
@@ -179,37 +254,61 @@ class Store:
         return self.update(change)
 
     def add(self, identifier, item):
-        item = media_item(item)
+        item = any_item(item)
         def change(data):
-            items = self.find(data, identifier)['items']
-            if not any((i['type'], i['id']) == (item['type'], item['id']) for i in items):
-                items.append(item)
+            collection = self.find(data, identifier)
+            if not holds(collection, item):
+                put(collection, item)
+                touch(collection)
         return self.update(change)
 
     def remove(self, identifier, item):
-        item = media_item(item)
+        item = any_item(item)
         def change(data):
             collection = self.find(data, identifier)
-            collection['items'] = [i for i in collection['items']
-                                   if (i['type'], i['id']) != (item['type'], item['id'])]
+            if holds(collection, item):
+                take(collection, item)
+                touch(collection)
         return self.update(change)
 
     def set_membership(self, item, wanted):
         """R10.18: the lists (by id) that hold `item` after this call are exactly `wanted`; one locked save, one revision bump."""
-        item = media_item(item)
+        item = any_item(item)    # R10.22: a movie, a show or an episode (an episode goes into the list's own `episodes` array)
         wanted = {list_id(identifier) for identifier in wanted}
         def change(data):
             known = {c['id'] for c in data['lists']}
             if not wanted <= known:
                 raise ListsError('This watchlist no longer exists.')
             for collection in data['lists']:
-                has = any((i['type'], i['id']) == (item['type'], item['id']) for i in collection['items'])
+                has = holds(collection, item)
                 if collection['id'] in wanted and not has:
-                    collection['items'].append(item)
+                    put(collection, item)
+                    touch(collection)
                 elif collection['id'] not in wanted and has:
-                    collection['items'] = [i for i in collection['items']
-                                           if (i['type'], i['id']) != (item['type'], item['id'])]
+                    take(collection, item)
+                    touch(collection)
         return self.update(change)
+
+
+def holds(collection, item):
+    """True when the list holds `item`: a movie / show in `items`, an episode in `episodes` (R10.22)."""
+    if is_episode(item):
+        return any(episode_key(entry) == episode_key(item) for entry in collection.get('episodes', ()))
+    return any((entry['type'], entry['id']) == (item['type'], item['id']) for entry in collection['items'])
+
+
+def put(collection, item):
+    if is_episode(item):
+        collection.setdefault('episodes', []).append(item)
+    else:
+        collection['items'].append(item)
+
+
+def take(collection, item):
+    if is_episode(item):
+        collection['episodes'] = [entry for entry in collection.get('episodes', ()) if episode_key(entry) != episode_key(item)]
+    else:
+        collection['items'] = [entry for entry in collection['items'] if (entry['type'], entry['id']) != (item['type'], item['id'])]
 
 
 def notify(message):
@@ -230,8 +329,39 @@ def bump_watchlists_revision():
         pass  # A successful atomic save must not fail because a window closed.
 
 
+VIEW = 'Netflix.MyLists.View'              # R10.22: '' (the page) | list (container 534: one list open) | all (container 535: See All)
+VIEW_FROM, VIEW_ID, VIEW_TOKEN = 'Netflix.MyLists.ViewFrom', 'Netflix.MyLists.ViewID', 'Netflix.MyLists.ViewToken'
+ALL_TOKEN = 'Netflix.MyLists.AllToken'      # See All's own token: only create from See All bumps it (a list's reload must not reload the hidden See All grid too: two calls)
+VIEW_PATH, VIEW_ERROR = 'Netflix.MyLists.ViewPath', 'Netflix.MyLists.ViewError'
+VIEW_GATES = ('Netflix.MyLists.Go.list', 'Netflix.MyLists.Go.all', 'Netflix.MyLists.Loaded.list', 'Netflix.MyLists.Loaded.all')   # what the tab's Back handler clears too
+MY_LISTS = 11165
+
+
+def close_view():
+    """Back to the cards row (focus on card 0: the open list was deleted). The same steps as the tab's Back handler in Includes_Home.xml."""
+    xbmc.executebuiltin('ClearProperty(%s,Home)' % VIEW)
+    for key in (VIEW_FROM, VIEW_ID, VIEW_PATH, VIEW_ERROR) + VIEW_GATES:
+        xbmc.executebuiltin('ClearProperty(%s,Home)' % key)
+    xbmc.executebuiltin('SetFocus(533,0,absolute)')
+
+
+def refresh_open_view(identifier, deleted=False):
+    """R10.22: the list is open inside My Lists (container 534): a changed list reloads it by a new path token (one add-on call, started by the user's own action);
+    a deleted one closes the view."""
+    home = xbmcgui.Window(10000)
+    if home.getProperty(VIEW) != 'list' or home.getProperty(VIEW_ID) != identifier:
+        return False
+    if deleted:
+        close_view()
+    else:
+        home.setProperty(VIEW_TOKEN, str(time.time_ns()))
+    return True
+
+
 def refresh_collection(identifier, deleted=False):
     list_id(identifier)
+    if xbmcgui.getCurrentWindowId() == MY_LISTS and refresh_open_view(identifier, deleted):
+        return
     try:
         path = urlsplit(xbmc.getInfoLabel('Container.FolderPath'))
         params = parse_qs(path.query)
@@ -281,6 +411,29 @@ def restore_collection_row(store=None):
         home.clearProperty('Netflix.Watchlists.Return')
 
 
+def focus_card(identifier, container=533, seconds=8):
+    """R10.22: put focus on the card / tile of list `identifier` once its container shows it (the card row refreshes after a change: the observer
+    reloads it as soon as My Lists is quiet). Passive polling of info labels only; no add-on call. A key press elsewhere in the meantime wins."""
+    monitor = xbmc.Monitor()
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline and not monitor.waitForAbort(.1):
+        if xbmcgui.getCurrentWindowId() != MY_LISTS:
+            return False
+        if xbmc.getInfoLabel('System.CurrentControlID') not in (str(container), str(container + 8000), '3734', '8533', '8535', ''):
+            return False   # the owner moved on (a key press elsewhere wins): never take focus back (review F9)
+        if xbmc.getCondVisibility('Container(%d).IsUpdating' % container):
+            continue
+        count = xbmc.getInfoLabel('Container(%d).NumItems' % container)
+        if not count.isdecimal() or not int(count):
+            continue
+        index = next((i for i in range(int(count)) if xbmc.getInfoLabel(
+            'Container(%d).ListItemAbsolute(%d).Property(Netflix.Watchlist.ID)' % (container, i)) == identifier), None)
+        if index is not None:
+            xbmc.executebuiltin('SetFocus(%d,%d,absolute)' % (container, index))
+            return True
+    return False
+
+
 @contextlib.contextmanager
 def pov_api():
     path = xbmcvfs.translatePath(xbmcaddon.Addon('plugin.video.pov').getAddonInfo('path'))
@@ -300,9 +453,55 @@ def current_movie():
                           for key in ('Title', 'Plot', 'Meta', 'Poster', 'Backdrop', 'Logo')}})
 
 
+def favorite_key(item):
+    """(db_type, tmdb_id text, title column) of the favorites row for `item`. Movies and shows as always; an episode is db_type 'episode', id
+    '<show>:<season>:<episode>' and a short JSON snapshot in the title column (so My Lists needs no TMDb call): {"s": show, "t": title, "i": still, "p": poster}."""
+    if is_episode(item):
+        return 'episode', episode_id(item['show_id'], item['season'], item['episode']), episode_snapshot(item)
+    return item['type'], item['id'], item['title']
+
+
+SNAPSHOT_MAX = 600
+
+
+def episode_snapshot(item):
+    fields = {'s': item.get('show_title', ''), 't': item.get('title', ''), 'i': item.get('still', ''), 'p': item.get('poster', '')}
+    text = json.dumps(fields, ensure_ascii=False, separators=(',', ':'))
+    while len(text) > SNAPSHOT_MAX:   # the long fields give way first: the poster, then the still, then the long texts
+        for key in ('p', 'i'):
+            if fields[key]:
+                fields[key] = ''
+                break
+        else:
+            fields['t'], fields['s'] = fields['t'][:max(0, len(fields['t']) - 40)], fields['s'][:max(0, len(fields['s']) - 40)]
+        text = json.dumps(fields, ensure_ascii=False, separators=(',', ':'))
+    return text
+
+
+def parse_snapshot(text):
+    """The snapshot back as a dict with all four keys (a damaged one reads as empty strings)."""
+    try:
+        data = json.loads(text)
+    except (TypeError, ValueError):
+        data = {}
+    data = data if isinstance(data, dict) else {}
+    return {key: data.get(key) if isinstance(data.get(key), str) else '' for key in ('s', 't', 'i', 'p')}
+
+
+def parse_episode_id(text):
+    """'<show>:<season>:<episode>' -> (show_id, season, episode) or None."""
+    parts = str(text).split(':')
+    if len(parts) != 3 or not all(part.isdigit() for part in parts):
+        return None
+    try:
+        return media_id(parts[0]), season_number(int(parts[1])), episode_number(int(parts[2]))
+    except ListsError:
+        return None
+
+
 def is_favorite(api, item):
-    return any(str(entry['tmdb_id']) == item['id']
-               for entry in api.local_favorites(None, item['type'], 'all'))
+    db_type, identifier, _ = favorite_key(item)
+    return any(str(entry['tmdb_id']) == identifier for entry in api.local_favorites(None, db_type, 'all'))
 
 
 # R10.18: the two buttons' labels. Title Case ("from" / "to" between words stay lower case, the last word is capitalised).
@@ -332,10 +531,6 @@ def text_px(text, size=30):
     return total * size
 
 
-def holds(collection, item):
-    return any((entry['type'], entry['id']) == (item['type'], item['id']) for entry in collection['items'])
-
-
 def label_name(name):
     """The name as it appears after "Remove from ": whole when it fits NAME_PX, otherwise cut at a letter with an ellipsis."""
     if text_px(name) <= NAME_PX:
@@ -357,10 +552,55 @@ def bookmark_label(holding):
     return BOOKMARK_MANY_LABEL
 
 
+# R10.22 (design B, Save Lane): the episode lane's labels. Same states and verbs as the show page; "Episode" says what the press saves.
+EPISODE_FAVORITE_LABEL, EPISODE_BOOKMARK_LABEL = 'Favorite Episode', 'Add Episode to Watchlist'
+
+
+def episode_bookmark_label(holding):
+    if not holding:
+        return EPISODE_BOOKMARK_LABEL
+    if len(holding) == 1:
+        return 'Remove from ' + label_name(holding[0]['name'])
+    return BOOKMARK_MANY_LABEL
+
+
+def episode_properties(favorite, holding):
+    """The four ListItem properties of an episode row of the show page's episode list (the lane's icons and labels)."""
+    return {'Fav': 'true' if favorite else '', 'FavLabel': FAVORITE_ON_LABEL if favorite else EPISODE_FAVORITE_LABEL,
+            'Bm': 'true' if holding else '', 'BmLabel': episode_bookmark_label(holding)}
+
+
+def episode_states(show_id, store=None):
+    """One favorites SELECT and one JSON read for the whole show: ({(season, episode)} favorites, {(season, episode): [lists holding it]}).
+    Called once per season refresh of the episode list, never per key press."""
+    show_id = media_id(str(show_id))
+    with pov_api() as api:
+        rows = api.local_favorites(None, 'episode', 'all')
+    favorites = set()
+    for row in rows:
+        parsed = parse_episode_id(row['tmdb_id'])
+        if parsed and parsed[0] == show_id:
+            favorites.add(parsed[1:])
+    holding = {}
+    for collection in (store or default_store()).read()['lists']:
+        for entry in collection.get('episodes', ()):
+            if entry['show_id'] == show_id:
+                holding.setdefault((entry['season'], entry['episode']), []).append(collection)
+    return favorites, holding
+
+
+def episode_saved_count(show_id, store=None):
+    """How many distinct episodes of the show are saved (a favorite, or on a watchlist): the show page's "N Saved"."""
+    favorites, holding = episode_states(show_id, store)
+    return len(favorites | set(holding))
+
+
 def saved_properties(item, store=None):
     with pov_api() as api:
         favorite = is_favorite(api, item)
     holding = [collection for collection in (store or default_store()).read()['lists'] if holds(collection, item)]
+    if is_episode(item):
+        return episode_properties(favorite, holding)
     return {'Favorite': 'true' if favorite else '', 'FavoriteLabel': FAVORITE_ON_LABEL if favorite else FAVORITE_LABEL,
             'Bookmarked': 'true' if holding else '', 'BookmarkLabel': bookmark_label(holding)}
 
@@ -385,14 +625,19 @@ def sync_movie(store=None):
 
 def favorite_item(item):
     """R10.18: Favorite toggles. A favorite is removed at once (no confirmation), a new one is added; nothing is announced."""
+    db_type, identifier, title = favorite_key(item)
     with pov_api() as api:
         favorite = is_favorite(api, item)
         action = api.remove_from_sync if favorite else api.add_to_sync
-        if not action('favorites', item['type'], item['id'], item['title']):
+        if not action('favorites', db_type, identifier, title):
             # A second press that raced the first (UNIQUE row): when the table is already in the state this press wanted, it is a success.
             if is_favorite(api, item) == favorite:
                 raise ListsError('Could not update My Lists. Try again.')
     # Movies and shows have separate rows in My Lists; bump only the one that changed.
+    if is_episode(item):
+        # R10.22: Saved Episodes is a card of the Watchlists row (container 533): that row's revision is the one that refreshes it
+        bump_watchlists_revision()
+        return True
     revision = 'Netflix.MyList.Revision' if item['type'] == 'movie' else 'Netflix.MyList.ShowsRevision'
     xbmcgui.Window(10000).setProperty(revision, str(time.time_ns()))
     return True
@@ -471,6 +716,13 @@ def create_watchlist(store=None):
     if not name:
         return None
     identifier = store.create(name)   # R10.18: no "Watchlist created" notification (errors still notify)
+    if xbmcgui.getCurrentWindowId() == MY_LISTS:
+        # R10.22: the new list is the most recent, so the refreshed cards row lists it first: focus goes to its card (not opened).
+        # From the See All grid the grid reloads by a new token and the focus goes to its tile.
+        grid = xbmcgui.Window(10000).getProperty(VIEW) == 'all'
+        if grid:
+            xbmcgui.Window(10000).setProperty(ALL_TOKEN, str(time.time_ns()))
+        focus_card(identifier, 535 if grid else 533)
     return identifier
 
 
@@ -485,6 +737,9 @@ def change_watchlist(command, identifier, store=None):
         if not xbmcgui.Dialog().yesno('Rename Watchlist', 'Save this new name?'):
             return
         store.rename(identifier, name)
+        home = xbmcgui.Window(10000)
+        if home.getProperty(VIEW) == 'list' and home.getProperty(VIEW_ID) == identifier:
+            home.setProperty('Netflix.MyLists.ViewName', name)   # R10.22: the open list's header shows the new name at once (the card row follows by its revision)
     elif command == 'delete':
         if not xbmcgui.Dialog().yesno('Delete Watchlist', 'Delete this Watchlist and its saved titles?'):
             return
@@ -505,6 +760,32 @@ def remove_watchlist_item(identifier, kind, item_id, store=None):
         return
     store.remove(identifier, item)   # R10.18: straight away, no "Remove this title from the Watchlist?" question
     refresh_collection(identifier)
+
+
+def remove_watchlist_episode(identifier, show_id, season, episode, store=None):
+    """R10.22: "Remove from Watchlist" on an episode card of an opened list. Straight away, like a title (R10.18: no questions)."""
+    identifier = list_id(identifier)
+    key = (media_id(show_id), season_number(int(season)), episode_number(int(episode)))
+    store = store or default_store()
+    collection = Store.find(store.read(), identifier)
+    entry = next((e for e in collection.get('episodes', ()) if episode_key(e) == key), None)
+    if entry is None:
+        return
+    store.remove(identifier, entry)
+    refresh_collection(identifier)
+
+
+def unfavorite_episode(identifier):
+    """R10.22: "Remove from Favorites" on a card of the opened Saved Episodes list."""
+    parsed = parse_episode_id(identifier)
+    if parsed is None:
+        raise ListsError('Invalid episode.')
+    with pov_api() as api:
+        if not api.remove_from_sync('favorites', 'episode', episode_id(*parsed), ''):
+            raise ListsError('Could not update My Lists. Try again.')
+    bump_watchlists_revision()
+    if xbmcgui.getCurrentWindowId() == MY_LISTS and xbmcgui.Window(10000).getProperty(VIEW_ID) == 'episodes':
+        xbmcgui.Window(10000).setProperty(VIEW_TOKEN, str(time.time_ns()))
 
 
 def choose_watchlists(item, collections, holding, store, heading='Manage Watchlists'):
@@ -593,6 +874,10 @@ def main(command, *arguments):
             return change_watchlist(command, arguments[0])
         if command == 'remove' and len(arguments) == 3:
             return remove_watchlist_item(*arguments)
+        if command == 'remove-episode' and len(arguments) == 4:
+            return remove_watchlist_episode(*arguments)
+        if command == 'unfavorite-episode' and len(arguments) == 1:
+            return unfavorite_episode(*arguments)
         if arguments:
             return
         action = {'sync-movie': sync_movie, 'favorite-movie': favorite_movie,
