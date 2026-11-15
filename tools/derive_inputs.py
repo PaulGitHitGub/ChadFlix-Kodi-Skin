@@ -31,6 +31,7 @@ def main():
     a = ap.parse_args()
     built = br.read_zip(a.built_zip, a.addon_id)
     upstream = br.read_zip(a.upstream_zip, a.addon_id, a.upstream_root)
+    built.pop('CHADFLIX-CHANGES.txt', None)        # the change notice: tools/build_release.py writes it from the overlay
     overlay = {rel: data for rel, data in built.items() if upstream.get(rel) != data}
     removed = sorted(rel for rel in upstream if rel not in built)
     dest = os.path.join(a.dest, a.addon_id)

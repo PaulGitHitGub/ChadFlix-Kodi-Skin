@@ -23,7 +23,8 @@
     "upstream": {
      "url": "https://raw.githubusercontent.com/kodifitzwell/repo/2c8390c6e65213853a862a00044597946b946132/plugin.video.pov/plugin.video.pov-6.11.03.zip",
      "file": "plugin.video.pov-6.11.03.zip",
-     "sha256": "9ac93ad045910774503cbfeeb45b63bbd9b23837c9e76749885076c9b11edfba"
+     "sha256": "9ac93ad045910774503cbfeeb45b63bbd9b23837c9e76749885076c9b11edfba",
+     "version": "6.11.03"
     },
     "overlay": "inputs/overlays/plugin.video.pov",
     "removed": "inputs/overlays/plugin.video.pov.removed.txt"
@@ -190,7 +191,8 @@
     "upstream": {
      "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/dbecc1eab3384007e8ff36a9dde2fec1336a96e6/omega/zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.4.18.zip",
      "file": "skin.arctic.fuse.3-3.4.18.zip",
-     "sha256": "ed7ec6ba9845bc3ae4a07b9ab6577b41617c6c32705b3ccbdbca343cba545e1a"
+     "sha256": "ed7ec6ba9845bc3ae4a07b9ab6577b41617c6c32705b3ccbdbca343cba545e1a",
+     "version": "3.4.18"
     },
     "overlay": "inputs/overlays/skin.arctic.fuse.3",
     "removed": "inputs/overlays/skin.arctic.fuse.3.removed.txt"
