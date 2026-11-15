@@ -3,8 +3,9 @@
     <extension point="xbmc.addon.repository" name="{NAME}">
         <dir>
             <info compressed="false">{BASE_URL}zips/addons.xml</info>
-            <checksum>{BASE_URL}zips/addons.xml.md5</checksum>
+            <checksum verify="sha256">{BASE_URL}zips/addons.xml.sha256</checksum>
             <datadir zip="true">{BASE_URL}zips/</datadir>
+            <hashes>sha256</hashes>
         </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
