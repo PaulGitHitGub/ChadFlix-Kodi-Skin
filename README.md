@@ -92,16 +92,24 @@ https://PaulGitHitGub.github.io/ChadFlix-Kodi-Skin/
 ```
 
 1. **Settings** → **System** → **Add-ons**: turn on **Unknown sources** (**Yes** on the warning) and set
-   **Update official add-ons from** to **Any repositories**.
+   **Update official add-ons from** to **Any repositories**. Both are for the install only: step 6 sets them back.
 2. **Settings** → **File manager** → **Add source** → **&lt;None&gt;**: type the address exactly, **OK**, name it
    `chadflix`, **OK**.
-3. **Settings** → **Add-ons** → **Install from zip file** → **chadflix** → **repository.chadflix-1.0.0.zip**.
+3. **Settings** → **Add-ons** → **Install from zip file** → **chadflix** → **repository.chadflix-1.0.1.zip**.
    Wait for *add-on installed*.
 4. Same screen: **Install from repository** → **ChadFlix Repository** → **Program add-ons** → **ChadFlix Setup** →
    **Install**. **OK** on the list of add-ons; **No** if Kodi offers to switch skin. Wait for *add-on installed*.
 5. Home → **Add-ons** → **Program add-ons** → **ChadFlix Setup** → **Set up ChadFlix**. YouTube is optional. Choose
    **Switch** (the screen goes dark briefly; the setup answers "Keep skin?" itself), then **Close Kodi** and open it
    again.
+
+6. Set Kodi's two settings back, in this order. **Settings** → **System** → **Add-ons**:
+   1. **Update official add-ons from** → **Official repositories only (default)**.
+   2. Then **Unknown sources** → off.
+
+   The order matters: turning Unknown sources off first greys out the other setting and leaves it on **Any
+   repositories**, which lets every repository you have installed replace official add-ons. Turning these off does not
+   remove ChadFlix or stop its updates: add-ons installed from the ChadFlix repository keep updating from it.
 
 Kodi opens on **Movies**. Next: [Signing In](#signing-in).
 
@@ -148,7 +156,7 @@ ChadFlix is mostly a visual change: a reworked skin plus small changes to POV fo
 
 TMDb and Trakt are the same services POV and TMDb Helper already used before ChadFlix.
 
-As with any third-party Kodi repository, installing it means trusting its publisher with updates, and the install steps turn on Unknown sources and *Any repositories*. You can turn Unknown sources off again after installing.
+As with any third-party Kodi repository, installing it means trusting its publisher with updates, and the install steps turn on Unknown sources and *Any repositories*. Set both back after installing, in the order given in [Install](#install) step 6.
 
 ## Known Issues
 
@@ -175,7 +183,7 @@ In this order, so Back keeps working:
 | Problem | Fix |
 | --- | --- |
 | No **chadflix** in **Install from zip file** | The address must end with `/`. Remove the source and add it again. |
-| Step 4 fails | *Not available*: set **Any repositories** (step 1). *POV: Update failed*: restart Kodi, repeat step 4. |
+| Step 4 fails | *Not available*: set **Any repositories** (step 1) for the install, then set it back (step 6). *POV: Update failed*: restart Kodi, repeat step 4. |
 | Old look after the setup | Restart Kodi and run step 5 again. |
 | Nothing plays | Sign in to **Real-Debrid**; stop streaming on other connections. |
 | No ratings | Add the **MDbList Key**. |

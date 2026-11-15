@@ -424,7 +424,7 @@ footer nav a { color: var(--muted); }
         <li><strong>Your scrapers and Real-Debrid</strong> (POV, unchanged): receive the title being checked. Opening a movie page starts this check, so they see the titles you browse, not only the ones you play.</li>
       </ul>
       <p>TMDb and Trakt are the same services POV and TMDb Helper already used before ChadFlix.</p>
-      <p>As with any third-party Kodi repository, installing it means trusting its publisher with updates, and the install steps turn on Unknown sources and <em>Any repositories</em>. You can turn Unknown sources off again after installing.</p>
+      <p>As with any third-party Kodi repository, installing it means trusting its publisher with updates, and the install steps turn on Unknown sources and <em>Any repositories</em>. Set both back after installing: first Update official add-ons from to Official repositories only (default), then Unknown sources off. In the other order the first setting stays on Any repositories. ChadFlix keeps updating from its own repository either way.</p>
     </div>
   </section>
 
@@ -439,7 +439,7 @@ footer nav a { color: var(--muted); }
       <div class="install-grid">
         <ol class="steps">
           <li><h3>Allow Outside Add-ons</h3>
-            <p><span class="path">Settings → System → Add-ons</span>: turn on Unknown sources (Yes on the warning) and set Update official add-ons from to Any repositories.</p></li>
+            <p><span class="path">Settings → System → Add-ons</span>: turn on Unknown sources (Yes on the warning) and set Update official add-ons from to Any repositories. Both are for the install only; set them back afterwards (see Security).</p></li>
           <li><h3>Add the Source</h3>
             <p><span class="path">Settings → File manager → Add source → &lt;None&gt;</span>: type the address exactly, OK, name it <code>chadflix</code>, OK.</p></li>
           <li><h3>Install the Repository</h3>
