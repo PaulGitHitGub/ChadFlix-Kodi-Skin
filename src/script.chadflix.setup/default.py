@@ -6,8 +6,8 @@ Run once after installing. Safe to run again: every step checks first and only c
 What it does, in order:
   1. checks that the add-ons the look needs are installed and enabled (installs or enables any that are not);
   2. offers YouTube (for trailers), optional;
-  3. writes the ChadFlix layout settings for Arctic Fuse 3, including the flag that skips the
-     skin's own setup wizard (only these skin settings; nothing else in any add-on's data);
+  3. initializes missing or zero-byte Skin Variables menus and writes the ChadFlix layout settings for Arctic Fuse 3, including the flag that skips the
+     skin's own setup wizard;
   4. switches the skin to Arctic Fuse 3 after asking, and answers Kodi's own "Keep skin?" question
      itself (see _switch_once for why; it answers that question only, never another yes/no dialog);
   5. copies five remote-control key files into userdata/keymaps and reloads them;
@@ -24,6 +24,10 @@ import hashlib
 import json
 import os
 import shutil
+import stat
+
+if os.name == 'posix':
+    import fcntl
 import time
 import xml.etree.ElementTree as ET
 
@@ -39,6 +43,12 @@ OWN_DATA = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
 RES = os.path.join(HERE, 'resources')
 CFG = json.load(open(os.path.join(RES, 'setup.json'), encoding='utf-8'))
 SKIN = CFG['skin']
+NODE_PROFILE = 'special://profile/addon_data/script.skinvariables/nodes/%s/' % SKIN
+NODE_DEFAULTS = os.path.join(RES, 'home-row-defaults')
+HOME_GENERATOR_HASH = 'script-skinvariables-generator-hash'
+HOME_NODES = tuple('skinvariables-shortcut-%s.json' % menu for menu in (
+    '1101submenu', '1101widgets', 'homesubmenu', 'homewidgets', 'hubs', 'powermenu', 'searchwidgets',
+))
 KEYMAPS_SRC = os.path.join(RES, 'keymaps')
 KEYMAPS_DST = xbmcvfs.translatePath('special://masterprofile/keymaps/')
 SKIN_SETTINGS = xbmcvfs.translatePath('special://profile/addon_data/%s/settings.xml' % SKIN)
@@ -123,6 +133,128 @@ def offer_youtube():
 
 
 # 3. skin layout settings ---------------------------------------------------------------------------
+def home_node_stat(path):
+    try:
+        return os.lstat(path)
+    except FileNotFoundError:
+        return None
+
+
+def home_node_needs_seed(entry):
+    return entry is None or (
+        stat.S_ISREG(entry.st_mode) and entry.st_size == 0 and entry.st_nlink == 1
+    )
+
+
+def open_existing_home_node(path, flags):
+    flags &= ~os.O_CREAT
+    flags |= getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0)
+    return os.open(path, flags)
+
+
+def seed_home_nodes(dst):
+    """Initialize missing or zero-byte nodes with the original JSON bytes."""
+    os.makedirs(dst, exist_ok=True)
+    created = 0
+    for name in HOME_NODES:
+        target = os.path.join(dst, name)
+        existing = home_node_stat(target)
+        if not home_node_needs_seed(existing):
+            continue
+        with open(os.path.join(NODE_DEFAULTS, name), 'rb') as source:
+            contents = source.read()
+
+        def open_output(path, flags):
+            if existing is None:
+                return os.open(path, flags | os.O_CREAT | os.O_EXCL, 0o666)
+            return open_existing_home_node(path, flags)
+
+        try:
+            # Append mode cannot overwrite bytes if another writer fills the inode.
+            node = open(target, 'a+b', buffering=0, opener=open_output)
+        except (FileExistsError, FileNotFoundError):
+            continue
+        identity = None
+        try:
+            with node as output:
+                if os.name == 'posix':
+                    fcntl.flock(output.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                current = home_node_stat(target)
+                opened = os.fstat(output.fileno())
+                if (current is None or not os.path.samestat(opened, current)
+                        or not home_node_needs_seed(opened)
+                        or (existing is not None and not os.path.samestat(opened, existing))):
+                    continue
+                identity = opened
+                if output.write(contents) != len(contents):
+                    raise OSError('Short write seeding %s' % name)
+                output.flush()
+                os.fsync(output.fileno())
+                output.seek(0)
+                current = home_node_stat(target)
+                if (current is None or not os.path.samestat(identity, current)
+                        or output.read(len(contents) + 1) != contents):
+                    # A writer outside Setup can ignore the lock. Preserve its bytes and stop.
+                    raise ValueError('Node changed while seeding %s' % name)
+        except OSError:
+            # Discard incomplete output only if the path and bytes still belong to this attempt.
+            if identity is not None:
+                discard_incomplete_home_node(target, identity, contents)
+            raise
+        created += 1
+    return created
+
+
+def discard_incomplete_home_node(path, identity, contents):
+    try:
+        current = home_node_stat(path)
+        if current is None or not os.path.samestat(identity, current):
+            return
+        with open(path, 'rb', opener=open_existing_home_node) as node:
+            if os.name == 'posix':
+                fcntl.flock(node.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            opened = os.fstat(node.fileno())
+            if (not os.path.samestat(identity, opened) or opened.st_nlink != 1
+                    or opened.st_size > len(contents)
+                    or not contents.startswith(node.read(len(contents) + 1))):
+                return
+            current = home_node_stat(path)
+            if (current is not None and os.path.samestat(opened, current)
+                    and current.st_size == opened.st_size and current.st_mtime_ns == opened.st_mtime_ns):
+                os.unlink(path)
+    except OSError:
+        # Preserve the original write failure if the name cannot be checked or removed.
+        pass
+
+
+def check_home_nodes(dst):
+    """Avoid asking the generator to replace unreadable nodes with stock menus."""
+    for name in HOME_NODES:
+        target = os.path.join(dst, name)
+        entry = home_node_stat(target)
+        if home_node_needs_seed(entry):
+            continue
+        if not stat.S_ISREG(entry.st_mode):
+            raise ValueError(name)
+        try:
+            with open(target, encoding='utf-8', opener=open_existing_home_node) as node:
+                if (os.path.samestat(entry, os.fstat(node.fileno()))
+                        and isinstance(json.load(node), list)):
+                    continue
+        except ValueError:
+            pass
+        raise ValueError(name)
+
+
+def rebuild_home_nodes():
+    # Same generator as Action_BuildShortcuts_OnLoad. The editor uses force
+    # because the generator's cache key does not include the node bytes.
+    last_build = CFG['skin_strings']['Shortcuts.RebuildDateTime']
+    xbmc.executebuiltin(
+        'RunScript(script.skinvariables,action=buildtemplate,lastbuildtime="%s",force=True)' % last_build
+    )
+
+
 def wanted_settings():
     bools = [b.lower() for b in CFG['skin_bools']]
     return bools, CFG['skin_strings']
@@ -144,7 +276,7 @@ def apply_settings_live():
     return changed
 
 
-def apply_settings_file():
+def apply_settings_file(reset_home_build=False):
     """The skin is not running: merge our values into its settings file (Kodi reads it when the skin loads)."""
     bools, strings = wanted_settings()
     root = None
@@ -172,6 +304,12 @@ def apply_settings_file():
             el = ET.SubElement(root, 'setting', {'id': k, 'type': 'string'})
         if el.text != v:
             el.text = v
+            changed += 1
+    if reset_home_build:
+        # Home's onload will build the default includes from the new nodes.
+        generator_hash = have.get(('string', HOME_GENERATOR_HASH))
+        if generator_hash is not None:
+            root.remove(generator_hash)
             changed += 1
     if changed:
         backup(SKIN_SETTINGS, 'skin-settings/settings.xml')
@@ -377,10 +515,26 @@ def setup():
     offer_youtube()
 
     on_skin = xbmc.getSkinDir() == SKIN
+    default_user = not on_skin or not xbmc.getInfoLabel('Skin.String(SkinVariables.SkinUser)')
+    node_dir = xbmcvfs.translatePath(NODE_PROFILE)
+    try:
+        if default_user and (not on_skin or any(
+                home_node_needs_seed(home_node_stat(os.path.join(node_dir, name))) for name in HOME_NODES)):
+            check_home_nodes(node_dir)
+        nodes_created = seed_home_nodes(node_dir)
+    except (OSError, ValueError):
+        log('Could not prepare the home row defaults.')
+        DIALOG.ok(TITLE, 'Could Not Prepare Home Rows. Check The Skin Variables Menu Files And Run Setup Again.')
+        return
+    rebuild_on_active_skin = on_skin and default_user and nodes_created > 0
+    if rebuild_on_active_skin:
+        # Home can rebuild on restart even if this Setup run stops here.
+        xbmc.executebuiltin('Skin.Reset(%s)' % HOME_GENERATOR_HASH, True)
     if on_skin:
         apply_settings_live()
     else:
-        apply_settings_file()
+        apply_settings_file(reset_home_build=bool(nodes_created))
+        xbmc.executebuiltin('SetProperty(Netflix.MoviesBoot.SessionSeen,true,Home)', True)
 
     kept = switch_skin()
     save_state(kept is True)
@@ -396,11 +550,15 @@ def setup():
         apply_settings_live()  # in case the skin started before reading the file (no-op when it did)
     install_keymaps()
 
-    if DIALOG.yesno(TITLE, 'All set.[CR][CR]Kodi needs to close once so every add-on restarts on its new version. '
+    close_now = DIALOG.yesno(TITLE, 'All set.[CR][CR]Kodi needs to close once so every add-on restarts on its new version. '
                            'Close Kodi now? Then open Kodi again.[CR][CR]'
                            'After that: gear (top right) > Real-Debrid to sign in.',
-                    nolabel='Later', yeslabel='Close Kodi'):
+                    nolabel='Later', yeslabel='Close Kodi')
+    if close_now:
         xbmc.executebuiltin('Quit')
+    elif rebuild_on_active_skin:
+        # ReloadSkin can close Setup's dialog, so build after the prompt.
+        rebuild_home_nodes()
 
 
 def main():

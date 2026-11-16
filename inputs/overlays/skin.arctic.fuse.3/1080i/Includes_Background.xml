@@ -94,12 +94,13 @@
 
     <include name="Background_StartUp_Custom">
         <param name="colordiffuse">main_back</param>
+        <param name="fadetime">2000</param>
         <definition>
             <control type="multiimage">
                 <imagepath colordiffuse="$PARAM[colordiffuse]">$VAR[Image_StartUp]</imagepath>
                 <randomize>true</randomize>
                 <timeperimage>5000</timeperimage>
-                <fadetime>2000</fadetime>
+                <fadetime>$PARAM[fadetime]</fadetime>
                 <aspectratio>scale</aspectratio>
             </control>
         </definition>
@@ -111,8 +112,13 @@
             <control type="image">
                 <texture colordiffuse="$VAR[ColorBackground]">common/white.png</texture>
             </control>
-            <include content="Background_StartUp_Custom" condition="$EXP[Exp_StartUp_CustomImage]">
-                <!-- Custom startup art is shown untinted (was main_back). -->
+            <include content="Background_StartUp_Custom" condition="$EXP[Exp_StartUp_CustomImage] + String.Contains(Skin.String(Startup.ImageFolder),arctic-startup-art)">
+                <!-- SF's base is present immediately beneath its animated layers. -->
+                <param name="colordiffuse">FFFFFFFF</param>
+                <param name="fadetime">0</param>
+            </include>
+            <include content="Background_StartUp_Custom" condition="$EXP[Exp_StartUp_CustomImage] + !String.Contains(Skin.String(Startup.ImageFolder),arctic-startup-art)">
+                <!-- User slideshow art retains its existing 2000 ms fade. -->
                 <param name="colordiffuse">FFFFFFFF</param>
             </include>
             <!-- Animated San Francisco layers (ship, traffic, water, fog, birds, plane) over the custom art. -->

@@ -28,11 +28,11 @@
             Window.IsActive(Home) +
             String.IsEqual(Window(Home).Property(Netflix.MoviesLanding.Pending),true) +
             Skin.HasSetting(Home.FirstRun) + !Skin.HasSetting(SetupWizard.Pending) +
-            !Player.HasMedia + !System.HasActiveModalDialog + !Window.IsVisible(1198)
+            !Player.HasMedia + !System.HasActiveModalDialog + ![System.HasAlarm(SplashTimeOut) + !String.IsEmpty(Window(1198).Property(SplashIsVisible))]
         </start>
         <stop>true</stop>
-        <onstart>ClearProperty(Netflix.MoviesLanding.Pending,Home)</onstart>
         <onstart>ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</onstart>
+        <onstart>ClearProperty(Netflix.MoviesLanding.Pending,Home)</onstart>
     </timer>
     <timer>
         <name>splashtest_autotime</name>

@@ -1,0 +1,68 @@
+[
+  {
+    "label": "Browse Genres",
+    "path": "Custom_Submenu",
+    "target": "videos",
+    "widget_style": "Square",
+    "guid": "guid-58e28bbd-38c9-4371-9be8-8a65b5757b8c",
+    "icon": "special://skin/extras/icons/genre.png",
+    "submenu": [
+      {
+        "label": "Action Movies",
+        "path": "plugin://plugin.video.pov/?mode=build_movie_list&action=tmdb_movies_genres&genre_id=28&name=Action",
+        "target": "videos",
+        "guid": "guid-eee28b7e977b48cfa3dd2b76b4e13af3",
+        "icon": "special://skin/extras/icons/bolt.png"
+      },
+      {
+        "label": "Movie Comedies",
+        "path": "plugin://plugin.video.pov/?mode=build_movie_list&action=tmdb_movies_genres&genre_id=35&name=Comedy",
+        "target": "videos",
+        "guid": "guid-b0bc89bd2f514cbc9e1f4b7693d4c0d8",
+        "icon": "special://skin/extras/icons/face-laugh-beam.png"
+      },
+      {
+        "label": "Thriller Movies",
+        "path": "plugin://plugin.video.pov/?mode=build_movie_list&action=tmdb_movies_genres&genre_id=53&name=Thriller",
+        "target": "videos",
+        "guid": "guid-dd96889e6f8e4f559bf117ceeb243b75",
+        "icon": "special://skin/extras/icons/user-secret.png"
+      },
+      {
+        "label": "Horror Movies",
+        "path": "plugin://plugin.video.pov/?mode=build_movie_list&action=tmdb_movies_genres&genre_id=27&name=Horror",
+        "target": "videos",
+        "guid": "guid-9093acdb7fb240de997eb3608d3246e8",
+        "icon": "special://skin/extras/icons/ghost.png"
+      },
+      {
+        "label": "TV Dramas",
+        "path": "plugin://plugin.video.pov/?mode=build_tvshow_list&action=tmdb_tv_genres&genre_id=18&name=Drama",
+        "target": "videos",
+        "guid": "guid-5219fa7c3f584108b3c51e289bb2e475",
+        "icon": "special://skin/extras/icons/masks-theater.png"
+      },
+      {
+        "label": "Sci-Fi & Fantasy TV",
+        "path": "plugin://plugin.video.pov/?mode=build_tvshow_list&action=tmdb_tv_genres&genre_id=10765&name=Sci-Fi+%26+Fantasy",
+        "target": "videos",
+        "guid": "guid-488549b16bc24bfb89d41e0652f00e23",
+        "icon": "special://skin/extras/icons/rocket.png"
+      },
+      {
+        "label": "Browse Movie Genres",
+        "path": "plugin://plugin.video.pov/?mode=navigator.genres&menu_type=movie&name=32470",
+        "target": "videos",
+        "guid": "guid-576fe485-cae3-4d0b-b87a-3b8dcc073701",
+        "icon": "special://skin/extras/icons/film.png"
+      },
+      {
+        "label": "Browse TV Genres",
+        "path": "plugin://plugin.video.pov/?mode=navigator.genres&menu_type=tvshow&name=32470",
+        "target": "videos",
+        "guid": "guid-84757a61-9c19-441e-82a9-0df11f357440",
+        "icon": "special://skin/extras/icons/tv.png"
+      }
+    ]
+  }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "label": "Browse Movie Genres",
+    "icon": "special://skin/extras/icons/film.png",
+    "path": "plugin://plugin.video.pov/?mode=navigator.genres&menu_type=movie&name=32470",
+    "target": "videos",
+    "guid": "guid-7d4814338f194d8d874d3c4193323477"
+  },
+  {
+    "label": "Browse TV Genres",
+    "icon": "special://skin/extras/icons/tv.png",
+    "path": "plugin://plugin.video.pov/?mode=navigator.genres&menu_type=tvshow&name=32470",
+    "target": "videos",
+    "guid": "guid-ce470f117c3c445ab4821bdc8d9edf38"
+  }
+]

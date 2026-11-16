@@ -774,7 +774,8 @@ class CatalogBootGate:
         self.started = None
         self.released_at = time.monotonic()   # R10.10 review 5
         api.log('catalog startup released reason=%s elapsed=%.3f' % (reason, elapsed))
-        if (api.mode() == 'movies' and not api.visible('Player.HasMedia')
+        if ((api.mode() == 'movies' or (reason == 'home-fallback' and api.number('System.CurrentControlID') == BOOT_FOCUS))
+                and not api.visible('Player.HasMedia')
                 and not api.visible('System.HasActiveModalDialog')):
             if main == 591 and api.count(CONTINUE_MOVIES) > 0:
                 main = CONTINUE_MOVIES
@@ -826,12 +827,23 @@ class CatalogBootGate:
         dialog = api.dialog()
         landing = api.visible('Window.IsVisible(1198)')
         busy = dialog in (10138, 10160) or window in (10138, 10160)
-        if api.visible('System.HasActiveModalDialog') and not (
-                busy or (landing and dialog in (0, 1198, 11198))):
+        startup_phase = api.visible(
+            'System.HasAlarm(SplashTimeOut) + !String.IsEmpty(Window(1198).Property(SplashIsVisible))')
+        # After the old timed phase, modeless splash visibility alone does not identify a modal.
+        splash_modal = landing and (dialog in (1198, 11198) or (dialog == 0 and startup_phase))
+        if api.visible('System.HasActiveModalDialog') and not (busy or splash_modal):
             self.finish('modal')
             return
-        if busy or landing or window == 10000 or api.visible('Container.IsUpdating'):
+        if busy or startup_phase or api.visible('Container.IsUpdating'):
             self.ready_since = self.empty_main_since = None
+            return
+        if window == 10000:
+            self.ready_since = self.empty_main_since = None
+            # The landing timer may switch to Videos after the window snapshot above.
+            if api.visible('Window.IsActive(Home) + '
+                           'String.IsEmpty(Window(Home).Property(Netflix.MoviesLanding.Pending)) + '
+                           '!Window.Next(Videos)'):
+                self.finish('home-fallback')
             return
         expected = BOOT_CATALOGS[self.phase]
         if window != 10025:
@@ -1711,6 +1723,10 @@ class Coordinator:
     def pov_quiet(self, now):
         """R10.5.1: True when no POV call other than this observer's own has been seen for POV_QUIET_SECONDS. Not during
         the boot gate. A marker held for POV_QUIET_CAP_SECONDS without a break is ignored (a crashed interpreter)."""
+        # The native Videos re-list can start before it has a POV ticket. The existing
+        # playback cover spans that return, including trailers, and already gates refreshes.
+        if self.api.visible('System.HasAlarm(netflix_playback_cover) + !String.IsEmpty(Window(Home).Property(Netflix.PlaybackCover))'):
+            return False
         if self.api.prop(BOOT_PENDING) == 'true':
             return True
         # review 1: the gate sites run with nothing of ours in flight, so ANY marker is a running interpreter (an "own"

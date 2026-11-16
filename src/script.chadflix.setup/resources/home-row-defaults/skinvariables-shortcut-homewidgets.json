@@ -1,0 +1,29 @@
+[
+  {
+    "label": "Continue Watching",
+    "icon": "",
+    "path": "plugin://plugin.video.pov/?mode=build_movie_list&action=in_progress_movies&name=32476",
+    "target": "videos",
+    "widget_style": "Landscape",
+    "widget_limit": "12",
+    "guid": "94296908-48b1-4851-a7fc-faec37b2def1"
+  },
+  {
+    "label": "Trending Movies",
+    "icon": "",
+    "path": "plugin://plugin.video.pov/?mode=build_movie_list&action=trakt_movies_trending&name=32458",
+    "target": "videos",
+    "widget_style": "Landscape",
+    "widget_limit": "20",
+    "guid": "6ea991fa-4dcd-4507-92ee-576386a670f4"
+  },
+  {
+    "label": "Trending TV",
+    "icon": "",
+    "path": "plugin://plugin.video.pov/?mode=build_tvshow_list&action=trakt_tv_trending&name=32458",
+    "target": "videos",
+    "widget_style": "Landscape",
+    "widget_limit": "20",
+    "guid": "b9d5cedc-a8f3-4674-a72d-43f264f1dd25"
+  }
+]

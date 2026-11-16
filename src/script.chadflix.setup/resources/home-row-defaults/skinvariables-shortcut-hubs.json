@@ -1,0 +1,82 @@
+[
+  {
+    "label": "Categories",
+    "icon": "special://skin/extras/icons/genre.png",
+    "path": "",
+    "target": "",
+    "window": "1101",
+    "slot": "01",
+    "disabled": "True",
+    "guid": "guid-43bda4e8"
+  },
+  {
+    "label": "$LOCALIZE[636]",
+    "icon": "special://skin/extras/icons/shapes.png",
+    "path": "",
+    "target": "",
+    "window": "1102",
+    "slot": "02",
+    "disabled": "True",
+    "guid": "guid-6a32a6df"
+  },
+  {
+    "label": "$LOCALIZE[636]",
+    "icon": "special://skin/extras/icons/shapes.png",
+    "path": "",
+    "target": "",
+    "window": "1103",
+    "slot": "03",
+    "disabled": "True",
+    "guid": "guid-b09a07fc"
+  },
+  {
+    "label": "$LOCALIZE[636]",
+    "icon": "special://skin/extras/icons/shapes.png",
+    "path": "",
+    "target": "",
+    "window": "1104",
+    "slot": "04",
+    "disabled": "True",
+    "guid": "guid-61c121d2"
+  },
+  {
+    "label": "$LOCALIZE[31605]",
+    "icon": "special://skin/extras/icons/calendar.png",
+    "path": "",
+    "target": "",
+    "window": "1106",
+    "slot": "06",
+    "disabled": "True",
+    "guid": "guid-f011994a"
+  },
+  {
+    "label": "$LOCALIZE[31085] / PVR",
+    "icon": "special://skin/extras/icons/livetv.png",
+    "path": "",
+    "target": "",
+    "window": "1107",
+    "slot": "07",
+    "disabled": "",
+    "guid": "guid-6afda371"
+  },
+  {
+    "label": "$LOCALIZE[24001]",
+    "icon": "special://skin/extras/icons/addon.png",
+    "path": "",
+    "target": "",
+    "window": "1108",
+    "slot": "08",
+    "disabled": "True",
+    "guid": "guid-17989bea"
+  },
+  {
+    "label": "$LOCALIZE[31639]",
+    "icon": "special://skin/extras/icons/shapes.png",
+    "path": "",
+    "target": "",
+    "window": "1109",
+    "slot": "09",
+    "disabled": "True",
+    "guid": "guid-84d59e35"
+  }
+]

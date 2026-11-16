@@ -11,7 +11,6 @@
     <include>skinvariables-homewidgets-standard-onunload</include>
 
     <onload condition="String.IsEmpty(Window(1198).Property(WidgetsInitialized))">SetProperty(WidgetsInitialized,True,1198)</onload>
-    <onload>ClearProperty(SplashIsVisible,1198)</onload>
     <defaultcontrol always="false">3733</defaultcontrol>
     <menucontrol>3733</menucontrol>
 
@@ -31,13 +30,14 @@
     <onload condition="Skin.HasSetting(Home.FirstRun) + Skin.HasSetting(SetupWizard.Pending)">AlarmClock(setupwizardopen,ActivateWindow(1130),00:01,silent)</onload>
 
     <!-- Home properties survive skin reload; a full application exit resets the latch. -->
+    <onload condition="![String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) + Window.Previous(Videos)]">SetProperty(Netflix.MoviesLanding.Pending,true,Home)</onload>
     <onload condition="!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen)) + !Player.HasMedia">SetProperty(Netflix.MoviesBoot.Pending,true,Home)</onload>
     <onload condition="!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen)) + !Player.HasMedia">AlarmClock(netflix_movies_boot_timeout,ClearProperty(Netflix.MoviesBoot.Pending,Home),00:59,silent)</onload>
     <onload condition="!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen))">SetProperty(Netflix.MoviesBoot.SessionSeen,true,Home)</onload>
-    <onload condition="String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)">SetFocus(8990)</onload>
+    <onload condition="String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) | [!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen)) + !Player.HasMedia]">SetFocus(8990)</onload>
+    <onload>ClearProperty(SplashIsVisible,1198)</onload>
 
     <!-- Home remains Kodi's technical root; browse content starts in Movies. -->
-    <onload>SetProperty(Netflix.MoviesLanding.Pending,true,Home)</onload>
     <!-- R10.29 (review F4): a Back-twice return still pending here was left without Back: forget it.
          R10.29.1: except when the add-ons list was left (Away set), the Movies landing below will run (the landing timer's own
          conditions) and the remembered path is the landing's path. That is a Back mashed on Kodi's busy dialog while the
@@ -66,16 +66,11 @@
             <param name="movies_selected">true</param>
             <param name="body">ActivateWindow(Videos,"plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458")</param>
         </include>
-        <!-- Reuse the incumbent startup artwork without holding window1198. -->
-        <include content="Hub_Widget_Splash">
-            <param name="condition">String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) + !Player.HasMedia</param>
-            <param name="showlabel">false</param>
-        </include>
         <control type="button" id="8990">
             <description>Skip catalog startup wait</description>
             <left>0</left><top>0</top><width>1</width><height>1</height>
             <label /><texturefocus /><texturenofocus />
-            <visible>String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)</visible>
+            <visible>String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) | [!Skin.HasSetting(SetupWizard.Pending) + Skin.HasSetting(Home.FirstRun) + String.IsEmpty(Window(Home).Property(Netflix.MoviesBoot.SessionSeen)) + !Player.HasMedia]</visible>
             <onback>ClearProperty(Netflix.MoviesBoot.Pending,Home)</onback>
             <onback>CancelAlarm(netflix_movies_boot_timeout,true)</onback>
             <onback>3733</onback>

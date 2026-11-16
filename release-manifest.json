@@ -97,16 +97,16 @@
    "zip": "zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
   },
   {
-   "content_sha256": "936fc820ba92a1f837e6fec97ff78ea348de66784a448af3cbe80faecf5a0f1a",
-   "files": 11,
+   "content_sha256": "73af40812b081ba6f30f2497c611fd13d1496099521e575f5d970ef44029d41b",
+   "files": 18,
    "id": "script.chadflix.setup",
-   "sha256": "59f6a97b27242d887fab25a4bce06cb169357a00ca62f66ae0aac84a95c3c0bb",
-   "size": 28140,
+   "sha256": "09e4ce290dd7d0fafedb6f3be0ae4ea3747d0cfcadce92d77832369a85315a2c",
+   "size": 34290,
    "source": "tree",
    "tree": "src/script.chadflix.setup",
-   "tree_sha256": "936fc820ba92a1f837e6fec97ff78ea348de66784a448af3cbe80faecf5a0f1a",
-   "version": "1.0.4",
-   "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.4.zip"
+   "tree_sha256": "73af40812b081ba6f30f2497c611fd13d1496099521e575f5d970ef44029d41b",
+   "version": "1.0.5",
+   "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.5.zip"
   },
   {
    "carried_from": "zips/script.module.infotagger/script.module.infotagger-0.1.0.zip",
@@ -190,23 +190,23 @@
   },
   {
    "added": 91,
-   "changed": 45,
-   "content_sha256": "40238e4c630a9c8b5ee3fd2df8d2a1b4058f484ee7696fa16abe7f7172f69921",
+   "changed": 46,
+   "content_sha256": "c50f8492adeb7b3bf26042ea9bfbb58b96a4dd0b1578dc417c9a39f57d2d7660",
    "files": 3828,
    "id": "skin.arctic.fuse.3",
    "overlay": "inputs/overlays/skin.arctic.fuse.3",
-   "overlay_sha256": "642af8539179c6000306e4aec6361001dea2a3733c5fdad9eb9f66486a43f94e",
+   "overlay_sha256": "ddcbf5fe656b55716400ba770123fe5ebc0225fa0d5c68eff32d5d91609aa7a3",
    "removed": 2,
-   "sha256": "b516a661d3c3f1d7557b0e5af45b1b84916ee903ab96586ec240e2000366c3fc",
-   "size": 60420476,
+   "sha256": "f82d8880e1080990a9aa6c334e15fe2d1a2db184894b77bcb5992f29633365e7",
+   "size": 60420851,
    "source": "upstream+overlay",
    "upstream": {
     "file": "skin.arctic.fuse.3-3.4.18.zip",
     "sha256": "ed7ec6ba9845bc3ae4a07b9ab6577b41617c6c32705b3ccbdbca343cba545e1a",
     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/dbecc1eab3384007e8ff36a9dde2fec1336a96e6/omega/zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.4.18.zip"
    },
-   "version": "3.99.418.5",
-   "zip": "zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.99.418.5.zip"
+   "version": "3.99.418.6",
+   "zip": "zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.99.418.6.zip"
   }
  ],
  "base_url": "https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/",
@@ -217,10 +217,10 @@
  },
  "index": {
   "file": "zips/addons.xml",
-  "md5": "94ea578ce4f31d4aa572312b881b3585",
-  "sha256": "b7d61207b7e90af83143d8d4f4b42cad57cc4369d8f8e359ac6713b7dacfc4ff"
+  "md5": "d5d6f2f3269e4152170a1fce79bdf989",
+  "sha256": "1aa6fd09d635a9eeda0a5e044c9c0817c4df68aa2f84495d0ad6924d2adeea79"
  },
- "lock_sha256": "1afe18d4b8e2cb2f092c59919e1d2c5c6c5b2153bb59e187757ed79420c63f9a",
- "release": "5 (release 4 + R10.28 POV call counter, R10.29 Back twice to Video add-ons, R10.29.1, R10.31 show page after Stop, R10.32 All Genres Trending; Setup 1.0.4)",
+ "lock_sha256": "20975980bf389078c4cfd2cbddadf3e49ef931c62cc8e1a3edce6c0d81f83629",
+ "release": "6 (release 5 + R10.37 start-up splash; Setup 1.0.5 with the R10.38 home-row recipe)",
  "repository_zip": "repository.chadflix-1.0.1.zip"
 }

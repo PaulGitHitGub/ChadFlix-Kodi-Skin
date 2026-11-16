@@ -1,0 +1,23 @@
+[
+    {
+        "label": "$LOCALIZE[3]",
+        "icon": "special://skin/extras/icons/video.png",
+        "path": "ActivateWindow(videos)",
+        "target": "",
+        "guid": "guid-d04c4050"
+    },
+    {
+        "label": "$LOCALIZE[249]",
+        "icon": "special://skin/extras/icons/songs.png",
+        "path": "ActivateWindow(music)",
+        "target": "",
+        "guid": "guid-c0bb4f03"
+    },
+    {
+        "label": "$LOCALIZE[1]",
+        "icon": "special://skin/extras/icons/image.png",
+        "path": "ActivateWindow(pictures)",
+        "target": "",
+        "guid": "guid-7b1d5752"
+    }
+]

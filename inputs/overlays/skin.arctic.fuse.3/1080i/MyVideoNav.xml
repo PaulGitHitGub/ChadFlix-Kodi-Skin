@@ -53,11 +53,6 @@
             <include content="Netflix_Loading_Poster_Row"><param name="top">192</param><param name="condition">$EXP[Netflix_Loading_Tab_Overlay]</param></include>
             <include content="Netflix_Loading_Poster_Row"><param name="top">966</param><param name="condition">$EXP[Netflix_Loading_Tab_Overlay]</param></include>
         </control>
-        <!-- Reuse the incumbent startup artwork without holding window1198. -->
-        <include content="Hub_Widget_Splash">
-            <param name="condition">String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) + !Player.HasMedia</param>
-            <param name="showlabel">false</param>
-        </include>
         <control type="button" id="8990">
             <description>Skip catalog startup wait</description>
             <left>0</left><top>0</top><width>1</width><height>1</height>

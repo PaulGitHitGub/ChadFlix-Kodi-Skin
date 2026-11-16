@@ -1,5 +1,19 @@
 # Changelog
 
+## Release 6 (2026-11-16)
+
+Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
+don't need to run ChadFlix Setup again.
+
+**Versions:** Arctic Fuse 3 **3.99.418.6**, ChadFlix Setup **1.0.5**. POV (6.99.1103.5) and ChadFlix Repository
+(1.0.1) are unchanged.
+
+### Fixed
+
+- Kodi shows one continuous splash while it starts, without flashes or black frames in between.
+- New installs get the ChadFlix home rows. ChadFlix Setup 1.0.5 adds the row files only when they are missing or
+  empty; it never replaces a row file you already have.
+
 ## Release 5 (2026-11-15)
 
 Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
