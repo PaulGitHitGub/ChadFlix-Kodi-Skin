@@ -1443,6 +1443,17 @@ def pov_in_flight():
         return False
 
 
+def pov_playing(token):
+    """R10.31: POV's play request `token` (this page's) is still running: its single-flight entry still says "play". After the
+    stop POV writes the resume point (and syncs it) before that entry turns "done", so a page reopened before then reloads
+    its episodes without it ("Play S1: E1" instead of "Resume S1: E1"). Only this request's own entry counts."""
+    parts = xbmcgui.Window(10000).getProperty(FLIGHT).split("|")
+    try:
+        return parts[0] == "play" and parts[2] == token and time() < float(parts[4])
+    except (IndexError, ValueError):
+        return False
+
+
 def exit_fast():
     """staged/exit-confirm: playback was just left with Exit / Stop (netflix_exit_return.py): come back sooner,
     but only once the window underneath is not loading a list."""
@@ -1457,10 +1468,18 @@ def play_and_wait(player, request, monitor, origin, current_origin, cover=None):
     """After the page launched the episode (SeriesDialog.launch_play) and closed into video: wait for the playback
     to end and the window underneath to settle, then True (open_series reopens the page). The transition cover is
     renewed all the while, so the stop and the wait show the backdrop, never the browse page. The settle waits
-    are unchanged (they keep the page's own POV requests away from the Videos list load)."""
+    are unchanged (they keep the page's own POV requests away from the Videos list load).
+    R10.31: every way out is logged ("Netflix Series: ..."), so a page that does not come back says why."""
     start_deadline = monotonic() + 90
     idle_since = None
     renewed = browse_since = None
+    began = monotonic()
+
+    def gave_up(why):
+        xbmc.log("Netflix Series: not reopening the show page: %s (the page closed for the video %.1f s ago)"
+                 % (why, monotonic() - began), xbmc.LOGINFO)
+        return False
+
     while not monitor.waitForAbort(0.25):
         now = monotonic()
         if cover and (renewed is None or now - renewed >= COVER_RENEW):
@@ -1469,15 +1488,16 @@ def play_and_wait(player, request, monitor, origin, current_origin, cover=None):
         if player.started:
             stop_loading(request)
         if player.unrelated:
-            return False
+            return gave_up("another video played, not this episode")
         window = xbmcgui.getCurrentWindowId()
         if window == origin[1] and xbmcgui.getCurrentWindowDialogId() == origin[-1]:
-            if current_origin() != origin:
-                return False
+            here = current_origin()
+            if here != origin:
+                return gave_up("the page underneath changed (skin, window, folder, tab, grid, dialog): %s -> %s" % (origin, here))
         elif window not in {origin[1], FULLSCREEN_VIDEO}:
-            return False
+            return gave_up("window %d is neither the page's window %d nor the video" % (window, origin[1]))
         if not player.started and not player.finished and (monotonic() >= start_deadline or not loading(request)):
-            return False  # no video came (POV ended, or the request was withdrawn)
+            return gave_up("no video came (POV ended, or the request was withdrawn)")
         if cover and window != FULLSCREEN_VIDEO and player.isPlayingVideo():
             # The video plays on with the browse page in front: the viewer chose that page, so it is not covered.
             browse_since = browse_since or now
@@ -1486,16 +1506,18 @@ def play_and_wait(player, request, monitor, origin, current_origin, cover=None):
                 cover = None
         else:
             browse_since = None
-        if not player.finished or player.isPlayingVideo() or window == FULLSCREEN_VIDEO:
-            idle_since = None
+        if not player.finished or player.isPlayingVideo() or window == FULLSCREEN_VIDEO or pov_playing(request):
+            idle_since = None   # R10.31: also while POV is still writing the resume point (pov_playing)
         elif xbmcgui.getCurrentWindowDialogId() == origin[-1]:
             now = monotonic()
             idle_since = idle_since or now
             if now - idle_since >= (0.4 if exit_fast() else 1.25):
+                xbmc.log("Netflix Series: reopening the show page (it closed for the video %.1f s ago)"
+                         % (monotonic() - began), xbmc.LOGINFO)
                 return True
         else:
             idle_since = None
-    return False
+    return gave_up("Kodi is closing")
 
 
 def open_series(source):
@@ -1526,9 +1548,16 @@ def open_series(source):
             return
 
         def current_origin():
+            # R10.31: no longer the source row's selected title (Container(<row>).ListItem.FileNameAndPath). Since R10.23 a
+            # video's start parks the Movies / Shows rows and they empty and refill around the stop, so the title read "" or
+            # another show and the page never came back (owner, 2026-11-15). Skin, window, folder and dialog still decide,
+            # and the shown tab: with the tab swap on (the Shield) Movies and Shows share one folder, and only
+            # Window(Home).Property(Netflix.Tab) tells them apart, so a tab change during the video is not a way back. The same
+            # for a genre grid / More Titles opened over the root (Netflix.Grid.Shell: same window, same root folder).
+            home = xbmcgui.Window(10000)
             return (
                 xbmc.getSkinDir(), xbmcgui.getCurrentWindowId(), info("Container.FolderPath"),
-                info(f"Container({source}).ListItem.FileNameAndPath"), xbmcgui.getCurrentWindowDialogId(),
+                home.getProperty("Netflix.Tab"), home.getProperty("Netflix.Grid.Shell"), xbmcgui.getCurrentWindowDialogId(),
             )
 
         origin = current_origin()

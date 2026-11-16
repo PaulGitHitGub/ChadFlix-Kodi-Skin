@@ -1,5 +1,5 @@
 {
-  "_comment": "Release 4 (2026-11-15): snapshot R10.22-lists-and-episodes-2026-11-15 = release 3 + R10.23 post-stop park, R10.24 grid speed-up, R10.25 security fixes, R10.22 My Lists and episodes. Release 3: snapshot R10.21.1-no-forced-start-2026-11-14 = release 2 (R10.13) + R10.17 UI polish, R10.18 Favorite/Watchlist toggles, R10.19 option C picker and genre menu, R10.21 grid-freeze fix, R10.21.1 no-forced-start. Not in it: R10.20 (rolled back), R10.23+ and the staged R10.25 security fixes / repository 2.1 patches. Overlays = every shipped set in install order (rolled-back R10.9, R10.9.1, R10.10.1, R10.11b, R10.20 left out; R10.12 MUST stay: its 10 loading images exist only there). MAC1-laptop-layout is NOT in this release (TV-only). Release 4: Setup 1.0.3 (fifth key file NetflixWatchlistMore.xml), repository 1.0.1 (SHA-256). Since release 2.1 this file drives only the PRIVATE assembly; tools/build_release.py builds the published zips from config/release.lock.json. Edit repo_slug (and github_user) to rename the GitHub repo; everything else follows. Then run tools/build_repo.py.",
+  "_comment": "Release 5 (2026-11-15): snapshot R10.33-stabilise-bundle-2026-11-15 = release 4 + R10.28 POV call counter, R10.29 Back twice to Video add-ons, and the R10.33 bundle (R10.29.1 Back-twice return, R10.31 show page after Stop, R10.32 All Genres Trending). Not in it: R10.26 (not installed), R10.27 (no files), R10.30 (review fixes pending). Setup 1.0.4 ships R10.29's NetflixRootBack.xml. Release 4 (2026-11-15): snapshot R10.22-lists-and-episodes-2026-11-15 = release 3 + R10.23 post-stop park, R10.24 grid speed-up, R10.25 security fixes, R10.22 My Lists and episodes. Release 3: snapshot R10.21.1-no-forced-start-2026-11-14 = release 2 (R10.13) + R10.17 UI polish, R10.18 Favorite/Watchlist toggles, R10.19 option C picker and genre menu, R10.21 grid-freeze fix, R10.21.1 no-forced-start. Not in it: R10.20 (rolled back), R10.23+ and the staged R10.25 security fixes / repository 2.1 patches. Overlays = every shipped set in install order (rolled-back R10.9, R10.9.1, R10.10.1, R10.11b, R10.20 left out; R10.12 MUST stay: its 10 loading images exist only there). MAC1-laptop-layout is NOT in this release (TV-only). Release 4: Setup 1.0.3 (fifth key file NetflixWatchlistMore.xml), repository 1.0.1 (SHA-256). Since release 2.1 this file drives only the PRIVATE assembly; tools/build_release.py builds the published zips from config/release.lock.json. Edit repo_slug (and github_user) to rename the GitHub repo; everything else follows. Then run tools/build_repo.py.",
   "github_user": "PaulGitHitGub",
   "repo_slug": "ChadFlix-Kodi-Skin",
   "repository": {
@@ -10,11 +10,11 @@
   "setup": {
     "id": "script.chadflix.setup",
     "name": "ChadFlix Setup",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
-  "btn_revision": 4,
+  "btn_revision": 5,
   "inputs": {
-    "snapshot": "releases/R10.22-lists-and-episodes-2026-11-15",
+    "snapshot": "releases/R10.33-stabilise-bundle-2026-11-15",
     "asset_overlays": [
       "staged/mylists-rail/patched",
       "staged/R8/files",
@@ -61,7 +61,10 @@
       "staged/R10.23-post-stop-park/files",
       "staged/R10.24-grid-speedup/files",
       "staged/R10.25-security-fixes/files",
-      "staged/R10.22-lists-and-episodes/files"
+      "staged/R10.22-lists-and-episodes/files",
+      "staged/R10.28-pov-call-counter/files",
+      "staged/R10.29-back-twice-addons/files",
+      "staged/R10.33-stabilise-bundle/files"
     ],
     "shield_pull": "mac-kodi/pull",
     "addon_folders": "mac-kodi/home/Library/Application Support/Kodi/addons",
@@ -109,7 +112,8 @@
   "stock_pov_settings_sha256": "2009543375916f49989cfabc8cf7be02c5b9078aea686384e410f137116a4b13",
   "keymaps_previous": {
     "NetflixRootBack.xml": [
-      "81cf4a0409e8927237bf2a2efea7f99f91ce4ba5376294ebe7fd61c592470275"
+      "81cf4a0409e8927237bf2a2efea7f99f91ce4ba5376294ebe7fd61c592470275",
+      "8745e83dfb2f5ce8303ddeaf76b86e9bf5264471c3e071eb5b48774e33f593bd"
     ],
     "NetflixMovieDetails.xml": [
       "74252d9867884bced67dff81c7868a10752d67ab8b219903fb329c88a04b4e20"
@@ -126,5 +130,5 @@
     "skin.arctic.fuse.3/1080i/Netflix_Playlists.xml"
   ],
   "_comment_expected_removed": "8 files: the compat stub extras/netflix_catalog_back.py is back in the final snapshot (R10.13-republish-compat). Add any tracked file a later set deletes.",
-  "_comment_keymaps_previous": "Setup 1.0.1 (the only Setup ever published, commit d66fac0) shipped these R8.6 key files."
+  "_comment_keymaps_previous": "Setup 1.0.1 (commit d66fac0) shipped the R8.6 key files (first hashes). Setup 1.0.2 and 1.0.3 (releases 2-4) shipped NetflixRootBack.xml 8745e83d; Setup 1.0.4 replaces it with R10.29's (My Lists Back through relay 3767)."
 }

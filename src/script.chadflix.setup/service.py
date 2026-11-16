@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""ChadFlix Setup: keep the ChadFlix key files current after an update (script.chadflix.setup 1.0.3).
+"""ChadFlix Setup: keep the ChadFlix key files current after an update (script.chadflix.setup 1.0.4).
 
 Runs once at every Kodi start and right after this add-on updates, then exits (no loop, no polling).
 For each of the key files Setup installs:

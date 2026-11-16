@@ -1,5 +1,25 @@
 # Changelog
 
+## Release 5 (2026-11-15)
+
+Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
+don't need to run ChadFlix Setup again.
+
+**Versions:** Arctic Fuse 3 **3.99.418.5**, POV **6.99.1103.5**, ChadFlix Setup **1.0.4**. ChadFlix Repository
+(1.0.1) is unchanged.
+
+### Changed
+
+- Press **Back** twice quickly on the **Movies**, **Shows** or **My Lists** tab to open **Video add-ons**. One **Back**
+  from there returns you to the page you came from.
+- The **Trending** row on **Movies** and **Shows** is now headed **All Genres · Trending**.
+- ChadFlix Setup 1.0.4 updates its **Back** key file by itself.
+
+### Fixed
+
+- Stopping an episode brings back the show's page instead of the **Shows** tab.
+- Rows also wait for POV requests they used to miss before they start loading (for example right after you stop a video).
+
 ## Release 4 (2026-11-15)
 
 Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You

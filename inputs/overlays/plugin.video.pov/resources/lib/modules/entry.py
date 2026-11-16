@@ -176,6 +176,32 @@ def routing(sys_obj):
 	if mode.startswith('alldebrid.'): return _run_debrid_method('debrids.ad_cloud', 'Menu', params, 'run')
 	if mode.startswith('easynews.'): return _run_dynamic_func('debrids.easynews', mode, params)
 
+# R10.28: one entry per running call in this folder (special://temp is the same for every profile, as the skin observer's
+# lock). Netflix.Pov.Running alone is last-setter-wins: a call that starts during another one and ends first clears it while
+# the other still runs. The entry is the call's own: nothing else adds or removes it, so overlapping calls cannot hide each
+# other. Name: <Kodi pid>~<monotonic ms at start>~<the marker token, '|' as '~'>[+n]. The skin's observer reads the folder
+# (extras/netflix_browse_state.py, POV_CALLS_DIR); an entry of another pid (an earlier Kodi run) or older than 60 s is dead.
+POV_CALLS_DIR = 'special://temp/netflix_pov_calls/'
+
+def _pov_call_begin(token):
+	try:
+		os_mod, time_mod = __import__('os'), __import__('time')
+		folder = translate_path(POV_CALLS_DIR)
+		os_mod.makedirs(folder, exist_ok=True)
+		name = '%d~%d~%s' % (os_mod.getpid(), int(time_mod.monotonic() * 1000), token.replace('|', '~'))
+		for n in range(8):
+			path = os_mod.path.join(folder, name + ('+%d' % n if n else ''))
+			try: os_mod.close(os_mod.open(path, os_mod.O_CREAT | os_mod.O_EXCL | os_mod.O_WRONLY, 0o644))
+			except FileExistsError: continue
+			return path
+	except Exception: pass
+	return None
+
+def _pov_call_end(path):
+	if not path: return
+	try: __import__('os').remove(path)
+	except Exception: pass
+
 class Router:
 	def __enter__(self):
 		return self
@@ -190,10 +216,13 @@ class Router:
 		# lost track of after a tab switch has ended). Cleared only if no later call has taken it over.
 		sys_obj = __import__('sys')
 		token = '%s|%s' % (sys_obj.argv[1] if len(sys_obj.argv) > 1 else '', __import__('time').time())
-		set_property('Netflix.Pov.Running', token)
+		entry = None
 		try:
+			entry = _pov_call_begin(token)   # R10.28: this call's own entry, added BEFORE the marker is set (inside the try: no leak) ...
+			set_property('Netflix.Pov.Running', token)
 			with self: return routing(sys_obj)
 		finally:
+			_pov_call_end(entry)   # ... and removed BEFORE the marker is cleared (the folder never shows less than the marker)
 			if get_property('Netflix.Pov.Running') == token: clear_property('Netflix.Pov.Running')
 
 def initializeDatabases():

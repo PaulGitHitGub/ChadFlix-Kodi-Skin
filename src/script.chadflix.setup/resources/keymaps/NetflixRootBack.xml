@@ -13,6 +13,8 @@
            nothing there, so Back could never leave Search.
          Home: noop, as before (the old script returned without doing anything; Home is only up ~0.4 s at boot).
          My Lists (11165): focus the My Lists tab, as the old script did (the page's own controls all do the same).
+           R10.29: through the hidden relay 3767, which focuses 3734 at once and counts a Back made on the tab itself
+           for the Back-twice latch (Includes_Home.xml, Netflix_Back_Twice_MyLists_Relay).
          Remove this file and restart Kodi to undo (then Kodi's defaults apply, including the Home escape). -->
     <Home>
         <keyboard>
@@ -40,10 +42,10 @@
     </window11105>
     <window11165>
         <keyboard>
-            <backspace>SetFocus(3734)</backspace>
-            <backspace mod="longpress">SetFocus(3734)</backspace>
-            <browser_back>SetFocus(3734)</browser_back>
+            <backspace>SetFocus(3767)</backspace>
+            <backspace mod="longpress">SetFocus(3767)</backspace>
+            <browser_back>SetFocus(3767)</browser_back>
         </keyboard>
-        <remote><back>SetFocus(3734)</back></remote>
+        <remote><back>SetFocus(3767)</back></remote>
     </window11165>
 </keymap>

@@ -229,4 +229,31 @@
         <onstop condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)]">ClearProperty(Netflix.GenreMenu.Window,Home)</onstop>
         <onstop condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true) + String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Origin),grid) + String.IsEqual(System.CurrentWindow,Window(Home).Property(Netflix.GenreMenu.Window)) + !System.HasActiveModalDialog + [Control.HasFocus(3736) | Control.HasFocus(3761)]">ClearProperty(Netflix.GenreMenu.Origin,Home)</onstop>
     </timer>
+    <!-- R10.29 Back twice (Includes_Home.xml, Netflix_Back_Twice_*). Kodi 21 runs skin timers from ProcessSlow (about every
+         500 ms) and queues their actions in order. Each start condition begins with an empty-property test. -->
+    <timer>
+        <name>netflix_back_twice_open</name>
+        <description>R10.29: a double Back asked for the Video add-ons list. From Movies / Shows: the same Videos window with the add-ons path and "return" (Kodi keeps the path history: its Back goes to the ChadFlix path). From My Lists: Videos first (its ChadFlix path, history intact), remember that path, then the same. Away is set right after the activation (review F1: a Back within the first 0.5 s still returns), Cool from now until about 1 s after the return (F5).</description>
+        <start reset="true">!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Open)) + !System.HasActiveModalDialog</start>
+        <stop>true</stop>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),mylists) + Window.IsActive(1165)">ActivateWindow(Videos)</onstart>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),mylists) + Window.IsActive(1165)">SetProperty(Netflix.BackTwice.Return,"$INFO[Container.FolderPath]",Home)</onstart>
+        <onstart condition="[String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),videos) + Window.IsActive(Videos)] | [String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),mylists) + Window.IsActive(1165)]">ActivateWindow(Videos,addons://sources/video/,return)</onstart>
+        <onstart condition="[String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),videos) + Window.IsActive(Videos)] | [String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),mylists) + Window.IsActive(1165)]">SetProperty(Netflix.BackTwice.Cool,1,Home)</onstart>
+        <onstart condition="[String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),videos) + Window.IsActive(Videos)] | [String.IsEqual(Window(Home).Property(Netflix.BackTwice.Open),mylists) + Window.IsActive(1165)]">SetProperty(Netflix.BackTwice.Away,1,Home)</onstart>
+        <onstart>ClearProperty(Netflix.BackTwice.Open,Home)</onstart>
+    </timer>
+    <timer>
+        <name>netflix_back_twice_return</name>
+        <description>R10.29: Videos is back on the ChadFlix path the add-ons list was opened from. While focus is still on the view (591 / 500, or 592: on the Shows swap Kodi's hidden 591 hands focus to Shows Trending 592) (keys pressed in the gap win, review F3): focus the control the double Back came from, or reopen My Lists (kept in memory, rows loaded) on its tab. R10.29.1: it runs only once some control has focus (so never "nowhere") and after Videos' own refocus; the My Lists reopen also runs while focus is on the page's tab 3732 / 3733 (a Back mashed in the gap moves focus from the row to that tab; the viewer is still on the way back to My Lists). Always: forget the return, and end the cool-down about 1 s from now.</description>
+        <start reset="true">!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Away)) + Window.IsActive(Videos) + String.IsEqual(Container.FolderPath,Window(Home).Property(Netflix.BackTwice.Return)) + !System.HasActiveModalDialog + String.IsEmpty(Window(Home).Property(Netflix.Refocus)) + !Integer.IsEqual(System.CurrentControlID,0)</start>
+        <stop>true</stop>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.BackTwice.Focus),mylists) + [Control.HasFocus(591) | Control.HasFocus(592) | Control.HasFocus(500) | Control.HasFocus(3732) | Control.HasFocus(3733)]">ActivateWindow(1165)</onstart>
+        <onstart condition="String.IsEqual(Window(Home).Property(Netflix.BackTwice.Focus),mylists) + [Control.HasFocus(591) | Control.HasFocus(592) | Control.HasFocus(500) | Control.HasFocus(3732) | Control.HasFocus(3733)]">SetFocus(3734)</onstart>
+        <onstart condition="!String.IsEqual(Window(Home).Property(Netflix.BackTwice.Focus),mylists) + !String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Focus)) + [Control.HasFocus(591) | Control.HasFocus(592) | Control.HasFocus(500)]">SetFocus($INFO[Window(Home).Property(Netflix.BackTwice.Focus)])</onstart>
+        <onstart>ClearProperty(Netflix.BackTwice.Return,Home)</onstart>
+        <onstart>ClearProperty(Netflix.BackTwice.Away,Home)</onstart>
+        <onstart>ClearProperty(Netflix.BackTwice.Focus,Home)</onstart>
+        <onstart>AlarmClock(NetflixBackTwiceCool,ClearProperty(Netflix.BackTwice.Cool,Home),00:01,silent)</onstart>
+    </timer>
 </timers>

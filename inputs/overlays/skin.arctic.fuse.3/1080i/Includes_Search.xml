@@ -1967,6 +1967,11 @@
         <value>$INFO[ListItem.Art(fanart)]</value>
     </variable>
 
+    <!-- R10.32: the pages whose Netflix_Catalog_Title is "Trending" (the Movies / Shows tab root), in that variable's order -->
+    <expression name="Netflix_Catalog_Trending_Heading">
+        !$EXP[Netflix_WatchlistResults] + [$EXP[Netflix_Movies_Catalog] | [!$EXP[Netflix_Continue_Catalog] + $EXP[Netflix_Shows_Catalog]]]
+    </expression>
+
     <expression name="Netflix_Browse_Catalog">
         $EXP[Netflix_Movies_Catalog] | $EXP[Netflix_Shows_Catalog]
     </expression>
@@ -2381,9 +2386,24 @@
                     <font>font_midi_bold</font>
                     <textcolor>FFF5F5F5</textcolor>
                     <label>$VAR[Netflix_Catalog_Title]</label>
-                    <visible>!$EXP[Netflix_Grid_Over]</visible>
+                    <!-- R10.32: not on the Movies / Shows Trending root, whose heading is the row heading below -->
+                    <visible>!$EXP[Netflix_Grid_Over] + !$EXP[Netflix_Catalog_Trending_Heading]</visible>
                     <!-- R10.5: Trending is the second row while Continue Watching is shown: its heading greys like any lower row's (#717171) until Trending has focus -->
                     <animation effect="fade" start="100" end="46" time="0" condition="!Control.HasFocus(591) + !Control.HasFocus(592) + [[$EXP[Netflix_Movies_Under] + Integer.IsGreater(Container(594).NumItems,0)] | [$EXP[Netflix_Shows_Under] + Integer.IsGreater(Container(595).NumItems,0)]]">Conditional</animation>
+                </control>
+                <!-- R10.32 (owner: "All Genres Trending" in the exact same design as the other row labels): the genre rows' own heading
+                     include, "All Genres" + " · Trending" like "Action · Trending": white with the accent while Trending (591 / 592) has focus,
+                     grey otherwise, as every genre row (so no longer white while the top row is unfocused, R10.5's exception). -->
+                <control type="group">
+                    <visible>!$EXP[Netflix_Grid_Over] + $EXP[Netflix_Catalog_Trending_Heading]</visible>
+                    <include content="Netflix_Row_Heading">
+                        <param name="home_hero">true</param>
+                        <param name="label">All Genres</param>
+                        <param name="label_accent">[COLOR FFFF4B55] · Trending[/COLOR]</param>
+                        <param name="label_dim"> · Trending</param>
+                        <param name="bright">Control.HasFocus(591) | Control.HasFocus(592)</param>
+                        <param name="dim">!Control.HasFocus(591) + !Control.HasFocus(592)</param>
+                    </include>
                 </control>
                 <control type="label">
                     <left>70</left>

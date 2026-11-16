@@ -38,6 +38,17 @@
 
     <!-- Home remains Kodi's technical root; browse content starts in Movies. -->
     <onload>SetProperty(Netflix.MoviesLanding.Pending,true,Home)</onload>
+    <!-- R10.29 (review F4): a Back-twice return still pending here was left without Back: forget it.
+         R10.29.1: except when the add-ons list was left (Away set), the Movies landing below will run (the landing timer's own
+         conditions) and the remembered path is the landing's path. That is a Back mashed on Kodi's busy dialog while the
+         ChadFlix page re-listed: the load is cancelled, Kodi falls back to POV's root and the next Back leaves Videos for Home.
+         The landing reopens that very path and netflix_back_twice_return completes (or forgets) the return there: the same
+         journey, never a later visit from another route. Conditions are all read before any action runs. -->
+    <onload>ClearProperty(Netflix.BackTwice.Open,Home)</onload>
+    <onload condition="![!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Away)) + Skin.HasSetting(Home.FirstRun) + !Skin.HasSetting(SetupWizard.Pending) + !Player.HasMedia + String.IsEqual(Window(Home).Property(Netflix.BackTwice.Return),plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458)]">ClearProperty(Netflix.BackTwice.Return,Home)</onload>
+    <onload condition="![!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Away)) + Skin.HasSetting(Home.FirstRun) + !Skin.HasSetting(SetupWizard.Pending) + !Player.HasMedia + String.IsEqual(Window(Home).Property(Netflix.BackTwice.Return),plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458)]">ClearProperty(Netflix.BackTwice.Away,Home)</onload>
+    <onload condition="![!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Away)) + Skin.HasSetting(Home.FirstRun) + !Skin.HasSetting(SetupWizard.Pending) + !Player.HasMedia + String.IsEqual(Window(Home).Property(Netflix.BackTwice.Return),plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458)]">ClearProperty(Netflix.BackTwice.Focus,Home)</onload>
+    <onload condition="![!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Away)) + Skin.HasSetting(Home.FirstRun) + !Skin.HasSetting(SetupWizard.Pending) + !Player.HasMedia + String.IsEqual(Window(Home).Property(Netflix.BackTwice.Return),plugin://plugin.video.pov/?mode=build_movie_list&amp;action=trakt_movies_trending&amp;name=32458)]">ClearProperty(Netflix.BackTwice.Cool,Home)</onload>
     <onunload>ClearProperty(Netflix.MoviesLanding.Pending,Home)</onunload>
 
     <controls>

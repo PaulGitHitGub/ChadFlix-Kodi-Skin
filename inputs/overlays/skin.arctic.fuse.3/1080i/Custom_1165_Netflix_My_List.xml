@@ -8,6 +8,8 @@
          path). The row coordinator refreshes a row, one at a time, only when its content changed. -->
     <controls>
         <include>Netflix_My_Lists_Page</include>
+        <!-- R10.29: Back relay (userdata/keymaps/NetflixRootBack.xml sends My Lists' Back here). -->
+        <include>Netflix_Back_Twice_MyLists_Relay</include>
         <include content="Netflix_Top_Navigation">
             <param name="active">My Lists</param>
             <param name="reference">Skin.HasSetting(Netflix.CompactHome)</param>

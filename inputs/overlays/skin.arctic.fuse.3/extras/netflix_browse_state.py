@@ -1,4 +1,5 @@
 """Keep first-page browse rows attached and activate one provider at a time."""
+import os
 import sys
 import time
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlsplit
@@ -40,6 +41,15 @@ CONTINUE_REQUEUE_SECONDS = 10.0
 # continuously for POV_QUIET_CAP_SECONDS is ignored (safety net, as ORPHAN_CAP_SECONDS).
 POV_QUIET_SECONDS = 1.75
 POV_QUIET_CAP_SECONDS = 60.0
+# R10.28: the marker is last-setter-wins: a call that starts during another one and ends first clears it while the other still
+# runs. POV (modules/entry.py) also keeps one entry per running call in POV_CALLS_DIR, named <Kodi pid>~<monotonic ms at
+# start>~<the call's marker token, '|' as '~'>[+n]; it adds the entry before it sets the marker and removes it before it clears
+# the marker. The gate checks (row_busy, orphan_running, pov_quiet, grid_wait) count a call as running when the marker says so
+# (as before) OR it has a live entry: this Kodi process's pid, younger than POV_CALL_CAP_SECONDS. Other entries are dead (an
+# earlier Kodi run, a call that never removed its entry) and are deleted. The folder is read at most once per tick and only
+# by those checks (pov_watch, every tick, still reads the marker alone: no file access on an idle tick).
+POV_CALLS_DIR = 'special://temp/netflix_pov_calls/'
+POV_CALL_CAP_SECONDS = 60.0   # = ORPHAN_CAP_SECONDS / POV_QUIET_CAP_SECONDS: a crashed call holds the queue no longer than before
 # My Lists: Watchlists (533) first, then Saved Movies, then Saved Shows, one at a time.
 SAVED = (533, 531, 532)
 SAVED_READY_SECONDS = .25
@@ -493,6 +503,47 @@ class Kodi:
     def clear(self, key):
         self.home.clearProperty(key)
 
+    def pov_calls(self, now):
+        """R10.28: the live POV calls, [(start, token), ...] oldest first (POV_CALLS_DIR; `now` is time.monotonic(), the clock
+        POV writes). Dead entries are deleted; the folder missing or unreadable = no entry (the marker still counts)."""
+        folder = getattr(self, 'pov_calls_dir', None)
+        try:
+            if folder is None:
+                import xbmcvfs
+                folder = self.pov_calls_dir = xbmcvfs.translatePath(POV_CALLS_DIR)
+            names = os.listdir(folder)
+        except Exception:
+            return []
+        pid, live = os.getpid(), []
+        fresh = max(now, time.monotonic())   # review F1: a tick can stall > 1 s (GUI lock): judge "in the future" by the clock now
+        for name in names:
+            parts = name.split('~', 2)
+            try:
+                owner, start, token = int(parts[0]), int(parts[1]) / 1000.0, parts[2].split('+')[0].replace('~', '|', 1)
+            except (IndexError, ValueError):
+                continue   # not an entry: left alone
+            # +1 s: POV may read the clock a moment after this check did (an entry from before a reboot is far off)
+            if owner == pid and start <= fresh + 1.0 and now - start < POV_CALL_CAP_SECONDS:
+                live.append((start, token))
+                continue
+            if owner == pid:
+                # review F2 / N1: one line a minute at most, with SEPARATE limits for the two kinds (the first of each kind in a
+                # run is always logged). Past the cap = a long call (POV's play call during a playback) or a call that never
+                # removed its ticket: expected now and then. In the future = the clock is not shared with POV, or a tick stalled
+                # past the slack: the feature should be checked.
+                kind = 'future' if start > fresh + 1.0 else 'past'
+                logged = self.__dict__.setdefault('pov_drop_logged', {})
+                if fresh - logged.get(kind, float('-inf')) >= 60.0:
+                    logged[kind] = fresh
+                    self.log('pov: deleted a call entry of this Kodi out of range (age %.1f s, %s; cap %d s): %s' % (
+                        now - start, 'NEGATIVE: clock or stall?' if kind == 'future' else 'a long call or a leaked ticket',
+                        POV_CALL_CAP_SECONDS, token))
+            try:
+                os.remove(os.path.join(folder, name))
+            except OSError:
+                pass
+        return sorted(live)
+
     def visible(self, condition):
         return xbmc.getCondVisibility(condition)
 
@@ -875,6 +926,8 @@ class Coordinator:
         self.pov_token_since = 0.0              # and since when it is held (any running interpreter blocks a start)
         self.pov_waiting = None                 # R10.5.1 review 3: when a gated start began to wait (for one log line)
         self.pov_last_foreign = ''              # R10.5.1 review 3: the last other POV call's marker (for that line)
+        self.pov_live_at, self.pov_live_list = None, []   # R10.28: POV's live call entries, read once per tick (pov_live)
+        self.pov_hidden_logged = []                       # R10.28: hidden calls already logged (one line each)
         self.parked = set()                     # R10.23: rows parked when a player came up, not loaded again since
         self.park_player = False                # R10.23: a player was up on the previous tick
         self.park_at = 0.0                      # R10.23: when the rows were last parked
@@ -937,7 +990,7 @@ class Coordinator:
             reason = 'a row call is in flight (row %s)' % ((self.inflight or {}).get('row') or self.refresh_row or 'refresh/grid')
         elif self.orphan_running(now):
             # review 4: a job a switch dropped is still running in POV
-            reason = 'a dropped job may still run in POV (dropped %s, marker %s)' % (sorted(self.dropped), api.prop(POV_RUNNING) or '-')
+            reason = 'a dropped job may still run in POV (dropped %s, marker %s)' % (sorted(self.dropped), (api.prop(POV_RUNNING) or '-') + ', %d live call entries' % len(self.pov_live(now)))   # R10.28
         else:
             busy = [row for row in ALL_ROWS if self.row_busy(row, api.mode(), now)]
             if busy:
@@ -1610,7 +1663,7 @@ class Coordinator:
         if row in CONTINUE_ROWS:
             token = api.prop(PREFIX + 'Token.%d' % row)
             return api.prop(CONTINUE_ANSWER + CONTINUE_ROWS[row]) not in ('r:' + token, 'e:' + token)
-        return bool(api.prop(POV_RUNNING)) or now - since < ORPHAN_START_GRACE
+        return self.pov_running(now) or now - since < ORPHAN_START_GRACE   # R10.28: the marker or a live call entry
 
     def pov_watch(self, now):
         """R10.5.1: follow POV's Netflix.Pov.Running marker. The first marker seen while one of this observer's jobs is
@@ -1639,6 +1692,22 @@ class Coordinator:
             return
         self.pov_own_tokens = (self.pov_own_tokens + [token])[-8:]
 
+    def pov_live(self, now):
+        """R10.28: POV's live calls [(start, token), ...] from their own entries, read once per tick. A call whose entry is
+        there while the marker shows another token (or none) is one the marker hides: logged once."""
+        if self.pov_live_at != now:
+            self.pov_live_at, self.pov_live_list = now, self.api.pov_calls(now)
+            marker = self.api.prop(POV_RUNNING)
+            for _start, token in self.pov_live_list:
+                if token != marker and token not in self.pov_hidden_logged:
+                    self.pov_hidden_logged = (self.pov_hidden_logged + [token])[-16:]
+                    self.api.log('pov: call %s is running while the marker shows %s (R10.28: counted)' % (token, marker or 'nothing'))
+        return self.pov_live_list
+
+    def pov_running(self, now):
+        """R10.28: a POV call is running: the marker is up (as before) or a live call entry is there."""
+        return bool(self.api.prop(POV_RUNNING)) or bool(self.pov_live(now))
+
     def pov_quiet(self, now):
         """R10.5.1: True when no POV call other than this observer's own has been seen for POV_QUIET_SECONDS. Not during
         the boot gate. A marker held for POV_QUIET_CAP_SECONDS without a break is ignored (a crashed interpreter)."""
@@ -1647,8 +1716,19 @@ class Coordinator:
         # review 1: the gate sites run with nothing of ours in flight, so ANY marker is a running interpreter (an "own"
         # token included: a job that never made its own call, an abandoned one); the cap still applies
         token = self.api.prop(POV_RUNNING)
+        # R10.28: calls the marker does not show (it holds another token, or was cleared by a call that ended first)
+        hidden = [t for _start, t in self.pov_live(now) if t != token]
+        if hidden:
+            # a hidden call this observer did not start restarts the quiet window (as pov_watch does for a foreign marker),
+            # whatever the marker shows (review F3)
+            own = set(self.pov_own_tokens) | {(self.inflight or {}).get('own_token'), (self.refresh_step or {}).get('own_token')}
+            foreign = [t for t in hidden if t not in own]
+            if foreign:
+                self.pov_foreign_last, self.pov_last_foreign = now, foreign[-1]
         if token and now - self.pov_token_since < POV_QUIET_CAP_SECONDS:
             quiet = False
+        elif hidden:
+            quiet = False   # a running interpreter blocks the start, as a marker does
         elif self.pov_foreign_token and now - self.pov_foreign_since >= POV_QUIET_CAP_SECONDS:
             quiet = True
         else:
@@ -1669,7 +1749,7 @@ class Coordinator:
         recent = [since for since in self.dropped.values() if now - since < ORPHAN_CAP_SECONDS]
         if not recent:
             return False
-        if self.api.prop(POV_RUNNING):
+        if self.pov_running(now):   # R10.28: the marker or a live call entry
             return True
         return any(now - since < ORPHAN_START_GRACE for since in recent)
 
@@ -1827,7 +1907,8 @@ class Coordinator:
         if quiet < GRID_FIRST_QUIET_SECONDS:
             return
         token = api.prop(POV_RUNNING)
-        marker = bool(token) and now - self.pov_token_since < POV_QUIET_CAP_SECONDS
+        hidden = tuple(t for _start, t in self.pov_live(now) if t != token)   # R10.28: calls the marker does not show
+        marker = (bool(token) and now - self.pov_token_since < POV_QUIET_CAP_SECONDS) or bool(hidden)
         under = self.grid_under()
         why = detail = ''
         busy = []
@@ -1854,7 +1935,7 @@ class Coordinator:
         if why not in seen:
             seen.add(why)
             api.log('grid: waiting (%s)' % detail)
-        progress = (why, tuple(busy), token)
+        progress = (why, tuple(busy), token, hidden)
         if progress != grid.get('progress') or 'progress_at' not in grid:
             grid['progress'], grid['progress_at'] = progress, now
         # R10.21.1: no forced start (fail closed). A held marker is a call in progress (Astra finding 2): only the 60 s cap fails the page then.

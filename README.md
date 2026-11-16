@@ -121,6 +121,7 @@ Kodi opens on **Movies**. Next: [Signing In](#signing-in).
 | OK | Open a title, or play from its page |
 | Right on **Play** (movies) | Quality choices and **All Sources** |
 | Back while a video plays | Pauses and asks. Back again stops; OK keeps watching |
+| Back twice on the **Movies**, **Shows** or **My Lists** tab | Opens **Video add-ons**. Back returns to the page |
 
 ## Signing In
 
@@ -144,7 +145,7 @@ need to run the setup again. Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Security
 
-Before this release, the published repository and every add-on zip were audited by an AI security review (Fable 5.2 & Astra). It found no passwords, tokens or personal sign-ins in the files and no telemetry. It also found issues that release 4 fixes: POV's source checks keep their results, including playable links, on the device for a short time; POV's optional log upload and some sign-in steps can include service keys or links; and some network requests have no time limit.
+Before release 4, the published repository and every add-on zip were audited by an AI security review (Fable 5.2 & Astra). It found no passwords, tokens or personal sign-ins in the files and no telemetry. It also found issues that release 4 fixes: POV's source checks keep their results, including playable links, on the device for a short time; POV's optional log upload and some sign-in steps can include service keys or links; and some network requests have no time limit.
 
 ChadFlix is mostly a visual change: a reworked skin plus small changes to POV for the home rows and play button. It adds no new places your Shield connects to. Every connection uses HTTPS, so others on your network can't read it.
 

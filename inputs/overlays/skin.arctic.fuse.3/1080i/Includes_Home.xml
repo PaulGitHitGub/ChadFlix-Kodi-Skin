@@ -811,6 +811,85 @@
         [$EXP[Netflix_Movies_Catalog] | $EXP[Netflix_Shows_Catalog]]
     </expression>
 
+    <!-- R10.29 Back twice: at a ChadFlix root page a second Back within about 1 s opens Kodi's Video add-ons list
+         (addons://sources/video/); Back from it returns to the page it came from. No script on any Back press.
+         Latch: Home property Netflix.BackTwice = armed, cleared by AlarmClock NetflixBackTwice after 00:01 (whole
+         seconds, checked every 100 ms: 1.0 to 1.1 s). Conditions are read before any action of the list runs, so
+         one Back either opens (armed) or arms (not armed), never both. Only a Back that does nothing today counts:
+         on Movies / Shows the page's own tab, Options or the genre button, with no grid, drawer or player; on My Lists
+         the My Lists tab (relay 3767, Netflix_Back_Twice_MyLists_Relay), never during the cool-down (Cool: from the
+         open until about 1 s after the return). The window work is done by the timers netflix_back_twice_open /
+         _return (Timers.xml), outside the key handling; Kodi runs skin timers about every 500 ms (ProcessSlow).
+         Include conditions never read these properties (a changed load-time include condition rebuilds a window). -->
+    <expression name="Netflix_Back_Twice_Armed">
+        String.IsEqual(Window(Home).Property(Netflix.BackTwice),armed)
+    </expression>
+    <expression name="Netflix_Back_Twice_Root">
+        $EXP[Netflix_Tab_Catalog_Root] + !Player.HasMedia + String.IsEmpty(Window(Home).Property(Netflix.GenreMenu.Open)) +
+        String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Cool)) +
+        [Control.HasFocus(3735) | Control.HasFocus(3736) |
+         [Control.HasFocus(3733) + !String.IsEqual(Window(Home).Property(Netflix.Tab),shows)] |
+         [Control.HasFocus(3732) + String.IsEqual(Window(Home).Property(Netflix.Tab),shows)]]
+    </expression>
+    <!-- OnTab = focus was on the My Lists tab before this press (see the relay below). -->
+    <expression name="Netflix_Back_Twice_MyLists_Root">
+        Window.IsActive(1165) + String.IsEqual(Window(Home).Property(Netflix.BackTwice.OnTab),1) +
+        String.IsEmpty(Window(Home).Property(Netflix.MyLists.View)) + !Player.HasMedia +
+        String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Cool))
+    </expression>
+
+    <!-- Movies / Shows header Back (tabs, Options, genre button). The control's own numeric relay (3762/3763/3764) still
+         runs after these, so focus stays where it was and Kodi's window default never runs. -->
+    <include name="Netflix_Back_Twice_Back">
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + $EXP[Netflix_Back_Twice_Armed]">CancelAlarm(NetflixBackTwice,true)</onback>
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + $EXP[Netflix_Back_Twice_Armed]">ClearProperty(Netflix.BackTwice,Home)</onback>
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + $EXP[Netflix_Back_Twice_Armed]">ClearProperty(Netflix.BackTwice.Away,Home)</onback>
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + $EXP[Netflix_Back_Twice_Armed]">SetProperty(Netflix.BackTwice.Focus,$INFO[System.CurrentControlID],Home)</onback>
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + $EXP[Netflix_Back_Twice_Armed]">SetProperty(Netflix.BackTwice.Return,"$INFO[Container.FolderPath]",Home)</onback>
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + $EXP[Netflix_Back_Twice_Armed]">SetProperty(Netflix.BackTwice.Open,videos,Home)</onback>
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + !$EXP[Netflix_Back_Twice_Armed]">SetProperty(Netflix.BackTwice,armed,Home)</onback>
+        <onback condition="$EXP[Netflix_Back_Twice_Root] + !$EXP[Netflix_Back_Twice_Armed]">AlarmClock(NetflixBackTwice,ClearProperty(Netflix.BackTwice,Home),00:01,silent)</onback>
+    </include>
+
+    <!-- My Lists tab only (param back_twice): OnTab = 1 while the tab has focus in My Lists with no list view open.
+         Kodi 21 queues onfocus / onunfocus actions (their conditions are read when focus moves): when Back moves focus
+         from the tab to the relay, the relay's conditions are read while this ClearProperty is still queued, so they
+         see OnTab = 1. Any other route onto the relay (a Back from a row) reads empty. The view-close lines of this tab's
+         onfocus move focus on to the cards: OnTab is not set then (View not empty when read), and the clear is
+         unconditional, so it can never be left set while focus is elsewhere (review F2). -->
+    <include name="Netflix_Back_Twice_MyLists_Tab">
+        <onfocus condition="Window.IsActive(1165) + String.IsEmpty(Window(Home).Property(Netflix.MyLists.View))">SetProperty(Netflix.BackTwice.OnTab,1,Home)</onfocus>
+        <onunfocus>ClearProperty(Netflix.BackTwice.OnTab,Home)</onunfocus>
+    </include>
+
+    <!-- Any tab click forgets a pending Back-twice return (the add-ons list was left some other way, review F4). -->
+    <include name="Netflix_Back_Twice_Forget">
+        <onclick>ClearProperty(Netflix.BackTwice.Open,Home)</onclick>
+        <onclick>ClearProperty(Netflix.BackTwice.Return,Home)</onclick>
+        <onclick>ClearProperty(Netflix.BackTwice.Away,Home)</onclick>
+        <onclick>ClearProperty(Netflix.BackTwice.Focus,Home)</onclick>
+        <onclick>ClearProperty(Netflix.BackTwice.Cool,Home)</onclick>
+    </include>
+
+    <!-- My Lists Back relay (the key file sends Back here instead of to 3734): focus goes to the My Lists tab at once,
+         as before, so its onfocus still closes an open list view. Never visible. -->
+    <include name="Netflix_Back_Twice_MyLists_Relay">
+        <control type="button" id="3767">
+            <description>Back relay (R10.29)</description>
+            <left>0</left><top>0</top><width>1</width><height>1</height>
+            <texturefocus /><texturenofocus /><label />
+            <onup>3734</onup><ondown>3734</ondown><onleft>3734</onleft><onright>3734</onright><onback>3734</onback>
+            <onfocus>SetFocus(3734)</onfocus>
+            <onfocus condition="$EXP[Netflix_Back_Twice_MyLists_Root] + $EXP[Netflix_Back_Twice_Armed]">CancelAlarm(NetflixBackTwice,true)</onfocus>
+            <onfocus condition="$EXP[Netflix_Back_Twice_MyLists_Root] + $EXP[Netflix_Back_Twice_Armed]">ClearProperty(Netflix.BackTwice,Home)</onfocus>
+            <onfocus condition="$EXP[Netflix_Back_Twice_MyLists_Root] + $EXP[Netflix_Back_Twice_Armed]">ClearProperty(Netflix.BackTwice.Away,Home)</onfocus>
+            <onfocus condition="$EXP[Netflix_Back_Twice_MyLists_Root] + $EXP[Netflix_Back_Twice_Armed]">SetProperty(Netflix.BackTwice.Focus,mylists,Home)</onfocus>
+            <onfocus condition="$EXP[Netflix_Back_Twice_MyLists_Root] + $EXP[Netflix_Back_Twice_Armed]">SetProperty(Netflix.BackTwice.Open,mylists,Home)</onfocus>
+            <onfocus condition="$EXP[Netflix_Back_Twice_MyLists_Root] + !$EXP[Netflix_Back_Twice_Armed]">SetProperty(Netflix.BackTwice,armed,Home)</onfocus>
+            <onfocus condition="$EXP[Netflix_Back_Twice_MyLists_Root] + !$EXP[Netflix_Back_Twice_Armed]">AlarmClock(NetflixBackTwice,ClearProperty(Netflix.BackTwice,Home),00:01,silent)</onfocus>
+        </control>
+    </include>
+
     <expression name="Netflix_Tab_Pending">
         !String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) |
         !String.IsEmpty(Window(Home).Property(Netflix.TabArrival))
@@ -1001,6 +1080,7 @@
                         <param name="left">564</param>
                         <param name="width">184</param>
                         <param name="label">My Lists</param>
+                        <param name="back_twice">true</param>
                         <param name="selected">$PARAM[my_list_selected]</param>
                         <param name="opened">$PARAM[my_list_opened]</param>
                         <param name="next">3735</param>
@@ -1050,6 +1130,7 @@
                          intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
                          window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
                          hence the relay. -->
+                    <include>Netflix_Back_Twice_Back</include>
                     <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
                     <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3763</onback>
                     <onback condition="Window.IsActive(Home) + Player.HasMedia">3740</onback>
@@ -1196,6 +1277,7 @@
                      intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
                      window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
                      hence the relay. -->
+                <include>Netflix_Back_Twice_Back</include>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3764</onback>
                 <!-- Home only: same result as hidden 3740 (Movies tab, then the playing video) without a Home-only id. -->
@@ -2187,6 +2269,8 @@
         <param name="swap_right">false</param>
         <param name="swap_left_tab">movies</param>
         <param name="swap_right_tab">shows</param>
+        <!-- R10.29: true only for the My Lists tab (3734): it tracks Netflix.BackTwice.OnTab. A constant, never a state. -->
+        <param name="back_twice">false</param>
         <definition>
             <control type="image">
                 <include content="Netflix_Tab_Placement" condition="$PARAM[reference]">
@@ -2274,6 +2358,7 @@
                      intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
                      window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
                      hence the relay. -->
+                <include>Netflix_Back_Twice_Back</include>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3762</onback>
                 <onback condition="Window.IsActive(Home) + $EXP[Netflix_Tab_Pending]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
@@ -2301,6 +2386,8 @@
                 <onclick condition="![$PARAM[opened]] + ![$PARAM[swap]]">SetProperty(Netflix.TabArrival,$PARAM[id],Home)</onclick>
                 <onclick condition="![$PARAM[opened]] + ![$PARAM[swap]]">Skin.TimerStart(netflix_tab_arrival)</onclick>
                 <nested />
+                <include condition="$PARAM[back_twice]">Netflix_Back_Twice_MyLists_Tab</include>
+                <include>Netflix_Back_Twice_Forget</include>
                 <onclick>ClearProperty(Netflix.TabDwellAuto,Home)</onclick>
             </control>
             <control type="label">
@@ -2365,6 +2452,51 @@
     </include>
 
 
+    <!-- R10.32: one row heading, "<name><view part>": white with the view part in the accent (label_accent) while bright, all grey
+         FF717271 (label_dim) while dim. Netflix_Home_Shelf (every Home / Movies / Shows row) and the Trending row (Includes_Search.xml
+         Netflix_Reference_Catalog_View) both draw their heading with it. -->
+    <include name="Netflix_Row_Heading">
+        <param name="home_hero">false</param>
+        <param name="label_accent"></param>
+        <param name="label_dim"></param>
+        <definition>
+            <control type="label">
+                <include content="Netflix_Shelf_Left" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="value">70</param>
+                </include>
+                <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="value">0</param>
+                </include>
+                <width>1500</width>
+                <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="value">40</param>
+                </include>
+                <aligny>center</aligny>
+                <font>font_midi_bold</font>
+                <textcolor>FFF5F5F5</textcolor>
+                <label>$PARAM[label]$PARAM[label_accent]</label>
+                <visible>$PARAM[bright]</visible>
+            </control>
+            <control type="label">
+                <include content="Netflix_Shelf_Left" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="value">70</param>
+                </include>
+                <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="value">0</param>
+                </include>
+                <width>1500</width>
+                <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
+                    <param name="value">40</param>
+                </include>
+                <aligny>center</aligny>
+                <font>font_midi_bold</font>
+                <textcolor>FF717271</textcolor>
+                <label>$PARAM[label]$PARAM[label_dim]</label>
+                <visible>$PARAM[dim]</visible>
+            </control>
+        </definition>
+    </include>
+
     <include name="Netflix_Home_Shelf">
         <param name="visible">true</param>
         <param name="catalog_genre">false</param>
@@ -2403,40 +2535,15 @@
                 <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
                     <param name="value">951</param>
                 </include>
-                <control type="label">
-                    <include content="Netflix_Shelf_Left" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
-                        <param name="value">70</param>
-                    </include>
-                    <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
-                        <param name="value">0</param>
-                    </include>
-                    <width>1500</width>
-                    <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
-                        <param name="value">40</param>
-                    </include>
-                    <aligny>center</aligny>
-                    <font>font_midi_bold</font>
-                    <textcolor>FFF5F5F5</textcolor>
-                    <label>$PARAM[label]$PARAM[label_accent]</label>
-                    <visible>![Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] | Control.HasFocus($PARAM[id]) | Control.HasFocus($PARAM[tile])</visible>
-                </control>
-                <control type="label">
-                    <include content="Netflix_Shelf_Left" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
-                        <param name="value">70</param>
-                    </include>
-                    <include content="Netflix_Shelf_Top" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
-                        <param name="value">0</param>
-                    </include>
-                    <width>1500</width>
-                    <include content="Netflix_Rail_Height" condition="[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]]">
-                        <param name="value">40</param>
-                    </include>
-                    <aligny>center</aligny>
-                    <font>font_midi_bold</font>
-                    <textcolor>FF717271</textcolor>
-                    <label>$PARAM[label]$PARAM[label_dim]</label>
-                    <visible>[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + !Control.HasFocus($PARAM[id]) + !Control.HasFocus($PARAM[tile])</visible>
-                </control>
+                <!-- R10.32: the heading is Netflix_Row_Heading (the same two labels as before), shared with the Trending row (Includes_Search.xml) -->
+                <include content="Netflix_Row_Heading">
+                    <param name="home_hero">$PARAM[home_hero]</param>
+                    <param name="label">$PARAM[label]</param>
+                    <param name="label_accent">$PARAM[label_accent]</param>
+                    <param name="label_dim">$PARAM[label_dim]</param>
+                    <param name="bright">![Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] | Control.HasFocus($PARAM[id]) | Control.HasFocus($PARAM[tile])</param>
+                    <param name="dim">[Skin.HasSetting(Netflix.CompactHome) + $PARAM[home_hero]] + !Control.HasFocus($PARAM[id]) + !Control.HasFocus($PARAM[tile])</param>
+                </include>
                 <include content="Netflix_Focus_Rail">
                     <param name="id">$PARAM[id]</param>
                     <param name="warm_genre">$PARAM[warm_genre]</param>
