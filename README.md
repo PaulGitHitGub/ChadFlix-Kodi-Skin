@@ -5,7 +5,7 @@
 
   <h1>ChadFlix for Kodi</h1>
 
-  <p>A (Better than) Netflix-style skin for Kodi 21. Built for and tested for the Nvidia Shield TV Pro. This is an early build. Currently focused on optimization and stability</p>
+  <p>A (Better than) Netflix-style skin for Kodi 21. Built for and tested on the Nvidia Shield TV Pro. This is an early build. Currently focused on optimization and stability</p>
 
   <p>
     <a href="#features"><b>Features</b></a> ·
