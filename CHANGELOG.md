@@ -17,8 +17,8 @@ unchanged.
 
 ### Changed
 
-- Quality picks: **Highest** is the top source in **All Sources**; **Medium** is the best source that is not a REMUX,
-  with HDR or Dolby Vision when there is one. **Play** starts **Medium**, and Dolby Vision is preferred.
+- Quality picks: **Highest** is the top source in **All Sources**. **Medium** is the first HDR or Dolby Vision file in
+  the **All Sources** list that isn't a remux (Dolby Vision preferred). **Play** starts **Medium**.
 - Smoother scrolling: TMDb Helper pauses its extra lookups while you browse rows.
 - The lines of remote-button hints are gone from the gear menu, the subtitle style picker, the Showing tile and the
   source info screen.
@@ -33,6 +33,12 @@ unchanged.
 
 - A short press of **OK** reacts about 0.1 s later than before (Kodi waits to tell a short press from a hold).
 - The next episode starts 3–4 seconds after the countdown ends.
+- **Play** now starts a much bigger file: usually about 31–37 GB instead of about 5–6 GB (**Highest** is usually a
+  60–90 GB remux). On a slower connection you will notice.
+- On a movie page the ratings appear 0.2–3 seconds after the page opens, and the logo and title move up slightly when
+  they do.
+- **Menu** and **C** no longer open **Add to Another Watchlist** on a movie page. Holding **OK** on **Watchlist** still
+  does.
 
 ## Release 6 (2026-11-16)
 

@@ -447,7 +447,7 @@ footer nav a { color: var(--muted); }
           <li><h3>Install the Setup</h3>
             <p><span class="path">Install from repository → ChadFlix Repository → Program add-ons → ChadFlix Setup → Install</span>. OK on the list of add-ons; No if Kodi offers to switch skin.</p></li>
           <li><h3>Run the Setup</h3>
-            <p><span class="path">Add-ons → Program add-ons → ChadFlix Setup → Set up ChadFlix</span>. YouTube is optional. Choose Switch (the setup answers &ldquo;Keep skin?&rdquo; itself), then Close Kodi and open it again.</p></li>
+            <p><span class="path">Add-ons → Program add-ons → ChadFlix Setup → Set Up ChadFlix (Keeps Sign-Ins, Keys, History)</span>. YouTube is optional: Kodi asks once, and No skips it. Choose Switch, then Close Kodi (asked right after Switch). The screen goes dark while the new look loads; the setup answers &ldquo;Keep skin?&rdquo; itself and then closes Kodi. Open Kodi again.</p></li>
         </ol>
         <aside class="source">
           <h3>Source Address</h3>
