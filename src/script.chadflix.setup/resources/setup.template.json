@@ -14,7 +14,11 @@
    "8745e83dfb2f5ce8303ddeaf76b86e9bf5264471c3e071eb5b48774e33f593bd"
   ],
   "NetflixMovieDetails.xml": [
-   "74252d9867884bced67dff81c7868a10752d67ab8b219903fb329c88a04b4e20"
+   "74252d9867884bced67dff81c7868a10752d67ab8b219903fb329c88a04b4e20",
+   "c5b6925ae792bb240b7672c991d772a89fa6e4ae96d1cd9445b82cf54604db1d"
+  ],
+  "NetflixWatchlistMore.xml": [
+   "8b30ef3721fb5b55231d27a6541ec90f834ec1d17ce5d8b4eeeef6f2c1c994e9"
   ]
  },
  "skin_bools": [

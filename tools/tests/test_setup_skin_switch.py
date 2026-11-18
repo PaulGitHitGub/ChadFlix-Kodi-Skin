@@ -152,10 +152,10 @@ class SkinSwitch(unittest.TestCase):
 
     def test_already_active_and_declined(self):
         k = Kodi({}, start_skin=SKIN)
-        self.assertIs(k.ns['switch_skin'](), True)
+        self.assertEqual(k.ns['switch_skin'](), (True, None))     # Setup 1.0.6: (kept, close_now); no close question asked here
         self.assertEqual(k.asked, [])                             # nothing to switch, nothing asked
         k = Kodi({5: KEEP}, user_answer=False)
-        self.assertEqual(k.ns['switch_skin'](), k.ns['DECLINED']) # "Not now": no switch, no click
+        self.assertEqual(k.ns['switch_skin'](), (k.ns['DECLINED'], None))  # "Not now": no switch, no click, no close question
         self.assertEqual((k.clicks, k.skin), ([], 'skin.estuary'))
 
     def test_old_code_clicked_the_unrelated_dialog(self):

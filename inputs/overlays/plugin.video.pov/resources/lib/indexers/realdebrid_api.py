@@ -58,6 +58,9 @@ class RealDebridAPI:
 		headers = self.headers()
 		try: response = session.request(method, base_url + path, **kwargs, headers=headers, timeout=self.timeout)
 		except session.CUSTOM_ERRORS: return kodi_utils.notification('timeout: %s' % __name__)
+		from modules.netflix_next_context import current
+		scope = current()
+		if scope is not None and scope.cancelled.is_set(): return None
 		if response.status_code in (401,) and self.refresh_token() is True:
 			response.request.headers['Authorization'] = 'Bearer %s' % self.token
 			response = session.send(response.request, timeout=self.timeout)

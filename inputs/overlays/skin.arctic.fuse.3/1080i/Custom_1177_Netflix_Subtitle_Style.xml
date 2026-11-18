@@ -96,14 +96,6 @@
                 </include>
         </control>
 
-        <control type="label">
-            <bottom>40</bottom>
-            <height>40</height>
-            <align>center</align>
-            <aligny>center</aligny>
-            <font>font_main</font>
-            <textcolor>D9F5F5F5</textcolor>
-            <label>OK to choose  ·  Back to close</label>
-        </control>
+        <!-- R10.44: remote-button hint row removed (owner rule: no button tutorials in ChadFlix UI) -->
     </controls>
 </window>

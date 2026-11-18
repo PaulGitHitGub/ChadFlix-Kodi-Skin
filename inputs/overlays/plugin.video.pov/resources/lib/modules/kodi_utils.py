@@ -24,8 +24,12 @@ internal_path  = 'special://home/addons/plugin.video.pov/resources/lib/debrids/'
 packages_path  = 'special://home/addons/packages/'
 
 def current_dbs():
-	return {'settings.xml', 'fenomcache.db', 'traktcache.db', 'mdblcache.db', 'watched.db',
-			'maincache.db', 'metacache.db', 'navigator.db', 'views.db', 'debridcache.db', 'providerscache.db'}
+	regular = {'settings.xml', 'fenomcache.db', 'traktcache.db', 'mdblcache.db', 'watched.db',
+			   'maincache.db', 'metacache.db', 'navigator.db', 'views.db', 'debridcache.db', 'providerscache.db'}
+	# Watched writes also use the Trakt and MDBList databases when configured.
+	# Maintenance must leave SQLite's active or recoverable journal files in place.
+	return regular | {name + suffix for name in ('watched.db', 'traktcache.db', 'mdblcache.db')
+								   for suffix in ('-journal', '-wal', '-shm')}
 
 def external_path():
 	from indexers.pov_api import files_path
@@ -40,6 +44,8 @@ def database_connect(file, **kwargs):
 	return database.connect(translate_path(file), **kwargs)
 
 def logger(heading, function):
+	from modules.netflix_next_context import ephemeral
+	if ephemeral(): return  # preparation has no toasts or provider payload logs
 	# R10.25 (security audit F-02): sign-in secrets never reach Kodi's log. modules/redact.py masks credential-named URL
 	# parameters, Authorization values, tokens and POV's own stored sign-in values. A message that cannot be checked is withheld.
 	text = '>> %s <<: %s' % (heading, function)
@@ -277,6 +283,8 @@ def show_text(heading, text=None, file=None, font_size='small', kodi_log=False):
 	return xbmcgui.Dialog().textviewer(heading, text)
 
 def notification(line1, time=3000, icon=None, sound=False):
+	from modules.netflix_next_context import ephemeral
+	if ephemeral(): return  # preparation has no toasts or provider payload logs
 	if isinstance(line1, int): line1 = local_string(line1)
 	icon = icon or get_addoninfo('icon')
 	xbmcgui.Dialog().notification('POV', line1, icon, time, sound)

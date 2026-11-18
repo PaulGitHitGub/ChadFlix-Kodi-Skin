@@ -9,6 +9,7 @@
     <Videos>
         <keyboard>
             <return>ActivateWindow(1156)</return>
+            <return mod="longpress">ActivateWindow(1157)</return>
         </keyboard>
         <remote>
             <select>ActivateWindow(1156)</select>

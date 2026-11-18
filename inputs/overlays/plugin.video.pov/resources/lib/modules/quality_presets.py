@@ -14,6 +14,8 @@ from modules.source_presentation import audio_rank, is_remux_class
 _KEYS = ('highest', 'medium', 'lowest')
 _LABELS = ('Highest Quality', 'Medium Quality', 'Lowest Quality · 4K')
 _PACKS = frozenset(('true', 'season', 'show'))
+_DV = frozenset(('D/VISION', 'DOLBY VISION', 'DV'))
+_LOSSLESS = frozenset(('TRUEHD', 'DOLBY TRUEHD', 'DTS-HD MA', 'DTS-HD MASTER AUDIO', 'DTS-X', 'DTS:X', 'FLAC', 'PCM', 'LPCM'))
 _MARKUP = re.compile(r'\[/?(?:B|I|COLOR(?: [^\]]+)?)\]', re.I)
 
 
@@ -206,23 +208,71 @@ def _preset(key, candidate, reason):
     return result
 
 
-def build_presets(results, mediatype, duration_minutes=None):
+def all_sources_picks(filtered):
+    """(top, medium) rows of the All Sources list for an already availability/quality-filtered list
+    (the caller applies prefer_available_quality(available_sources(...)), as the window does).
+    top: the first row (REMUX allowed), or a near-size lossless DV REMUX (see below); Highest Quality plays it.
+    medium: the first row that is not REMUX-class and is HDR or Dolby Vision; Medium Quality and plain Play.
+    Owner, 16 Nov: prefer Dolby Vision — when that row is not DV, the first non-REMUX DV row at least
+    80% of its size is used instead."""
+    from modules.source_presentation import build_source_groups, _HDR_FORMATS
+    rows = [group['source'] for group in build_source_groups(filtered)]
+    top = rows[0] if rows else None
+    # Owner, 16 Nov: prefer Dolby Vision for Highest too (the Shield + LG G5 play DV natively, profile 7 included).
+    # When row 1 isn't DV, the first DV REMUX with lossless audio at least 70% of row 1's size is used instead.
+    top_size = _positive(top.get('size')) if top else None
+    if top is not None and top_size is not None and not _tags(top) & _DV:
+        top = next((row for row in rows if is_remux_class(row) and _tags(row) & _DV and _tags(row) & _LOSSLESS
+                    and top_size * .70 <= (_positive(row.get('size')) or 0) <= top_size), top)
+    encodes = [row for row in rows if not is_remux_class(row) and _tags(row) & _HDR_FORMATS]
+    medium = encodes[0] if encodes else None
+    if medium is not None and not _tags(medium) & _DV:
+        size = _positive(medium.get('size'))
+        cap = _positive(top.get('size')) if top else None
+        if size is not None:
+            medium = next((row for row in encodes if _tags(row) & _DV and (_positive(row.get('size')) or 0) >= size * .80
+                           and (cap is None or (_positive(row.get('size')) or 0) <= cap)), medium)
+    if medium is top:
+        medium = None
+    return top, medium
+
+
+def build_presets(results, mediatype, duration_minutes=None, top_index=None, medium_index=None):
     """Return exactly three safe presentation dictionaries over original indices.
 
     Caller applies user filters first. This helper never reads settings or adds
     sources. Ranking uses reported metadata and size proxies, not a perfect joint
     video/audio optimum or an equipment compatibility guarantee.
+
+    Owner, 16 Nov (overrides R10.3): Highest is exactly the top row of All Sources.
+    The caller passes that row's index in results as top_index; REMUX-class is
+    allowed there. Medium is the first All Sources row that is not REMUX-class and
+    is HDR or Dolby Vision (medium_index; plain Play uses it). Lowest stays the
+    smallest comparable 4K encode, and is left out unless smaller than both.
     """
     if mediatype not in ('movie', 'episode'):
         raise ValueError('mediatype must be movie or episode')
     candidates = _candidates(results)
-    if not candidates:
+    def pick(index):
+        if isinstance(index, int) and 0 <= index < len(results) and isinstance(results[index], dict):
+            return _candidate(index, results[index])
+        return None
+    top = pick(top_index)
+    if not candidates and top is None:
         return [_preset(key, None, 'No available 4K option remains in the filtered source list.') for key in _KEYS]
-    high = _highest(candidates)
+    high = top or _highest(candidates)
     sized = [candidate for candidate in candidates if candidate.size is not None]
     low = min(sized, key=lambda candidate: (candidate.size, tuple(-part for part in candidate.rank), candidate.index), default=None)
     medium = None
-    if low and high.size is not None and high.size >= low.size * 1.25:
+    if top is not None:
+        medium = pick(medium_index)
+        if medium is not None and medium.index == high.index:
+            medium = None
+        floor = min(c.size for c in (high, medium) if c is not None and c.size is not None) if any(
+            c is not None and c.size is not None for c in (high, medium)) else None
+        if low and (low.index in {c.index for c in (high, medium) if c is not None} or (floor is not None and low.size >= floor)):
+            low = None
+    elif low and high.size is not None and high.size >= low.size * 1.25:
         def comparable(candidate):
             return (_positive(duration_minutes) is not None and bool(candidate.codec)
                     and candidate.codec == low.codec == high.codec
@@ -236,7 +286,7 @@ def build_presets(results, mediatype, duration_minutes=None):
     if low and (low.index == high.index or (low.profile == high.profile and high.size is not None and low.size > high.size * .80)):
         low = None
     return [
-        _preset('highest', high, 'Reported source fidelity, video and audio metadata; missing audio stays uncertain. Matching-codec size can act as a bitrate proxy. Quality and equipment compatibility are not verified.'),
-        _preset('medium', medium, 'Balanced intermediate reported size and metadata; this is a compression/bandwidth heuristic, not measured picture quality.' if medium else 'No materially distinct intermediate 4K option has enough comparable metadata.'),
+        _preset('highest', high, 'The top source of the All Sources list.' if top else 'Reported source fidelity, video and audio metadata; missing audio stays uncertain. Matching-codec size can act as a bitrate proxy. Quality and equipment compatibility are not verified.'),
+        _preset('medium', medium, ('The first HDR or Dolby Vision encode in the All Sources list.' if top else 'Balanced intermediate reported size and metadata; this is a compression/bandwidth heuristic, not measured picture quality.') if medium else 'No materially distinct intermediate 4K option has enough comparable metadata.'),
         _preset('lowest', low, 'Smallest comparable reported 4K file size; it does not prove lowest perceptual quality.' if low else 'No distinct smaller 4K option has a comparable known file size.'),
     ]

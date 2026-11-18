@@ -62,14 +62,6 @@
             <textcolor>FFF5F5F5</textcolor>
             <label>$INFO[Window.Property(tikiskins.results.info.size_label)]</label>
         </control>
-        <control type="label">
-            <left>192</left>
-            <top>988</top>
-            <width>1536</width>
-            <height>40</height>
-            <font>font10</font>
-            <textcolor>FFB8B8B8</textcolor>
-            <label>Press Back to return to sources</label>
-        </control>
+        <!-- R10.44: remote-button hint row removed (owner rule: no button tutorials in ChadFlix UI) -->
     </controls>
 </window>

@@ -7,6 +7,7 @@ tables of the database POV writes when you stop or finish something) and lists, 
   - kind=shows: one tile per show: the episode stopped part-way, else the next aired episode after the last one watched.
     Shows last watched more than 60 days ago, shows marked dropped, finished shows and shows whose next episode
     has not aired are left out.
+A local hide applies to this row until a newer playback timestamp for the title.
 Each tile is the title itself (DBType movie / tvshow, built by POV's own list builders), so the skin's usual OK
 opens the movie page or the show page. Extra properties for the skin's caption and bar:
   Netflix.CW.Kind     resume | next
@@ -30,6 +31,7 @@ from modules import kodi_utils, settings
 MAX_TILES = 20
 KINDS = {'movies': ('movie',), 'shows': ('episode',)}
 SHOW_DAYS = 60
+UNKNOWN_PLAYED = float('-inf')
 GET_PROGRESS = 'SELECT db_type, media_id, season, episode, resume_point, curr_time, last_played, resume_id, title ' \
                'FROM progress WHERE db_type IN (?, ?) ORDER BY last_played DESC'
 GET_WATCHED = 'SELECT db_type, media_id, season, episode, last_played FROM watched_status WHERE db_type IN (?, ?)'
@@ -105,36 +107,57 @@ def show_pointer(meta, bookmarks, watched, show_specials, current_date, adjust_p
     return pointer
 
 
-def candidates(progress_rows, watched_rows, dropped, show_cutoff):
+def played_time(value):
+    """Compare POV local wall time and UTC Trakt/MDBList timestamps on the same time axis."""
+    if not isinstance(value, str) or not value:
+        return UNKNOWN_PLAYED
+    try:
+        return datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
+    except (ValueError, OverflowError, OSError):
+        return UNKNOWN_PLAYED
+
+
+def candidates(progress_rows, watched_rows, dropped, show_cutoff, hidden=None):
     """Pure selection before metadata: [(last_played, kind, tmdb_id, rows...)], newest first.
-    progress_rows: (db_type, media_id, season, episode, resume_point, curr_time, last_played, resume_id, title),
-    newest first. watched_rows: (db_type, media_id, season, episode, last_played)."""
+    progress_rows: (db_type, media_id, season, episode, resume_point, curr_time, last_played, resume_id, title).
+    watched_rows: (db_type, media_id, season, episode, last_played)."""
+    hidden = hidden or {}
     movie_done = {}
     show_watched, show_bookmarks, show_last = {}, {}, {}
     for db_type, media_id, season, episode, last_played in watched_rows:
+        key = str(media_id)
+        played = played_time(last_played)
         if db_type == 'movie':
-            movie_done[str(media_id)] = max(movie_done.get(str(media_id), ''), last_played or '')
+            movie_done[key] = max(movie_done.get(key, UNKNOWN_PLAYED), played)
         else:
-            show_watched.setdefault(str(media_id), []).append((db_type, media_id, season, episode, last_played))
-            show_last[str(media_id)] = max(show_last.get(str(media_id), ''), last_played or '')
+            show_watched.setdefault(key, []).append((db_type, media_id, season, episode, last_played))
+            if played > show_last.get(key, (UNKNOWN_PLAYED, ''))[0]:
+                show_last[key] = (played, last_played)
+    chronological = sorted(((played_time(row[6]), row) for row in progress_rows),
+                           key=lambda item: item[0], reverse=True)
     out, seen_movies = [], set()
-    for row in progress_rows:
-        media_id, last_played = str(row[1]), row[6] or ''
+    for played, row in chronological:
+        media_id, last_played = str(row[1]), row[6]
         if row[0] == 'movie':
             if media_id in seen_movies: continue
             seen_movies.add(media_id)
             if not 0 < number(row[4]) < 100: continue
-            if movie_done.get(media_id, '') >= last_played: continue    # finished after this stop (or at it)
-            out.append((last_played, 'movie', media_id, row))
+            if movie_done.get(media_id, UNKNOWN_PLAYED) >= played: continue
+            if played_time(hidden.get(('movie', media_id))) >= played: continue
+            out.append((played, last_played, 'movie', media_id, row))
         else:
             show_bookmarks.setdefault(media_id, []).append(row)
-            show_last[media_id] = max(show_last.get(media_id, ''), last_played)
+            if played > show_last.get(media_id, (UNKNOWN_PLAYED, ''))[0]:
+                show_last[media_id] = (played, last_played)
     dropped = {str(i) for i in dropped}
-    for media_id, last_played in show_last.items():
-        if media_id in dropped or last_played < show_cutoff: continue
-        out.append((last_played, 'tvshow', media_id, (show_bookmarks.get(media_id, []), show_watched.get(media_id, []))))
-    out.sort(key=lambda i: i[0], reverse=True)
-    return out
+    cutoff = played_time(show_cutoff)
+    for media_id, (played, last_played) in show_last.items():
+        if media_id in dropped or played < cutoff: continue
+        if played_time(hidden.get(('tvshow', media_id))) >= played: continue
+        out.append((played, last_played, 'tvshow', media_id,
+                    (show_bookmarks.get(media_id, []), show_watched.get(media_id, []))))
+    out.sort(key=lambda item: item[0], reverse=True)
+    return [entry[1:] for entry in out]
 
 
 def read_store(watched_indicators, kind=None):
@@ -154,6 +177,7 @@ def read_store(watched_indicators, kind=None):
 
 def build_items(kind=None):
     from caches.watched_cache import get_dropped_info_tv
+    from indexers.local_api import read_cw_hidden
     from indexers.metadata import tvshow_meta
     from menus.movies import Movies
     from menus.tvshows import TVShows
@@ -162,7 +186,7 @@ def build_items(kind=None):
     progress, watched = read_store(watched_indicators, kind)
     has_shows = any(row[0] == 'episode' for row in progress) or any(row[0] == 'episode' for row in watched)
     dropped = get_dropped_info_tv(watched_indicators) if has_shows else ()
-    chosen = candidates(progress, watched, dropped, cutoff_value(watched_indicators, SHOW_DAYS))
+    chosen = candidates(progress, watched, dropped, cutoff_value(watched_indicators, SHOW_DAYS), read_cw_hidden())
     if not chosen: return [], {'store': len(progress) + len(watched), 'movies': 0, 'shows': 0}
     current_date, user_info, specials = get_datetime(), settings.metadata_user_info(), settings.show_specials()
     params = {'action': 'netflix_continue_watching', 'exit_list_params': 'plugin://plugin.video.pov/'}

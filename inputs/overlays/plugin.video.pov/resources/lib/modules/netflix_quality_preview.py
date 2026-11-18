@@ -337,18 +337,21 @@ def summary(source):
 
 def build_view(source, processed):
     """Tiers over sources whose availability is known; returns (view, available sources)."""
-    from modules.sources import prefer_available_quality, quality_ranks
+    from modules.sources import all_sources_picks, prefer_available_quality, quality_ranks
     results = available_sources(processed)
+    picks = all_sources_picks(results, 'movie')
     ranked = rank_playback_sources(results, quality_ranks)
     view = {'labels': {}, 'lines': {}, 'total': 0}
     if ranked:
-        for key, index in source.movie_quality_indices(ranked).items():
+        indices = source.movie_quality_indices(ranked, picks)
+        for key, index in indices.items():
             if index is not None:
                 view['labels'][key] = list(describe(ranked[index]))
                 view['lines'][key] = summary(ranked[index])
-                if key == 'highest':
-                    # R10-playback: what the play loader shows for plain Play (it plays this source first).
-                    view['facts'] = list(play_facts(ranked[index]))
+        # R10-playback: what the play loader shows for plain Play. Owner, 16 Nov: plain Play = Medium (else Highest).
+        play = indices['medium'] if indices.get('medium') is not None else indices.get('highest')
+        if play is not None:
+            view['facts'] = list(play_facts(ranked[play]))
         view['total'] = len(build_source_groups(prefer_available_quality(results, 'movie')))
     return view, results
 

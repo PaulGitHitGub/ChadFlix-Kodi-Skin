@@ -148,7 +148,7 @@
                     </control>
                 </control>
             </control>
-            <control type="label"><left>0</left><top>930</top><width>680</width><height>40</height><align>center</align><aligny>center</aligny><font>font_mini</font><textcolor>FFB4B4BA</textcolor><label>OK to open   ·   Back to close</label></control>
+            <!-- R10.44: remote-button hint row removed (owner rule: no button tutorials in ChadFlix UI) -->
         </control>
     </controls>
 </window>

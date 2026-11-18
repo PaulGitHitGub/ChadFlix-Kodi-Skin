@@ -1,7 +1,7 @@
 {
  "_comment": "Every input of a release build. tools/build_release.py reads nothing else. Change a version here and in the overlay addon.xml together.",
- "release": "6 (release 5 + R10.37 start-up splash; Setup 1.0.5 with the R10.38 home-row recipe)",
- "previous_release": "5",
+ "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.48b-scroll-speed-crashfix-2026-11-17; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files)",
+ "previous_release": "6",
  "github_user": "PaulGitHitGub",
  "repo_slug": "ChadFlix-Kodi-Skin",
  "repository_addon": "repository.chadflix",
@@ -9,15 +9,15 @@
   "plugin.program.autocompletion": "2.1.2"
  },
  "previous_versions": {
-  "skin.arctic.fuse.3": "3.99.418.5",
+  "skin.arctic.fuse.3": "3.99.418.6",
   "plugin.video.pov": "6.99.1103.5",
-  "script.chadflix.setup": "1.0.4",
+  "script.chadflix.setup": "1.0.5",
   "repository.chadflix": "1.0.1"
  },
  "addons": [
   {
    "id": "plugin.video.pov",
-   "version": "6.99.1103.5",
+   "version": "6.99.1103.6",
    "source": {
     "type": "upstream+overlay",
     "upstream": {
@@ -98,7 +98,7 @@
   {
    "id": "script.chadflix.setup",
    "name": "ChadFlix Setup",
-   "version": "1.0.5",
+   "version": "1.0.6",
    "requires": [
     "skin.arctic.fuse.3",
     "plugin.video.pov",
@@ -185,7 +185,7 @@
   },
   {
    "id": "skin.arctic.fuse.3",
-   "version": "3.99.418.6",
+   "version": "3.99.418.7",
    "source": {
     "type": "upstream+overlay",
     "upstream": {

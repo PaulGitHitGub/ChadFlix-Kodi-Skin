@@ -231,11 +231,14 @@ class Store:
             raise ListsError('This watchlist no longer exists.')
         return collection
 
-    def create(self, name):
+    def create(self, name, item=None):
         name = clean_text(name, 80, True)
         identifier = str(uuid.uuid4())
         def change(data):
-            data['lists'].append({'id': identifier, 'name': name, 'items': [], 'updated': int(time.time())})
+            collection = {'id': identifier, 'name': name, 'items': [], 'updated': int(time.time())}
+            if item is not None:
+                put(collection, any_item(item))
+            data['lists'].append(collection)
             return identifier
         return self.update(change)
 
@@ -269,6 +272,22 @@ class Store:
             if holds(collection, item):
                 take(collection, item)
                 touch(collection)
+        return self.update(change)
+
+    def toggle(self, identifier, item):
+        """Toggle one list under the same lock used for every saved-list write."""
+        item = any_item(item)
+
+        def change(data):
+            collection = self.find(data, identifier)
+            selected = not holds(collection, item)
+            if selected:
+                put(collection, item)
+            else:
+                take(collection, item)
+            touch(collection)
+            return selected, data['lists']
+
         return self.update(change)
 
     def set_membership(self, item, wanted):
@@ -333,6 +352,7 @@ VIEW = 'Netflix.MyLists.View'              # R10.22: '' (the page) | list (conta
 VIEW_FROM, VIEW_ID, VIEW_TOKEN = 'Netflix.MyLists.ViewFrom', 'Netflix.MyLists.ViewID', 'Netflix.MyLists.ViewToken'
 ALL_TOKEN = 'Netflix.MyLists.AllToken'      # See All's own token: only create from See All bumps it (a list's reload must not reload the hidden See All grid too: two calls)
 VIEW_PATH, VIEW_ERROR = 'Netflix.MyLists.ViewPath', 'Netflix.MyLists.ViewError'
+VIEW_INDEX = 'Netflix.MyLists.ViewIndex'
 VIEW_GATES = ('Netflix.MyLists.Go.list', 'Netflix.MyLists.Go.all', 'Netflix.MyLists.Loaded.list', 'Netflix.MyLists.Loaded.all')   # what the tab's Back handler clears too
 MY_LISTS = 11165
 
@@ -345,22 +365,35 @@ def close_view():
     xbmc.executebuiltin('SetFocus(533,0,absolute)')
 
 
-def refresh_open_view(identifier, deleted=False):
-    """R10.22: the list is open inside My Lists (container 534): a changed list reloads it by a new path token (one add-on call, started by the user's own action);
-    a deleted one closes the view."""
+def refresh_open_view(identifier, deleted=False, item_removed=False):
+    """Refill the current list through its existing serial view loader."""
     home = xbmcgui.Window(10000)
     if home.getProperty(VIEW) != 'list' or home.getProperty(VIEW_ID) != identifier:
         return False
     if deleted:
         close_view()
-    else:
-        home.setProperty(VIEW_TOKEN, str(time.time_ns()))
+        return True
+
+    has_focus = xbmc.getInfoLabel('System.CurrentControlID') == '534'
+    if has_focus:
+        index = xbmc.getInfoLabel('Container(534).CurrentItem')
+        count = xbmc.getInfoLabel('Container(534).NumItems')
+        if index.isdecimal():
+            position = max(0, int(index) - 1)
+            if item_removed and count.isdecimal():
+                position = min(position, max(0, int(count) - 2))
+            home.setProperty(VIEW_INDEX, str(position))
+    home.clearProperty('Netflix.MyLists.Go.list')
+    home.clearProperty('Netflix.MyLists.Loaded.list')
+    if has_focus:
+        # The existing timer restores 534 when the new answer is available.
+        xbmc.executebuiltin('SetFocus(8534)', True)
     return True
 
 
-def refresh_collection(identifier, deleted=False):
+def refresh_collection(identifier, deleted=False, item_removed=False):
     list_id(identifier)
-    if xbmcgui.getCurrentWindowId() == MY_LISTS and refresh_open_view(identifier, deleted):
+    if xbmcgui.getCurrentWindowId() == MY_LISTS and refresh_open_view(identifier, deleted, item_removed):
         return
     try:
         path = urlsplit(xbmc.getInfoLabel('Container.FolderPath'))
@@ -504,10 +537,10 @@ def is_favorite(api, item):
     return any(str(entry['tmdb_id']) == identifier for entry in api.local_favorites(None, db_type, 'all'))
 
 
-# R10.18: the two buttons' labels. Title Case ("from" / "to" between words stay lower case, the last word is capitalised).
-FAVORITE_LABEL, FAVORITE_ON_LABEL = 'Favorite', 'Remove from Favorites'
-BOOKMARK_LABEL, BOOKMARK_MANY_LABEL = 'Add to Watchlist', 'Manage Watchlists'
-NAME_PX = 300          # pixels (at the 30 px label font) a watchlist's name may take in "Remove from <name>": the label box is 560 px wide, "Remove from " is ~200
+# R10.18: the two buttons' labels. Use Title Case for the actions.
+FAVORITE_LABEL, FAVORITE_ON_LABEL = 'Favorite', 'Remove From Favorites'
+BOOKMARK_LABEL, BOOKMARK_MANY_LABEL = 'Add To Watchlist', 'Manage Watchlists'
+NAME_PX = 300          # pixels (at the 30 px label font) a watchlist's name may take in "Remove From <name>": the label box is 560 px wide
 _NARROW, _SLIM = set("ilj.,'!:;|`"), set('ftrI()[]- ')
 _WIDE = {'W': 1.0, 'M': 0.9, 'm': 0.9, 'w': 0.78, '@': 1.0, '%': 0.95}
 
@@ -532,7 +565,7 @@ def text_px(text, size=30):
 
 
 def label_name(name):
-    """The name as it appears after "Remove from ": whole when it fits NAME_PX, otherwise cut at a letter with an ellipsis."""
+    """The name as it appears after "Remove From ": whole when it fits NAME_PX, otherwise cut at a letter with an ellipsis."""
     if text_px(name) <= NAME_PX:
         return name
     keep = ''
@@ -544,11 +577,11 @@ def label_name(name):
 
 
 def bookmark_label(holding):
-    """The Watchlist button: none = Add to Watchlist; one list = Remove from <its name>; several = Manage Watchlists (a picker)."""
+    """The Watchlist button: none = Add To Watchlist; one list = Remove From <its name>; several = Manage Watchlists (a picker)."""
     if not holding:
         return BOOKMARK_LABEL
     if len(holding) == 1:
-        return 'Remove from ' + label_name(holding[0]['name'])
+        return 'Remove From ' + label_name(holding[0]['name'])
     return BOOKMARK_MANY_LABEL
 
 
@@ -560,7 +593,7 @@ def episode_bookmark_label(holding):
     if not holding:
         return EPISODE_BOOKMARK_LABEL
     if len(holding) == 1:
-        return 'Remove from ' + label_name(holding[0]['name'])
+        return 'Remove From ' + label_name(holding[0]['name'])
     return BOOKMARK_MANY_LABEL
 
 
@@ -595,14 +628,23 @@ def episode_saved_count(show_id, store=None):
     return len(favorites | set(holding))
 
 
+def bookmark_properties(item, collections, holding):
+    label = bookmark_label(holding)
+    if holding and item['type'] == 'movie' and len(collections) > 1:
+        count = len(holding)
+        label = 'Watchlist · In %d %s' % (count, 'List' if count == 1 else 'Lists')
+    return {'Bookmarked': 'true' if holding else '', 'BookmarkLabel': label}
+
+
 def saved_properties(item, store=None):
     with pov_api() as api:
         favorite = is_favorite(api, item)
-    holding = [collection for collection in (store or default_store()).read()['lists'] if holds(collection, item)]
+    collections = (store or default_store()).read()['lists']
+    holding = [collection for collection in collections if holds(collection, item)]
     if is_episode(item):
         return episode_properties(favorite, holding)
     return {'Favorite': 'true' if favorite else '', 'FavoriteLabel': FAVORITE_ON_LABEL if favorite else FAVORITE_LABEL,
-            'Bookmarked': 'true' if holding else '', 'BookmarkLabel': bookmark_label(holding)}
+            **bookmark_properties(item, collections, holding)}
 
 
 def sync_movie(store=None):
@@ -759,11 +801,11 @@ def remove_watchlist_item(identifier, kind, item_id, store=None):
     if item is None:
         return
     store.remove(identifier, item)   # R10.18: straight away, no "Remove this title from the Watchlist?" question
-    refresh_collection(identifier)
+    refresh_collection(identifier, item_removed=True)
 
 
 def remove_watchlist_episode(identifier, show_id, season, episode, store=None):
-    """R10.22: "Remove from Watchlist" on an episode card of an opened list. Straight away, like a title (R10.18: no questions)."""
+    """R10.22: "Remove From Watchlist" on an episode card of an opened list. Straight away, like a title (R10.18: no questions)."""
     identifier = list_id(identifier)
     key = (media_id(show_id), season_number(int(season)), episode_number(int(episode)))
     store = store or default_store()
@@ -772,11 +814,11 @@ def remove_watchlist_episode(identifier, show_id, season, episode, store=None):
     if entry is None:
         return
     store.remove(identifier, entry)
-    refresh_collection(identifier)
+    refresh_collection(identifier, item_removed=True)
 
 
 def unfavorite_episode(identifier):
-    """R10.22: "Remove from Favorites" on a card of the opened Saved Episodes list."""
+    """R10.22: "Remove From Favorites" on a card of the opened Saved Episodes list."""
     parsed = parse_episode_id(identifier)
     if parsed is None:
         raise ListsError('Invalid episode.')
@@ -784,8 +826,8 @@ def unfavorite_episode(identifier):
         if not api.remove_from_sync('favorites', 'episode', episode_id(*parsed), ''):
             raise ListsError('Could not update My Lists. Try again.')
     bump_watchlists_revision()
-    if xbmcgui.getCurrentWindowId() == MY_LISTS and xbmcgui.Window(10000).getProperty(VIEW_ID) == 'episodes':
-        xbmcgui.Window(10000).setProperty(VIEW_TOKEN, str(time.time_ns()))
+    if xbmcgui.getCurrentWindowId() == MY_LISTS:
+        refresh_open_view('episodes', item_removed=True)
 
 
 def choose_watchlists(item, collections, holding, store, heading='Manage Watchlists'):
@@ -828,8 +870,8 @@ def bookmark_item(item, store=None):
         return True
     if holding:
         return choose_watchlists(item, collections, holding, store)
-    create_options = ['Create New Watchlist…']
-    choice = xbmcgui.Dialog().select('Add to Watchlist', create_options + [c['name'] for c in collections])
+    create_options = [CREATE_WATCHLIST_LABEL]
+    choice = xbmcgui.Dialog().select(BOOKMARK_LABEL, create_options + [c['name'] for c in collections])
     if choice < 0:
         return False
     if choice < len(create_options):
@@ -845,25 +887,119 @@ def bookmark_item(item, store=None):
     return True
 
 
-def bookmark_movie(store=None):
-    if xbmcgui.getCurrentWindowDialogId() != DETAILS:
+PICKER_LIST = 4100
+PICKER_EDGE = 4101
+PICKER_SURFACE = 4102
+PICKER_ERROR = 4103
+PICKER_ROW_HEIGHT = 62
+PICKER_MAX_ROWS = 4
+WATCHLIST_BUTTON = 18
+CREATE_WATCHLIST_LABEL = 'Create New Watchlist…'
+WATCHLIST_UPDATE_ERROR = 'Could Not Update Watchlist. Try Again.'
+
+
+def update_movie_bookmark(item, collections):
+    home = xbmcgui.Window(10000)
+    if home.getProperty(PREFIX + 'ID') != item['id']:
         return
-    with one_at_a_time() as free:
-        if free:
-            item = current_movie()
-            if bookmark_item(item, store):
-                update_movie_state(item, store)   # R10.18: no "Added to Watchlist" notification
+    holding = [collection for collection in collections if holds(collection, item)]
+    for key, value in bookmark_properties(item, collections, holding).items():
+        home.setProperty(PREFIX + key, value)
 
 
-def another_movie(store=None):
-    """R10.18: the Menu key / a long press of OK (userdata/keymaps/NetflixWatchlistMore.xml), only while the Watchlist button (18) has focus."""
+class WatchlistPicker(xbmcgui.WindowXMLDialog):
+    def onInit(self):
+        self.rows = self.getControl(PICKER_LIST)
+        self.error = self.getControl(PICKER_ERROR)
+        self.fill(0)
+        self.setFocusId(PICKER_LIST)
+
+    def fill(self, selected):
+        items = []
+        for collection in self.collections:
+            entry = xbmcgui.ListItem(label=collection['name'])
+            entry.setArt({'icon': 'special://skin/extras/icons/square-regular.png'})
+            entry.select(holds(collection, self.item))
+            items.append(entry)
+        create = xbmcgui.ListItem(label=CREATE_WATCHLIST_LABEL)
+        create.setArt({'icon': 'special://skin/extras/icons/circle-plus.png'})
+        items.append(create)
+        height = PICKER_ROW_HEIGHT * min(len(items), PICKER_MAX_ROWS)
+        self.rows.setHeight(height)
+        self.rows.reset()
+        self.rows.addItems(items)
+        self.rows.selectItem(selected)
+        self.error.setPosition(209, 704 + height + 8)
+        self.panel_height = 68 + height + 16
+        self.show_error('')
+
+    def show_error(self, message):
+        self.error.setLabel(message)
+        height = self.panel_height + (28 if message else 0)
+        self.getControl(PICKER_EDGE).setHeight(height)
+        self.getControl(PICKER_SURFACE).setHeight(height - 2)
+
+    def onClick(self, control):
+        if control != PICKER_LIST:
+            return
+        index = self.rows.getSelectedPosition()
+        if not 0 <= index <= len(self.collections):
+            return
+        if xbmcgui.Window(10000).getProperty(PREFIX + 'ID') != self.item['id']:
+            self.close()
+            return
+        try:
+            if index == len(self.collections):
+                name = prompt_name('Create Watchlist')
+                if not name or xbmcgui.Window(10000).getProperty(PREFIX + 'ID') != self.item['id']:
+                    return
+                identifier = self.store.create(name, self.item)
+                collections = self.collections = self.store.read()['lists']
+                self.fill(next((i for i, entry in enumerate(collections) if entry['id'] == identifier), 0))
+            else:
+                selected, collections = self.store.toggle(self.collections[index]['id'], self.item)
+                self.rows.getListItem(index).select(selected)
+        except (ListsError, OSError):
+            self.show_error(WATCHLIST_UPDATE_ERROR)
+            return
+        self.show_error('')
+        update_movie_bookmark(self.item, collections)
+
+    def onAction(self, action):
+        if action.getId() in (9, 10, 92):  # ParentDir, PreviousMenu, NavBack.
+            self.close()
+
+
+def bookmark_movie(store=None, *, force_picker=False):
     if xbmcgui.getCurrentWindowDialogId() != DETAILS or not xbmc.getCondVisibility('Control.HasFocus(18)'):
         return
     with one_at_a_time() as free:
-        if free:
-            item = current_movie()
-            if more_watchlists(item, store):
-                update_movie_state(item, store)
+        if not free:
+            return
+        item = current_movie()
+        store = store or default_store()
+        try:
+            collections = store.read()['lists']
+            if not collections:
+                if bookmark_item(item, store):
+                    update_movie_bookmark(item, store.read()['lists'])
+                return
+            if len(collections) == 1 and not force_picker:
+                _, collections = store.toggle(collections[0]['id'], item)
+                update_movie_bookmark(item, collections)
+                return
+        except (ListsError, OSError):
+            notify(WATCHLIST_UPDATE_ERROR)
+            return
+        picker = WatchlistPicker('Netflix_Watchlist_Picker.xml', 'special://skin', 'Default', '1080i')
+        picker.store, picker.item, picker.collections = store, item, collections
+        try:
+            picker.doModal()
+        finally:
+            del picker
+            if (xbmcgui.getCurrentWindowDialogId() == DETAILS
+                    and xbmcgui.Window(10000).getProperty(PREFIX + 'ID') == item['id']):
+                xbmc.executebuiltin('SetFocus(%d)' % WATCHLIST_BUTTON, True)
 
 
 def main(command, *arguments):
@@ -881,7 +1017,8 @@ def main(command, *arguments):
         if arguments:
             return
         action = {'sync-movie': sync_movie, 'favorite-movie': favorite_movie,
-                  'bookmark-movie': bookmark_movie, 'another-movie': another_movie,
+                  'bookmark-movie': bookmark_movie,
+                  'another-movie': lambda: bookmark_movie(force_picker=True),
                   'restore-row': restore_collection_row}.get(command)
         if action:
             action()

@@ -181,6 +181,11 @@ class TVShows:
 			cm_append((self.cm_sort['exit'], exit_str, container_refresh % self.exit_list_params))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]
+			if self.action == 'favorites_tvshows' and self.params.get('netflix_saved_revision'):
+				saved_id = string(tmdb_id).lstrip('0')
+				if saved_id.isascii() and saved_id.isdecimal():
+					cm.insert(0, ('Remove From Row',
+					              'RunScript(special://skin/extras/netflix_row_remove.py,favorite,tvshow,%s)' % saved_id))
 			props = {
 				'pov_sort_order': string(position), 'unwatchedepisodes': string(total_unwatched),
 				'totalseasons': string(total_seasons), 'totalepisodes': string(total_aired_eps),

@@ -2,6 +2,17 @@
 <window type="dialog">
     <defaultcontrol always="true">10</defaultcontrol>
     <controls>
+        <!-- R10.47: the one item TMDb Helper reads on this page (netflix_series.py TMDB_ITEM_LIST: the page names this
+             list as TMDb Helper's widget container and puts its show here). Never shown or focused. -->
+        <control type="list" id="9167">
+            <left>-10</left>
+            <top>-10</top>
+            <width>1</width>
+            <height>1</height>
+            <visible>false</visible>
+            <itemlayout width="1" height="1" />
+            <focusedlayout width="1" height="1" />
+        </control>
         <!-- R10-playback: no opaque base while the transition cover is up under this page (see Custom_1167). -->
         <control type="image">
             <width>1920</width>

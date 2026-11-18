@@ -6,6 +6,9 @@ from indexers.metadata import art_infodict, episode_infodict, info_tagger, movie
 from indexers.segments import SegmentScraper
 from modules import kodi_utils, settings
 from modules.utils import sec2time
+
+HANDOFF_DEFERRED, HANDOFF_FAILED = object(), object()
+HANDOFF_STOP_WAIT = 2.0   # R10.45: longest wait for the held episode to close before the successor opens
 # from modules.kodi_utils import logger
 
 KODI_VERSION, make_cast_list = kodi_utils.get_kodi_version(), kodi_utils.make_cast_list
@@ -44,9 +47,11 @@ class POVPlayer(MediaPlayer):
 		MediaPlayer.__init__(self)
 		self.monitor = kodi_utils.xbmc_monitor()
 		self.set_resume, self.set_watched = 5, 80
-		self.media_marked, self.nextep_info_gathered = False, False
+		self.media_marked = False
+		self.next_episode = None
+		self.nextep_settings = None
 		self.subs_searched, self.stingers_checked = False, False
-		self.nextep_started, self.play_random_continual = False, False
+		self.play_random_continual = False
 		self.autoplay_next_episode = False
 		self.autoplay_nextep = settings.autoplay_next_episode()
 		self.autoscrape_next_episode = False
@@ -57,7 +62,7 @@ class POVPlayer(MediaPlayer):
 		self.skip_intro_enabled = get_setting('skip_intro.enable') == 'true'
 		self.volume_check = get_setting('volumecheck.enabled', 'false') == 'true'
 
-	def run(self, url, filename, meta, progress_media=None, resume_action=None):
+	def run(self, url, filename, meta, progress_media=None, resume_action=None, next_flight=None, previous=None):
 		if not url: return
 		try:
 			self.meta = meta or {}
@@ -80,14 +85,18 @@ class POVPlayer(MediaPlayer):
 			listitem.setProperty('StartPercent', str(bookmark))
 
 			self.playback_event = False
-			self.play(listitem.getPath(), listitem)
-			while self.playback_event is False: kodi_utils.sleep(100)
+			if previous is None:
+				self.play(listitem.getPath(), listitem)
+				while self.playback_event is False: kodi_utils.sleep(100)
+			else:
+				started = self.complete_replacement(previous, listitem)
+				if started is not True: return started or None
 			if self.playback_event and self.mediatype in ('movie', 'episode'):
 				original = self.meta_get('original_language')
 				if not original or original == 'en':
 					Thread(target=self.select_original_english, args=(original,), daemon=True).start()
 			if callable(progress_media): progress_media()
-			kodi_utils.close_all_dialog()
+			if previous is None: kodi_utils.close_all_dialog()
 			self.exec_task('trakt_ids')
 			if self.mediatype == 'episode':
 				self.play_random_continual = 'random_continual' in self.meta
@@ -97,13 +106,136 @@ class POVPlayer(MediaPlayer):
 					self.autoscrape_next_episode = 'random' not in self.meta
 				if not self.play_random_continual and self.autoplay_nextep and self.autoscrape_nextep:
 					self.autoscrape_next_episode = False
+				if next_flight is not None and next_flight.owns_playback():
+					from modules.netflix_next_episode import NextEpisodeController
+					self.next_episode = NextEpisodeController(self, next_flight)
+					if not self.autoplay_next_episode: self.next_episode.model.dismiss()
 				self.exec_task('episode_handler')
 			if self.volume_check: kodi_utils.volume_checker()
-			while self.isPlayingVideo(): self.check_playback_events()
-			if not self.media_marked: self.media_watched_marker()
-			kodi_utils.clear_local_bookmarks()
-			kodi_utils.clear_property('script.trakt.ids')
-		except: pass
+			return self.watch()
+		except RuntimeError:
+			if previous is not None and previous.next_episode.owns_playback():
+				return HANDOFF_FAILED
+			self.finish_owner()
+		except Exception:
+			self.finish_owner()
+
+	def matching_video(self, expected, path):
+		from modules.netflix_next_episode import playing_episode
+		try:
+			return (self.isPlayingVideo() and playing_episode(self) == expected
+					and self.getPlayingFile().split('|', 1)[0] == path)
+		except RuntimeError:
+			return False
+
+	def onAVStarted(self):
+		event = self.playback_event
+		if isinstance(event, tuple):
+			expected, path, owner, acknowledged = event
+			if not acknowledged and self.matching_video(expected, path):
+				if owner.exiting() and owner.flight.owns_playback():
+					# An asynchronous successor can reach AV after the viewer's Stop.
+					# Stop only the exact file and episode dispatched by this request.
+					self.playback_event = None
+					self.stop()
+				else:
+					self.playback_event = expected, path, owner, True
+		else:
+			super().onAVStarted()
+
+	def onPlayBackStopped(self):
+		# Kodi can deliver the preceding video's Stop/Ended after the replacement's AV callback.
+		if not isinstance(self.playback_event, tuple): super().onPlayBackStopped()
+
+	def onPlayBackEnded(self):
+		if not isinstance(self.playback_event, tuple): super().onPlayBackEnded()
+
+	def onPlayBackSeek(self, position, offset):
+		owner = self.next_episode
+		if owner is not None: owner.model.defer()
+
+	def watch(self):
+		while self.isPlayingVideo():
+			replacement = self.check_playback_events()
+			if replacement is not None:
+				return replacement
+		self.finish_watch()
+
+	def finish_watch(self, replacement=False):
+		owner = self.next_episode
+		if owner is not None:
+			owner.close(handoff=replacement)
+		if not self.media_marked: self.media_watched_marker()
+		kodi_utils.clear_local_bookmarks()
+		kodi_utils.clear_property('script.trakt.ids')
+
+	def finish_owner(self):
+		owner = self.next_episode
+		if owner is not None: self.finish_watch()
+
+	def complete_replacement(self, previous, listitem):
+		owner = previous.next_episode
+		if not owner.can_commit():
+			return HANDOFF_DEFERRED
+		expected = str(self.tmdb_id), int(self.season), int(self.episode)
+		link = listitem.getPath()
+		handed = False
+		try:
+			from modules.sources import Sources
+			if not Sources.update_series_return(owner.flight, 'video', expected): return HANDOFF_FAILED
+			if not owner.can_commit():
+				if not owner.exiting(): Sources.update_series_return(owner.flight, 'video', owner.identity)
+				return HANDOFF_DEFERRED
+			path = link.split('|', 1)[0]
+			self.playback_event = expected, path, owner, False
+			if not self.release_previous(owner): return HANDOFF_FAILED
+			sent = monotonic()
+			self.play(link, listitem)
+			kodi_utils.logger('Netflix Next', 'play() returned after %.2f s' % (monotonic() - sent))
+			# Reuse initial playback's native AV/error/abort events for slow starts.
+			while self.playback_event is not None and owner.flight.owns_playback():
+				if owner.exiting():
+					# Kodi posts Play to the application FIFO; Player.stop sends to that
+					# same queue synchronously and aborts the native opening. It also
+					# covers a Stop pressed just before this request posted Play.
+					if owner.flight.owns_playback() and (not self.isPlayingVideo() or self.matching_video(expected, path)
+							or self.matching_video(owner.identity, owner.file.split('|', 1)[0])):
+						self.stop()
+					return HANDOFF_FAILED
+				if self.playback_event == (expected, path, owner, True) and self.matching_video(expected, path):
+					self.playback_event = True
+					previous.finish_watch(replacement=True)
+					handed = True
+					return True
+				if self.monitor.waitForAbort(0.1): break
+			return HANDOFF_FAILED
+		except Exception:
+			# Once Play has been dispatched, its result is ambiguous. Never dispatch it again.
+			return HANDOFF_FAILED
+		finally:
+			owner.hide()
+			# R10.45: the planned Stop leaves fullscreen video; Kodi may refuse to switch back while the card
+			# (a modal dialog) is up, so return to it once the card is hidden.
+			if handed and self.isPlayingVideo() and not get_visibility('Window.IsActive(fullscreenvideo)'):
+				kodi_utils.execute_builtin('ActivateWindow(fullscreenvideo)')
+
+	def release_previous(self, owner):
+		# R10.45: Android has one hardware video decoder. Play over the held episode leaves the
+		# successor without it (InstanceGuard locked: audio only, black screen). Stop first and
+		# open only once Kodi reports nothing playing. The card's black hand-off stays up.
+		# This player's tuple event keeps the planned Stop out of onPlayBackStopped; no exit
+		# property is written, so the show page and owner.exiting() ignore it. A viewer's Stop
+		# (Netflix.Exit.NoNext) or a lost flight cancels; no release within the bound fails.
+		began = monotonic()
+		self.stop()
+		deadline = began + HANDOFF_STOP_WAIT
+		while owner.flight.owns_playback() and not owner.exiting():
+			# R10.46: isPlaying() alone: Kodi reports it False once the old file is closed (Player.HasMedia lagged).
+			if not self.isPlaying():
+				kodi_utils.logger('Netflix Next', 'decoder released %.2f s after stop' % (monotonic() - began))
+				return True
+			if monotonic() >= deadline or self.monitor.waitForAbort(0.05): break
+		return False
 
 	def select_original_english(self, original):
 		def audio_properties():
@@ -148,7 +280,8 @@ class POVPlayer(MediaPlayer):
 
 	def check_playback_events(self):
 		try:
-			self.monitor.waitForAbort(1)
+			owner = self.next_episode
+			self.monitor.waitForAbort(owner.poll_interval() if owner else 1)
 			self.total_time, self.curr_time = self.getTotalTime(), self.getTime()
 			self.current_point = round(float(self.curr_time/self.total_time * 100), 1)
 			self.remaining_time = round(self.total_time - self.curr_time)
@@ -160,7 +293,10 @@ class POVPlayer(MediaPlayer):
 			if not self.media_marked:
 				if self.current_point >= self.set_watched:
 					self.media_watched_marker()
-			if self.nextep_info_gathered and not self.nextep_started:
+			if owner is not None:
+				if hasattr(self, 'credits'):
+					return owner.tick(self.curr_time, self.total_time, self.credits)
+			elif self.nextep_settings is not None:
 				if self.play_random_continual and self.remaining_time <= self.start_prep:
 					self.exec_task('random_continual')
 				elif self.autoplay_next_episode and self.remaining_time <= self.start_prep:
@@ -215,7 +351,8 @@ class POVPlayer(MediaPlayer):
 			)
 			bookmark = percent if choice is True else 0 if choice is False else 'cancel'
 		else: bookmark = percent
-		if bookmark == 0: ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode)
+		if bookmark == 0:
+			ws.erase_bookmark(self.mediatype, self.tmdb_id, self.season, self.episode, timeout=0.5)
 		return bookmark
 
 	def stinger_notification(self, tmdb_id, poster):
@@ -243,31 +380,31 @@ class POVPlayer(MediaPlayer):
 			else:
 				kodi_utils.logger('POV Skip Intro', 'Marker window %s–%s seconds.' % self.intro)
 				self.exec_task('skip_intro')
-		if self.play_random_continual or self.autoplay_next_episode or self.autoscrape_next_episode:
+		if self.next_episode is None and (self.play_random_continual or self.autoplay_next_episode or self.autoscrape_next_episode):
 			self.info_next_ep()
 
 	def info_next_ep(self):
 		try:
-			self.nextep_settings = settings.autoplay_next_settings()
+			next_settings = settings.autoplay_next_settings()
 			if self.credits is not None and self.credits <= self.getTotalTime():
 				window_time = round(self.getTotalTime() - self.credits + 5)
-				self.nextep_settings['window_time'] = window_time
-				self.nextep_settings['autoscrape_next_window_time'] = window_time
-			elif not self.nextep_settings['run_popup']:
+				next_settings['window_time'] = window_time
+				next_settings['autoscrape_next_window_time'] = window_time
+			elif not next_settings['run_popup']:
 				window_time = round(0.02 * self.getTotalTime())
-				self.nextep_settings['window_time'] = window_time
-			elif self.nextep_settings['timer_method'] == 'percentage':
-				percentage = self.nextep_settings['window_percentage']
+				next_settings['window_time'] = window_time
+			elif next_settings['timer_method'] == 'percentage':
+				percentage = next_settings['window_percentage']
 				window_time = round((percentage/100) * self.getTotalTime())
-				self.nextep_settings['window_time'] = window_time
+				next_settings['window_time'] = window_time
 			else:
-				window_time = self.nextep_settings['window_time']
+				window_time = next_settings['window_time']
 			threshold_check = window_time + 21
-			self.start_prep = self.nextep_settings['scraper_time'] + threshold_check
-			self.nextep_settings.update({'threshold_check': threshold_check, 'start_prep': self.start_prep})
-			self.autoscrape_next_window_time = self.nextep_settings['autoscrape_next_window_time']
-		except: pass
-		finally: self.nextep_info_gathered = True
+			self.start_prep = next_settings['scraper_time'] + threshold_check
+			next_settings.update({'threshold_check': threshold_check, 'start_prep': self.start_prep})
+			self.autoscrape_next_window_time = next_settings['autoscrape_next_window_time']
+			self.nextep_settings = next_settings
+		except Exception: self.nextep_settings = None
 
 	def media_watched_marker(self):
 		self.media_marked = True
@@ -300,7 +437,9 @@ class POVPlayer(MediaPlayer):
 				# isPlayingVideo is False before onPlayBackStopped called, ensure player cleanup
 				# completed or container_refresh in set_bookmark will sometimes crash container
 				_ = any(kodi_utils.sleep(300) or not self.windowIsActive() for i in range(5))
-				if args: ws.set_bookmark(*args)
+				if args:
+					if kodi_utils.netflix_skin(): ws.set_bookmark(*args, refresh='false')
+					else: ws.set_bookmark(*args)
 			elif task_name == 'media_watched':
 				if args: Thread(target=args[0], args=(args[1],)).start()
 			elif task_name == 'episode_handler':
@@ -309,13 +448,13 @@ class POVPlayer(MediaPlayer):
 				from modules.episode_tools import execute_skip_intro
 				Thread(target=execute_skip_intro, args=(self, self.meta)).start()
 			elif task_name == 'scrape_next_ep':
-				self.nextep_started = True
+				self.nextep_settings = None
 				from modules.episode_tools import execute_scrape_nextep
 				Thread(target=execute_scrape_nextep, args=(self, self.meta)).start()
 			elif task_name in ('next_ep', 'random_continual'):
-				self.nextep_started = True
+				next_settings, self.nextep_settings = self.nextep_settings, None
 				from modules.episode_tools import execute_nextep
-				Thread(target=execute_nextep, args=(self, self.meta, self.nextep_settings)).start()
+				Thread(target=execute_nextep, args=(self, self.meta, next_settings)).start()
 			elif task_name == 'subtitles':
 				self.subs_searched = True
 				poster = self.meta.get('poster') or poster_empty

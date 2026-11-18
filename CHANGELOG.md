@@ -1,5 +1,39 @@
 # Changelog
 
+## Release 7 (2026-11-17)
+
+Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
+don't need to run ChadFlix Setup again: Setup 1.0.6 updates its two changed key files by itself.
+
+**Versions:** Arctic Fuse 3 **3.99.418.7**, POV **6.99.1103.6**, ChadFlix Setup **1.0.6**. ChadFlix Repository (1.0.1) is
+unchanged.
+
+### Added
+
+- **Next Episode** card: near the end of an episode a card with a picture of the next episode counts down and plays it
+  by itself.
+- **Remove From Row:** hold **OK** on a title in **Continue Watching** or a favorites row to take it off that row.
+- **Save To Watchlists:** a new picker on the movie page for choosing which of your watchlists a movie is on.
+
+### Changed
+
+- Quality picks: **Highest** is the top source in **All Sources**; **Medium** is the best source that is not a REMUX,
+  with HDR or Dolby Vision when there is one. **Play** starts **Medium**, and Dolby Vision is preferred.
+- Smoother scrolling: TMDb Helper pauses its extra lookups while you browse rows.
+- The lines of remote-button hints are gone from the gear menu, the subtitle style picker, the Showing tile and the
+  source info screen.
+- ChadFlix Setup asks "Close Kodi?" before it switches the look, so the question can no longer vanish while the new look
+  loads. YouTube is asked about once (Kodi's own question).
+
+### Fixed
+
+- Stability fixes.
+
+### Known trade-offs
+
+- A short press of **OK** reacts about 0.1 s later than before (Kodi waits to tell a short press from a hold).
+- The next episode starts 3–4 seconds after the countdown ends.
+
 ## Release 6 (2026-11-16)
 
 Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+
+    <defaultcontrol>996</defaultcontrol>
+    <coordinates>
+        <origin x="0" y="0" />
+    </coordinates>
+    <onload condition="$EXP[Netflix_Row_Removal_Context]">SetFocus(995)</onload>
+    <onload condition="!$EXP[Netflix_Row_Removal_Context]">AlarmClock(Refocus,SetFocus(1001),00:00,silent)</onload>
+    <controls>
+        <include content="DialogContextMenu">
+            <param name="visible">!$EXP[Netflix_Row_Removal_Context] | Window.IsActive(1165)</param>
+            <param name="conceal">[Control.HasFocus(995) | Control.HasFocus(994)]</param>
+        </include>
+        <!-- A grouplist rewrites the Up/Down links of Kodi's cloned context buttons, so keep
+             the cancel directions on this static one-item list. Unlike a button, a list
+             with content executes its Select handler before sending any GUI_MSG_CLICKED.
+             Kodi 21.2's two-argument SendClick takes the window first and its native
+             context OnMessage records choice 1001 against the original item. -->
+        <control type="list" id="995">
+            <width>1</width>
+            <height>1</height>
+            <orientation>vertical</orientation>
+            <itemlayout width="1" height="1" />
+            <focusedlayout width="1" height="1" />
+            <content><item><label>Remove From Row</label></item></content>
+            <visible>$EXP[Netflix_Row_Removal_Context]</visible>
+            <onup>Dialog.Close(contextmenu,true)</onup>
+            <ondown condition="Window.IsActive(1165)">994</ondown>
+            <ondown condition="!Window.IsActive(1165)">Dialog.Close(contextmenu,true)</ondown>
+            <onleft>Dialog.Close(contextmenu,true)</onleft>
+            <onright>Dialog.Close(contextmenu,true)</onright>
+            <onback>Dialog.Close(contextmenu,true)</onback>
+            <onclick condition="$EXP[Netflix_Row_Removal_Context]">SendClick(contextmenu,1001)</onclick>
+        </control>
+        <control type="list" id="994">
+            <right>152</right><bottom>76</bottom><width>224</width><height>52</height>
+            <visible>Window.IsActive(1165) + $EXP[Netflix_Row_Removal_Context] + [Control.HasFocus(995) | Control.HasFocus(994)]</visible>
+            <orientation>vertical</orientation>
+            <itemlayout width="224" height="52">
+                <control type="image"><texture border="24" colordiffuse="FF232323">common/box.png</texture></control>
+                <control type="label"><font>font_mini</font><align>center</align><aligny>center</aligny><textcolor>FFF5F5F5</textcolor><label>$INFO[ListItem.Label]</label></control>
+            </itemlayout>
+            <focusedlayout width="224" height="52">
+                <control type="image"><visible>!Control.HasFocus(994)</visible><texture border="24" colordiffuse="FF232323">common/box.png</texture></control>
+                <control type="label"><visible>!Control.HasFocus(994)</visible><font>font_mini</font><align>center</align><aligny>center</aligny><textcolor>FFF5F5F5</textcolor><label>$INFO[ListItem.Label]</label></control>
+                <control type="image"><visible>Control.HasFocus(994)</visible><texture border="24" colordiffuse="FFF5F5F5">common/box.png</texture></control>
+                <control type="label"><visible>Control.HasFocus(994)</visible><font>font_mini</font><align>center</align><aligny>center</aligny><textcolor>FF101012</textcolor><label>$INFO[ListItem.Label]</label></control>
+            </focusedlayout>
+            <content><item><label>More Options</label></item></content>
+            <onup>995</onup>
+            <ondown>Dialog.Close(contextmenu,true)</ondown>
+            <onleft>Dialog.Close(contextmenu,true)</onleft>
+            <onright>Dialog.Close(contextmenu,true)</onright>
+            <onback>Dialog.Close(contextmenu,true)</onback>
+            <onclick>SetFocus(1001)</onclick>
+        </control>
+    </controls>
+</window>
