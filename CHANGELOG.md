@@ -1,6 +1,6 @@
 # Changelog
 
-## Release 7 (2026-11-17)
+## Release 7 (2026-11-18)
 
 Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
 don't need to run ChadFlix Setup again: Setup 1.0.6 updates its two changed key files by itself.
