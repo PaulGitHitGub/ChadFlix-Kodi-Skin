@@ -36,6 +36,14 @@ SAVED_GUARD = 1.4     # ... and never less than this long after the action START
 LANE_FAVORITE, LANE_BOOKMARK = 1, 2   # R10.22 Save Lane: Right from an episode card steps into the icon row inside it (Favorite, then Watchlist); Left steps back
 STAYS = {MORE, RELATED, FAVORITE, BOOKMARK}  # buttons that are on the page from its first frame
 SEASONS, EPISODES, RECOMMENDATIONS, SECONDARY_STATUS = 20, 21, 22, 23
+# R10.49 (owner: "an All Sources button for TV shows, built in the exact same way as movies"): Right on Play opens the
+# movie page's side menu (Netflix_Series.xml list 47, the look of Custom_1167's list 30) with one row, All Sources.
+# It plays the episode Play would play, with Play's resume rule, as POV's play_media with autoplay=false: the request
+# the movie page's All Sources row makes (netflix_movie_details.play_movie(quality="all")). No POV call before the row
+# is chosen; the request then goes through this page's own play path (launch_play's single flight, the loader,
+# play_and_wait and the reopen), like Play. Left (XML) and Back (onAction) close the menu onto Play.
+SOURCES = 47
+SOURCES_OPEN = "Netflix.Series.SourcesOpen"   # Window(Home), "true" while the menu is open (as Netflix.Movie.QualityOpen)
 # R10.47: TMDb Helper no longer looks up the title focused on the browse rows (paused there), which is where this page's
 # ratings used to come from. The page names its hidden list 9167 as TMDb Helper's widget container (the skin runs TMDb
 # Helper in local mode, which reads it from the top window) and puts the show it describes there; TMDb Helper looks
@@ -576,6 +584,13 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         self.episode_list = self.getControl(EPISODES)
         self.related_list = self.getControl(RECOMMENDATIONS)
         self.setProperty(TMDB_CONTAINER, str(TMDB_ITEM_LIST))   # R10.47 (see TMDB_ITEM_LIST)
+        self.close_sources(focus=False)   # R10.49: never open on arrival (a page closed with it open)
+        try:
+            self.sources_list = self.getControl(SOURCES)   # self is the page: the control stays attached
+            self.sources_list.reset()
+            self.sources_list.addItem(xbmcgui.ListItem("All Sources", offscreen=True))
+        except (RuntimeError, TypeError) as error:
+            xbmc.log("Netflix Series: All Sources row not set: %s" % error, xbmc.LOGWARNING)
         if not self.view.page and self.focus_id() in STAYS:
             self.view.focus = self.focus_id()  # a key pressed between the first frame and this call
         self.load_needed()  # the POV request starts before refresh()'s local favourites lookup
@@ -643,6 +658,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
 
     def refresh(self):
         self.play_wanted = None  # a held Play press belongs to the page it was made on
+        self.close_sources(focus=False)   # R10.49: the menu belongs to the view it was opened on
         self.paint()
         self.feed_tmdb_helper()
         self.refresh_saved_actions()
@@ -790,13 +806,43 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         else:
             label, play = "", ""
             status = "No episodes available." if view.seasons == [] else "Choose an episode to play."
-        if self.play_wanted and self.play_wanted[0] == PRIMARY:
+        if self.play_wanted and self.play_wanted[0] in (PRIMARY, SOURCES):
             label = "Getting ready…"
         elif self.play_wanted and self.play_wanted[0] == RESTART:
             status = "Getting ready…"
         # ActionsReady is always 1 now; it is still written because the XML conditions name it.
+        # R10.49: the All Sources menu is offered while Play plays (or will play) an episode: not on Try Again.
+        sources = "1" if play and not view.retry else ""
         self.properties(ActionsReady="1", PrimaryLabel=label, EpisodeTitle=title, Plot=plot,
-                        CanPlay=play, CanRestart=restart, Status=status)
+                        CanPlay=play, CanRestart=restart, Status=status, CanSources=sources)
+        if not sources:
+            self.close_sources()
+
+    def sources_open(self):
+        return xbmcgui.Window(10000).getProperty(SOURCES_OPEN) == "true"
+
+    def open_sources(self):
+        """R10.49: Right on Play. Like netflix_movie_details.open_movie_quality, minus the source check: the menu shows,
+        and focus moves to its row once Kodi has drawn it (apply_pending_focus, on this page's loop)."""
+        view = self.view
+        rows = getattr(self, "sources_list", None)
+        if (view.page or self.play_request or self.play_wanted is not None or self.focus_id() != PRIMARY
+                or self.getProperty("Series.CanSources") != "1" or rows is None or not rows.size()):
+            return   # (an empty list cannot take focus: the pending focus would wait on it for ever)
+        xbmcgui.Window(10000).setProperty(SOURCES_OPEN, "true")
+        self.pending_focus = SOURCES
+        self.apply_pending_focus()
+
+    def close_sources(self, focus=True):
+        """R10.49: Back (or the row chosen) closes the menu onto Play, as the movie page's list 30 does."""
+        home = xbmcgui.Window(10000)
+        was_open = home.getProperty(SOURCES_OPEN) == "true"
+        home.clearProperty(SOURCES_OPEN)
+        if self.pending_focus == SOURCES:
+            self.pending_focus = None
+        if focus and was_open and self.ready and not self.closed:
+            self.pending_focus = PRIMARY
+            self.apply_pending_focus()
 
     def settle_focus(self, was_pending=False):
         """Main page, after an answer: move the highlight only off a button that has gone, or from Play to
@@ -967,6 +1013,12 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             if action in BACK and xbmcgui.Window(10000).getProperty("Netflix.Play.Phase") != "play":
                 stop_loading(self.play_token)  # POV reads it as cancelled; the loop puts the page back
             return
+        if self.sources_open() and not view.page and action in BACK | {LEFT}:
+            self.close_sources()   # R10.49: Back / Left on the All Sources menu: back to Play, the page stays
+            return
+        if action == RIGHT and not view.page and self.focus_id() == PRIMARY:
+            self.open_sources()    # R10.49
+            return
         if action in BACK:
             if view.page == "episodes" and self.lane:
                 self.set_lane(0)   # R10.22: Back leaves the lane first (back to the card), then the usual Back
@@ -1056,6 +1108,10 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         elif control in DETAIL_ACTIONS:
             if self.detail_request is None:
                 self.detail_request = (view, control)
+        elif control == SOURCES:
+            # R10.49: as the movie page's All Sources row: the menu closes onto Play, then Play's path with autoplay off.
+            self.close_sources()
+            self.press_play(SOURCES)
         elif control in {PRIMARY, RESTART}:
             self.press_play(control)
         elif control == MORE:
@@ -1080,7 +1136,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             return
         if view.recheck_failed:
             view.recheck_failed, view.revalidate = False, "seasons"  # never play what could not be confirmed
-        view.focus = control
+        view.focus = PRIMARY if control == SOURCES else control   # R10.49: an All Sources press comes back to Play
         if self.busy:
             # A request is out (first load, or the re-check of a remembered show): keep the press, with the
             # episode the button named, and act on it when the answer is in ONLY if the answer still means
@@ -1089,7 +1145,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             self.play_wanted = (control, (episode["season"], episode["episode"]) if episode else None, view.again)
             self.show_primary()
         elif view.primary:
-            self.play(view.primary, restart=control == RESTART)
+            self.play(view.primary, restart=control == RESTART, all_sources=control == SOURCES)
 
     def press_episode(self, episode):
         """OK on an episode in More Episodes: the same rule as Play. What is on screen may be remembered data."""
@@ -1124,13 +1180,13 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         # plain "Play" during the first load named no episode and follows whatever loaded, except onto
         # "Watch Again", which nobody was shown.
         same = current is not None and (named == current and again == view.again if named else not view.again)
-        if same and not view.recheck_failed and not view.page and (control == PRIMARY or view.resumable):
-            self.play(episode, restart=control == RESTART)
+        if same and not view.recheck_failed and not view.page and (control in (PRIMARY, SOURCES) or view.resumable):
+            self.play(episode, restart=control == RESTART, all_sources=control == SOURCES)
         if not self.closed:  # nothing (or no longer that) to play: show what the answer said instead
             self.show_primary()
             self.settle_focus()
 
-    def play(self, episode, restart=False):
+    def play(self, episode, restart=False, all_sources=False):
         if episode["unaired"]:
             self.properties(EpisodeStatus="This episode hasn’t aired yet.")
             return
@@ -1144,11 +1200,16 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         # R10-playback (owner): the page's choice is final, POV never asks "Resume / Start Over" on top: "Resume"
         # resumes, every other press (Play, Watch Again, Play From Beginning, an episode row) starts at 0.
         params["netflix_resume"] = "resume" if resumable and not restart else "restart"
+        if all_sources:
+            # R10.49: the movie page's All Sources request (play_movie(quality="all")): POV searches and lists every
+            # source, the viewer picks one. Same episode, resume point, token, loader, cover and return as Play.
+            params["autoplay"] = "false"
         # R10-playback: the request's token names it for POV (quiet mode: no loading window of its own, facts and
         # phase published for the loader) and is what Back withdraws. POV names the episode's source mid-load.
         self.play_token = uuid4().hex
         params["netflix_playback_cover"] = self.play_token
-        params["netflix_play_facts"] = "true"
+        if not all_sources:   # R10.49: as on the movie page, All Sources carries no facts (the viewer picks the source)
+            params["netflix_play_facts"] = "true"
         # Playing changes what Play should do next, however this playback ends.
         remember(CACHE, CACHE_SHOWS, show_key(self.view.tmdb_id), None)
         self.play_request = pov_url("play_media", self.view.tmdb_id, **params)
@@ -1463,6 +1524,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                 if monitor.waitForAbort(0.04 if waiting else 0.09):
                     break
         finally:
+            xbmcgui.Window(10000).clearProperty(SOURCES_OPEN)   # R10.49 (also the XML onunload)
             if up():
                 self.close()
 

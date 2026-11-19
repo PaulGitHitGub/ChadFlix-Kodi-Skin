@@ -1,6 +1,6 @@
 import json
 from modules.debrid import Source
-from modules.source_presentation import build_source_groups, format_source_size, style_source_label, FILTERS
+from modules.source_presentation import build_source_groups, format_source_size, source_is_unchecked, style_source_label, FILTERS
 from modules.kodi_utils import dialog, hide_busy_dialog, local_string as ls, media_path, ok_dialog, select_dialog
 from modules.settings import get_art_provider, info_icons, provider_sort_ranks
 from windows import BaseDialog
@@ -148,7 +148,7 @@ class SourceResults(BaseDialog):
 	def make_items(self):
 		self.item_list = []
 		self._groups = {}
-		self.source_groups = build_source_groups(self.results)
+		self.source_groups = build_source_groups(self.results, include_unchecked=True)
 		self.active_filter, self.context_filtered_items = 'all', None
 		self.filter_applied = False
 		self.available_filters = {'all'}
@@ -245,8 +245,9 @@ class SourceResults(BaseDialog):
 #				set_property('source', json.dumps(item))
 				set_property('source', str(count))
 				set_property('pov.source.label', group['label'])
-				set_property('pov.source.label.focused', style_source_label(group['label'], True))
-				set_property('pov.source.label.unfocused', style_source_label(group['label'], False))
+				unchecked = source_is_unchecked(item)
+				set_property('pov.source.label.focused', style_source_label(group['label'], True, unchecked))
+				set_property('pov.source.label.unfocused', style_source_label(group['label'], False, unchecked))
 				set_property('pov.source.detail', group['detail'])
 				set_property('pov.source.video', ' · '.join(group['video_badges']) or 'N/A')
 				set_property('pov.source.audio', ' · '.join(group['audio_badges']) or 'N/A')

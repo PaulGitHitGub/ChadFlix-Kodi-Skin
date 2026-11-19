@@ -3,14 +3,14 @@
   {
    "added": 15,
    "changed": 44,
-   "content_sha256": "772bba6b83b86acbeb47516802740202b1880d3477ffe6701c9b2674c20d63de",
+   "content_sha256": "0281d6ed036951a365155345ece07343c2a08fd2b1a9b0668087c7ccb0c50e03",
    "files": 226,
    "id": "plugin.video.pov",
    "overlay": "inputs/overlays/plugin.video.pov",
-   "overlay_sha256": "2cdc932ae5f7142a97e5070050c141252d181c790de174a3039ca5ec1d4f7cee",
+   "overlay_sha256": "04aa9cab3c7ff3b007ce3edbea125db7c2570351f96a15a4c573a54d68ea81d6",
    "removed": 0,
-   "sha256": "a44dd01b98139c32f732e34789ee1f741f3eb746c06efa11ac4d0635dfcb6489",
-   "size": 867345,
+   "sha256": "b5ded7fcc834280cb9b42c560272dbcda073a38c1ae5352d3f0eb30e4f3690b2",
+   "size": 868116,
    "source": "upstream+overlay",
    "upstream": {
     "file": "plugin.video.pov-6.11.03.zip",
@@ -191,14 +191,14 @@
   {
    "added": 102,
    "changed": 48,
-   "content_sha256": "859bd62d936e76df22d108bb103313be8acf4693d452f4963365bc51c3d93bb8",
+   "content_sha256": "da79328d0e389b6fcfa43095978b7336c942018b2eaa8d5d883bc5aa6da61fcb",
    "files": 3839,
    "id": "skin.arctic.fuse.3",
    "overlay": "inputs/overlays/skin.arctic.fuse.3",
-   "overlay_sha256": "69d6caf1975853d1c9dc2113a94f61d8919d94b454fca22982fc3795e4b29eca",
+   "overlay_sha256": "c2709a6adb7f3e75c3efd1c77f04ddd8a76383828daa8ae061c6c139e3c81667",
    "removed": 2,
-   "sha256": "944887f107a58cc2edd1a4d7bf1aa0b7fa3c66dcde55cf63616789c9e8e6f4b1",
-   "size": 60489518,
+   "sha256": "7f6b41582fb6bb3c63572b7c4ba9dabcccb4a290dd705ebe05f3cd59669b6e76",
+   "size": 60492010,
    "source": "upstream+overlay",
    "upstream": {
     "file": "skin.arctic.fuse.3-3.4.18.zip",
@@ -220,7 +220,7 @@
   "md5": "eb668bfb726b1e21eea063e35c00be68",
   "sha256": "7cf69f6fc60e4ee22c3e6c6a2ba3b6c8ab5e799a82e2958e9d9dbf01f7b3f884"
  },
- "lock_sha256": "6bfd01160fc68a3cc74b1a37b02019b9954f2d8849fd032a81024d73d39607b0",
- "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.48b-scroll-speed-crashfix-2026-11-17; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files)",
+ "lock_sha256": "a34427a5168d4ec09532bc2507c6ebebbf92071c26594bd85d05a4af65de2b62",
+ "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.51-plot-text-2026-11-18; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files, unchanged in R10.51)",
  "repository_zip": "repository.chadflix-1.0.1.zip"
 }

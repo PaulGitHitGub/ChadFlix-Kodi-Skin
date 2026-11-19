@@ -2715,11 +2715,14 @@
                     <label>$INFO[Container($PARAM[id]).ListItem.MPAA]</label>
                     <visible>String.IsEmpty(Container($PARAM[id]).ListItem.Genre) + String.IsEmpty(Container($PARAM[id]).ListItem.Year) + String.IsEmpty(Container($PARAM[id]).ListItem.Duration) + !String.IsEmpty(Container($PARAM[id]).ListItem.MPAA)</visible>
                 </control>
-                <control type="textbox">
+                <control type="label">
                     <left>72</left>
                     <top>615</top>
                     <width>896</width>
-                    <height>119</height>
+                    <height>33</height>
+                    <aligny>top</aligny>
+                    <wrapmultiline>false</wrapmultiline>
+                    <scroll>false</scroll>
                     <font>font_mini</font>
                     <textcolor>FFBBBBBB</textcolor>
                     <label>$INFO[Container($PARAM[id]).ListItem.Plot]</label>

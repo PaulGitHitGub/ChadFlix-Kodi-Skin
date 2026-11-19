@@ -1,6 +1,6 @@
 {
  "_comment": "Every input of a release build. tools/build_release.py reads nothing else. Change a version here and in the overlay addon.xml together.",
- "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.48b-scroll-speed-crashfix-2026-11-17; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files)",
+ "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.51-plot-text-2026-11-18; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files, unchanged in R10.51)",
  "previous_release": "6",
  "github_user": "PaulGitHitGub",
  "repo_slug": "ChadFlix-Kodi-Skin",

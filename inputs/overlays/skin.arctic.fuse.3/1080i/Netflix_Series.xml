@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <window type="dialog">
     <defaultcontrol always="true">10</defaultcontrol>
+    <!-- R10.49: the All Sources menu beside Play (list 47) is closed whenever the page goes (netflix_series.py also
+         clears it, as Custom_1167 does for its quality menu). -->
+    <onunload>ClearProperty(Netflix.Series.SourcesOpen,Home)</onunload>
     <controls>
         <!-- R10.47: the one item TMDb Helper reads on this page (netflix_series.py TMDB_ITEM_LIST: the page names this
              list as TMDb Helper's widget container and puts its show here). Never shown or focused. -->
@@ -223,7 +226,7 @@
                     <width>748</width>
                     <!-- 1 to 5 lines; a longer description stops after the fifth line (Read Full Description removed). -->
                     <height min="42" max="178">auto</height>
-                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + ![System.IdleTime(1) + ControlGroup(29).HasFocus]</visible>
+                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + ![System.IdleTime(1) + ControlGroup(29).HasFocus + !Control.HasFocus(47)]</visible>
                 </control>
                 <control type="textbox">
                     <font>font_main</font>
@@ -234,21 +237,23 @@
                     <top>-4</top>
                     <width>748</width>
                     <height min="42" max="178">auto</height>
-                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + System.IdleTime(1) + ControlGroup(29).HasFocus</visible>
+                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + System.IdleTime(1) + ControlGroup(29).HasFocus + !Control.HasFocus(47)</visible>
                 </control>
             </control>
+            <!-- R10.49: 29 and 30 are 1180 wide (were 750) only so the All Sources menu right of Play (x 684 to 1244)
+                 is not clipped: a grouplist clips to its own rectangle. Every child keeps its own width and place. -->
             <control type="grouplist" id="29">
                 <visible>!$EXP[Netflix_Play_Loading]</visible>
                 <left>78</left>
                 <top>560</top>
-                <width>750</width>
+                <width>1180</width>
                 <height>460</height>
                 <orientation>vertical</orientation>
                 <usecontrolcoords>false</usecontrolcoords>
                 <itemgap>16</itemgap>
                 <defaultcontrol>30</defaultcontrol>
                 <control type="grouplist" id="30">
-                    <width>750</width>
+                    <width>1180</width>
                     <height>355</height>
                     <orientation>vertical</orientation>
                     <usecontrolcoords>false</usecontrolcoords>
@@ -413,6 +418,9 @@
                             <textcolor>FFF5F5F5</textcolor>
                             <focusedcolor>FF101010</focusedcolor>
                             <label>$INFO[Window.Property(Series.PrimaryLabel)]</label>
+                            <!-- R10.49: Right opens the All Sources menu (netflix_series.py onAction, only while
+                                 Series.CanSources is 1); the XML itself moves nothing. -->
+                            <onfocus>ClearProperty(Netflix.Series.SourcesOpen,Home)</onfocus>
                             <onleft>noop</onleft>
                             <onright>noop</onright>
                             <texturefocus border="32,0,32,0" colordiffuse="FFF5F5F5">common/menu.png</texturefocus>
@@ -438,6 +446,64 @@
                             <aspectratio>keep</aspectratio>
                             <visible>String.IsEqual(Window.Property(Series.ActionsReady),1) + String.IsEqual(Window.Property(Series.CanPlay),1) + !Control.HasFocus(10)</visible>
                             <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/play2.png</texture>
+                        </control>
+                        <!-- R10.49 (owner: "an All Sources button for TV shows, built in the exact same way as movies"):
+                             the movie page's quality menu (Custom_1167 list 30) with one row, All Sources. Same panel,
+                             glass, row, pill, fonts and colours; 40 to the right of Play and 12 above it, as on the
+                             movie page. Panel height = 10 + one 84 row + 10. No sub-line: this page checks no
+                             sources in advance. Play's chevron and its faint plate while the menu is open are the
+                             movie page's, on this page's wider Play (566 x 62, common/menu.png, focused text FF101010). -->
+                        <control type="image">
+                            <left>530</left><top>20</top><width>22</width><height>22</height>
+                            <texture colordiffuse="FF101010">special://skin/extras/icons/angle-right.png</texture>
+                            <visible>Control.HasFocus(10) + String.IsEqual(Window.Property(Series.CanSources),1)</visible>
+                        </control>
+                        <control type="image">
+                            <width>566</width><height>62</height>
+                            <texture border="32,0,32,0" colordiffuse="2EF5F5F5">common/menu.png</texture>
+                            <visible>String.IsEqual(Window(Home).Property(Netflix.Series.SourcesOpen),true) + !Control.HasFocus(10)</visible>
+                        </control>
+                        <control type="image">
+                            <left>530</left><top>20</top><width>22</width><height>22</height>
+                            <texture colordiffuse="FFF5F5F5">special://skin/extras/icons/angle-right.png</texture>
+                            <visible>String.IsEqual(Window(Home).Property(Netflix.Series.SourcesOpen),true) + !Control.HasFocus(10)</visible>
+                        </control>
+                        <control type="group">
+                            <left>606</left><top>-12</top>
+                            <width>560</width><height>104</height>
+                            <visible>String.IsEqual(Window(Home).Property(Netflix.Series.SourcesOpen),true)</visible>
+                            <include>Netflix_Menu_Glass_Background</include>
+                            <!-- Its one row ("All Sources") is put in by netflix_series.py (onInit): a static <content>
+                                 item would run its own onclick and the script would never hear the click. Left closes
+                                 here at once; Back is the script's (an XML onback would clear the menu before the
+                                 script sees the Back, and the script would then close the page). -->
+                            <control type="list" id="47">
+                                <description>All Sources</description>
+                                <left>0</left><top>10</top><width>560</width><height>84</height>
+                                <orientation>vertical</orientation>
+                                <scrolltime>90</scrolltime>
+                                <onleft>ClearProperty(Netflix.Series.SourcesOpen,Home)</onleft>
+                                <onleft>10</onleft>
+                                <onright>noop</onright><onup>noop</onup><ondown>noop</ondown>
+                                <itemlayout width="560" height="84">
+                                    <control type="label">
+                                        <left>32</left><top>10</top><width>496</width><height>34</height>
+                                        <aligny>center</aligny><font>font_main_bold</font><textcolor>FFF5F5F5</textcolor>
+                                        <label>$INFO[ListItem.Label]</label>
+                                    </control>
+                                </itemlayout>
+                                <focusedlayout width="560" height="84">
+                                    <control type="image">
+                                        <left>8</left><top>2</top><width>544</width><height>80</height>
+                                        <texture border="24" colordiffuse="FFF5F5F5">special://home/addons/plugin.video.pov/resources/skins/Default/media/source-pill.png</texture>
+                                    </control>
+                                    <control type="label">
+                                        <left>32</left><top>10</top><width>496</width><height>34</height>
+                                        <aligny>center</aligny><font>font_main_bold</font><textcolor>FF080808</textcolor>
+                                        <label>$INFO[ListItem.Label]</label>
+                                    </control>
+                                </focusedlayout>
+                            </control>
                         </control>
                     </control>
                     <control type="group" id="41">

@@ -14,6 +14,8 @@ _HASH = re.compile(r'^(?:[a-f0-9]{40}|[a-f0-9]{64})$', re.I)
 _PACKS = frozenset(('true', 'season', 'show'))
 _HDR_FORMATS = frozenset(('HDR', 'HDR10', 'HDR10+', 'D/VISION', 'DOLBY VISION'))
 _BLURAY_ACCENT = {True: 'FF1D4ED8', False: 'FF719EFF'}
+# R10.50: the list's second-line grey (as its video/audio detail lines) on the focused pill / unfocused row.
+_UNCHECKED_GREY = {True: 'FF454545', False: 'FFB8B8B8'}
 _IDENTITY_FIELDS = (
     'filename', 'file_name', 'file_path', 'file', 'language', 'languages',
     'audio_language', 'audio_languages', 'edition', 'version', 'package',
@@ -29,11 +31,16 @@ def _tags(source):
     return frozenset(part.strip().upper() for part in _text(source.get('extraInfo')).split('|') if part.strip())
 
 
-def style_source_label(label, focused=False):
-    """Accent Blu-Ray labels, including the 4K prefix for 4K Blu-Ray."""
+def style_source_label(label, focused=False, unchecked=False):
+    """Accent Blu-Ray labels, including the 4K prefix for 4K Blu-Ray. R10.50: an unchecked source gets a grey
+    second line, "Unchecked" (POV's own word for it, Title Case)."""
     if label == '4K Blu-Ray':
-        return '[COLOR %s]%s[/COLOR]' % (_BLURAY_ACCENT[bool(focused)], label)
-    return label.replace('Blu-Ray', '[COLOR %s]Blu-Ray[/COLOR]' % _BLURAY_ACCENT[bool(focused)])
+        styled = '[COLOR %s]%s[/COLOR]' % (_BLURAY_ACCENT[bool(focused)], label)
+    else:
+        styled = label.replace('Blu-Ray', '[COLOR %s]Blu-Ray[/COLOR]' % _BLURAY_ACCENT[bool(focused)])
+    if unchecked:
+        styled += '[CR][COLOR %s]Unchecked[/COLOR]' % _UNCHECKED_GREY[bool(focused)]
+    return styled
 
 
 def source_is_available(source):
@@ -48,10 +55,21 @@ def source_is_available(source):
     return True
 
 
-def available_sources(results):
+def source_is_unchecked(source):
+    """R10.50: a Real-Debrid torrent whose cache state POV could not confirm ("Unchecked realdebrid"). Real-Debrid has
+    no cache-check API; POV's estimate (DMM + Torrentio) misses some cached hashes. Only the All Sources list offers
+    these; Play, the quality tiers and the Next Episode preparation keep using confirmed sources only."""
+    if not isinstance(source, dict) or source.get('scrape_provider') != 'external':
+        return False
+    return str(source.get('cache_provider') or '').strip().lower() == 'unchecked realdebrid'
+
+
+def available_sources(results, include_unchecked=False):
+    """Confirmed sources. include_unchecked (R10.50, the All Sources list only) also keeps unchecked Real-Debrid
+    torrents; "Uncached" ones are never kept."""
     sources, seen = [], set()
     for source in results:
-        if not source_is_available(source):
+        if not (source_is_available(source) or (include_unchecked and source_is_unchecked(source))):
             continue
         # Identical full records are duplicates. Different accounts, resolvers,
         # files, headers or URLs must remain available as distinct fallbacks.
@@ -230,10 +248,11 @@ def _describe(source, tags):
             tuple(video_badges), tuple(audio_badges), codec or '', channel_label or '')
 
 
-def build_source_groups(results):
-    """Build ordered display groups while retaining every original playback source."""
+def build_source_groups(results, include_unchecked=False):
+    """Build ordered display groups while retaining every original playback source. include_unchecked: R10.50, the
+    All Sources window only (the quality tiers and the details-page preview keep the default, confirmed only)."""
     groups, by_identity = [], {}
-    for source in prefer_dynamic_range(available_sources(results)):
+    for source in prefer_dynamic_range(available_sources(results, include_unchecked)):
         tags = _tags(source)
         identity = _identity(source, tags)
         group = by_identity.get(identity) if identity is not None else None

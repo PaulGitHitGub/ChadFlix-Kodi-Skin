@@ -12,7 +12,7 @@ from indexers.metadata import get_title, movie_meta, season_episodes_meta, tvsho
 from modules import kodi_utils, player, settings, source_utils
 from modules.debrid import DebridCheck, Source, debrid_enabled, debrid_type_enabled
 from modules.utils import get_datetime, safe_string, string_to_float
-from modules.source_presentation import available_sources, play_facts, prefer_dynamic_range, rank_playback_sources
+from modules.source_presentation import available_sources, play_facts, prefer_dynamic_range, rank_playback_sources, source_is_unchecked
 from windows import create_window, open_window
 # from modules.kodi_utils import logger
 
@@ -418,7 +418,10 @@ class Sources:
 			return self.source_select()
 
 	def play_source(self, results):
-		results = available_sources(results)
+		# R10.50: only the All Sources list (not autoplay, not background) also lists unchecked Real-Debrid torrents;
+		# Play, the movie quality tiers and background checks keep confirmed sources only.
+		listing = not self.autoplay and not self.background
+		results = available_sources(results, include_unchecked=listing)
 		picks = all_sources_picks(results, self.mediatype) if self.autoplay and self.mediatype == 'movie' else None
 		if self.autoplay:
 			results = rank_playback_sources(results, quality_ranks)
@@ -466,7 +469,10 @@ class Sources:
 				source_index, items = 0, results
 			elif source in results:
 				source_index = results.index(source)
-				items = [i for i in results[source_index:] if 'Uncached' not in i.get('cache_provider', '')]
+				# R10.50: the picked row first (it may be unchecked), then later rows as before, but never another
+				# unchecked one: a failing unchecked torrent costs ~1.5 s and an add/delete in the debrid account.
+				items = [source, *(i for i in results[source_index + 1:] if 'Uncached' not in i.get('cache_provider', '')
+					and not source_is_unchecked(i))]
 			else: source_index, items = None, [source]
 			if self.progress_dialog.full_screen:
 				self.progress_dialog.make(self.meta)
@@ -488,7 +494,7 @@ class Sources:
 					elif self.progress_dialog.full_screen and self.progress_dialog.iscanceled(): break
 					percent = int(((total_items := len(items))-count)/total_items*100)
 					from modules.source_presentation import build_source_groups, format_source_size
-					group = next(iter(build_source_groups([item])), {})
+					group = next(iter(build_source_groups([item], include_unchecked=True)), {})
 					line1 = group.get('label', 'Opening source')
 					line2 = ' · '.join(value for value in (format_source_size(item),
 						' / '.join(group.get('video_badges', ())), ' / '.join(group.get('audio_badges', ()))) if value)

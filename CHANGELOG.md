@@ -14,12 +14,18 @@ unchanged.
   by itself.
 - **Remove From Row:** hold **OK** on a title in **Continue Watching** or a favorites row to take it off that row.
 - **Save To Watchlists:** a new picker on the movie page for choosing which of your watchlists a movie is on.
+- **All Sources** on the show page: press **Right** from **Resume** (or **Play**) to open an **All Sources** side menu,
+  the same look as on the movie page.
 
 ### Changed
 
 - Quality picks: **Highest** is the top source in **All Sources**. **Medium** is the first HDR or Dolby Vision file in
   the **All Sources** list that isn't a remux (Dolby Vision preferred). **Play** starts **Medium**.
 - Smoother scrolling: TMDb Helper pauses its extra lookups while you browse rows.
+- **All Sources** lists also show **Unchecked** rows: sources Real-Debrid hasn't confirmed as cached, at the bottom of
+  the list with a grey **Unchecked** line. **Play**, the quality picks and the next-episode preparation are unchanged.
+- The plot on the Home rows is now one line ending in "…". The full plot is still on the movie and show pages. Holding
+  **Left** or **Right** on Home now scrolls much more smoothly (about 40 → 57 frames per second on a Shield).
 - The lines of remote-button hints are gone from the gear menu, the subtitle style picker, the Showing tile and the
   source info screen.
 - ChadFlix Setup asks "Close Kodi?" before it switches the look, so the question can no longer vanish while the new look
@@ -39,6 +45,9 @@ unchanged.
   they do.
 - **Menu** and **C** no longer open **Add to Another Watchlist** on a movie page. Holding **OK** on **Watchlist** still
   does.
+- The Home rows no longer show the whole plot, only as much as fits on one line.
+- An **Unchecked** row may not play. After a few seconds you get "No Results" and the page comes back. The "N sources"
+  line under **All Sources** on a movie page still counts confirmed sources only.
 
 ## Release 6 (2026-11-16)
 
