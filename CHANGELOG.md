@@ -19,12 +19,12 @@ unchanged.
 
 ### Changed
 
-- Quality picks: **Highest** is the top source in **All Sources**. **Medium** is the first HDR or Dolby Vision file in
-  the **All Sources** list that isn't a remux (Dolby Vision preferred). **Play** starts **Medium**.
+- Quality picks: **Highest** is the top source in **All Sources**. **Medium** is the first confirmed HDR or Dolby Vision
+  file in the **All Sources** list that isn't a remux (Dolby Vision preferred). **Play** starts **Medium**.
 - Smoother scrolling: TMDb Helper pauses its extra lookups while you browse rows.
 - **All Sources** lists also show **Unchecked** rows: sources Real-Debrid hasn't confirmed as cached, at the bottom of
   the list with a grey **Unchecked** line. **Play**, the quality picks and the next-episode preparation are unchanged.
-- The plot on the Home rows is now one line ending in "…". The full plot is still on the movie and show pages. Holding
+- The plot on the Home rows is now cut short to one line (a plot with its own line break shows two). The full plot is still on the movie and show pages. Holding
   **Left** or **Right** on Home now scrolls much more smoothly (about 40 → 57 frames per second on a Shield).
 - The lines of remote-button hints are gone from the gear menu, the subtitle style picker, the Showing tile and the
   source info screen.
@@ -45,7 +45,7 @@ unchanged.
   they do.
 - **Menu** and **C** no longer open **Add to Another Watchlist** on a movie page. Holding **OK** on **Watchlist** still
   does.
-- The Home rows no longer show the whole plot, only as much as fits on one line.
+- The Home rows no longer show the whole plot, only its first line.
 - An **Unchecked** row may not play. After a few seconds you get "No Results" and the page comes back. The "N sources"
   line under **All Sources** on a movie page still counts confirmed sources only.
 
