@@ -1,3 +1,4 @@
+from contextlib import closing, contextmanager
 from datetime import datetime, timedelta, timezone
 from operator import itemgetter
 from threading import Thread
@@ -20,16 +21,19 @@ DELETE_MOVIE_SHOW = 'DELETE FROM watched_status WHERE db_type = ? AND media_id =
 DELETE_BM = 'DELETE FROM progress WHERE db_type = ? AND media_id = ? AND season = ? AND episode = ?'
 plswait_str = kodi_utils.local_string(32577)
 
-def _database_connect(watched_indicators):
+def _database_connect(watched_indicators, timeout=5.0):
 	database_file = kodi_utils.get_database(watched_indicators)
-	return kodi_utils.database_connect(database_file, isolation_level=None)
+	return kodi_utils.database_connect(database_file, isolation_level='IMMEDIATE', timeout=timeout)
 
 def set_PRAGMAS(dbcon):
 	dbcur = dbcon.cursor()
-	dbcur.execute("""PRAGMA synchronous = OFF""")
-	dbcur.execute("""PRAGMA journal_mode = OFF""")
 	dbcur.execute("""PRAGMA mmap_size = 268435456""")
 	return dbcur
+
+@contextmanager
+def _watched_cursor(watched_indicators, timeout=5.0):
+	with closing(_database_connect(watched_indicators, timeout=timeout)) as dbcon, dbcon:
+		yield set_PRAGMAS(dbcon)
 
 def dt_formats(watched_indicators):
 	if watched_indicators == 1: return '1970-01-01T00:00:00.000Z'
@@ -64,10 +68,9 @@ def detect_bookmark(bookmarks, tmdb_id, season='', episode=''):
 
 def get_bookmarks(watched_indicators, mediatype):
 	try:
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		data = dbcur.execute(GET_BM, (mediatype,))
-		return MappingProxyType({f"{i[1]}_{i[2]}_{i[3]}": i for i in data})
+		with _watched_cursor(watched_indicators) as dbcur:
+			data = dbcur.execute(GET_BM, (mediatype,))
+			return MappingProxyType({f"{i[1]}_{i[2]}_{i[3]}": i for i in data})
 	except: pass
 
 def set_bookmark(mediatype, tmdb_id, curr_time, total_time, title, season='', episode='', refresh='true'):
@@ -77,10 +80,8 @@ def set_bookmark(mediatype, tmdb_id, curr_time, total_time, title, season='', ep
 		resume_point = round(adjusted_current_time/float(total_time)*100, 1)
 		watched_indicators = settings.watched_indicators()
 		last_played = get_last_played_value(watched_indicators)
-#		erase_bookmark(mediatype, tmdb_id, season, episode)
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		dbcur.execute(SET_BM, (mediatype, tmdb_id, season, episode, str(resume_point), str(curr_time), last_played, 0, title))
+		with _watched_cursor(watched_indicators) as dbcur:
+			dbcur.execute(SET_BM, (mediatype, tmdb_id, season, episode, str(resume_point), str(curr_time), last_played, 0, title))
 		written = True
 		if refresh == 'true' and not kodi_utils.netflix_skin(): kodi_utils.watched_refresh(tmdb_id)
 		if watched_indicators not in (1, 2): return
@@ -89,22 +90,25 @@ def set_bookmark(mediatype, tmdb_id, curr_time, total_time, title, season='', ep
 	except: pass
 	finally: netflix_refresh_last(written and refresh == 'true', tmdb_id)
 
-def erase_bookmark(mediatype, tmdb_id, season='', episode='', refresh='false'):
+def erase_bookmark(mediatype, tmdb_id, season='', episode='', refresh='false', *, timeout=5.0):
 	written = False
 	try:
 		watched_indicators = settings.watched_indicators()
-		bookmarks = get_bookmarks(watched_indicators, mediatype)
 		if mediatype == 'episode': season, episode = int(season), int(episode)
-		try: resume_id = detect_bookmark(bookmarks, tmdb_id, season, episode)[2]
-		except: return
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		dbcur.execute(DELETE_BM, (mediatype, tmdb_id, season, episode))
+		identity = mediatype, tmdb_id, season, episode
+		with _watched_cursor(watched_indicators, timeout=timeout) as dbcur:
+			dbcur.execute('BEGIN IMMEDIATE')
+			row = dbcur.execute('SELECT resume_id FROM progress WHERE db_type = ? AND media_id = ? AND season = ? AND episode = ?', identity).fetchone()
+			if row is None: return
+			resume_id = row[0]
+			dbcur.execute(DELETE_BM, identity)
 		written = True
 		if refresh == 'true' and not kodi_utils.netflix_skin(): kodi_utils.watched_refresh(tmdb_id)
 		if watched_indicators not in (1, 2): return
 		function = mdbl_progress if watched_indicators == 2 else trakt_progress
 		function('clear_progress', mediatype, tmdb_id, 0, season, episode, resume_id)
+	except kodi_utils.database.OperationalError:
+		kodi_utils.logger('POV Bookmark', 'Could not clear the stored bookmark.')
 	except: pass
 	finally: netflix_refresh_last(written and refresh == 'true', tmdb_id)
 
@@ -112,9 +116,8 @@ def batch_erase_bookmark(watched_indicators, insert_list, action):
 	try:
 		if action == 'mark_as_watched': modified_list = [(i[0], i[1], i[2], i[3]) for i in insert_list]
 		else: modified_list = insert_list
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		dbcur.executemany(DELETE_BM, modified_list)
+		with _watched_cursor(watched_indicators) as dbcur:
+			dbcur.executemany(DELETE_BM, modified_list)
 		if watched_indicators not in (1, 2): return
 		def _process(arg):
 			try: function(*arg)
@@ -154,7 +157,7 @@ def mark_as_watched_unwatched_movie(params):
 		elif watched_indicators == 2:
 			mdbl_watched_unwatched(action, 'movies', tmdb_id)
 			clear_mdbl_collection_watchlist_data('watchlist')
-	finally: netflix_refresh_last(refresh or from_playback, tmdb_id)
+	finally: netflix_refresh_last(refresh and not from_playback, tmdb_id)
 
 def mark_as_watched_unwatched_episode(params):
 	season, episode = int(params.get('season')), int(params.get('episode'))
@@ -176,7 +179,7 @@ def mark_as_watched_unwatched_episode(params):
 		elif watched_indicators == 2:
 			mdbl_watched_unwatched(action, mediatype, tmdb_id, tvdb_id, season, episode)
 			clear_mdbl_collection_watchlist_data('watchlist')
-	finally: netflix_refresh_last(refresh or from_playback, tmdb_id)
+	finally: netflix_refresh_last(refresh and not from_playback, tmdb_id)
 
 def mark_as_watched_unwatched_tvshow(params):
 	action = params.get('action')
@@ -261,22 +264,24 @@ def mark_as_watched_unwatched_season(params):
 def mark_as_watched_unwatched(watched_indicators, mediatype='', tmdb_id='', action='', season='', episode='', title=''):
 	try:
 		last_played = get_last_played_value(watched_indicators)
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		if action == 'mark_as_watched':
-			dbcur.execute(SET_MOVIE_SHOW, (mediatype, tmdb_id, season, episode, last_played, title))
-		elif action == 'mark_as_unwatched':
-			dbcur.execute(DELETE_MOVIE_SHOW, (mediatype, tmdb_id, season, episode))
-		erase_bookmark(mediatype, tmdb_id, season, episode)
+		identity = mediatype, tmdb_id, season, episode
+		with _watched_cursor(watched_indicators) as dbcur:
+			if action == 'mark_as_watched':
+				dbcur.execute(SET_MOVIE_SHOW, (*identity, last_played, title))
+			elif action == 'mark_as_unwatched':
+				dbcur.execute(DELETE_MOVIE_SHOW, identity)
+			if watched_indicators not in (1, 2): dbcur.execute(DELETE_BM, identity)
+		if watched_indicators in (1, 2): erase_bookmark(*identity)
 	except: kodi_utils.notify_error()
 
 def batch_mark_as_watched_unwatched(watched_indicators, insert_list, action):
 	try:
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		if action == 'mark_as_watched': dbcur.executemany(SET_MOVIE_SHOW, insert_list)
-		elif action == 'mark_as_unwatched': dbcur.executemany(DELETE_MOVIE_SHOW, insert_list)
-		batch_erase_bookmark(watched_indicators, insert_list, action)
+		with _watched_cursor(watched_indicators) as dbcur:
+			if action == 'mark_as_watched': dbcur.executemany(SET_MOVIE_SHOW, insert_list)
+			elif action == 'mark_as_unwatched': dbcur.executemany(DELETE_MOVIE_SHOW, insert_list)
+			if watched_indicators not in (1, 2):
+				dbcur.executemany(DELETE_BM, (row[:4] for row in insert_list))
+		if watched_indicators in (1, 2): batch_erase_bookmark(watched_indicators, insert_list, action)
 	except: kodi_utils.notify_error()
 
 def make_batch_insert(action, mediatype, tmdb_id, season, episode, last_played, title):
@@ -302,12 +307,11 @@ def get_last_episodes(watched_indicators, days=7):
 		ORDER BY last_played DESC
 	"""
 	dropped_info = get_dropped_info_tv(watched_indicators)
-	dbcon = _database_connect(watched_indicators)
-	dbcur = set_PRAGMAS(dbcon)
-	return [
-		{'media_ids': {'tmdb': i[0]}, 'last_played': i[2], 'season': i[3], 'episode': i[4]}
-		for i in dbcur.execute(command, ('episode', cutoff)).fetchall() if int(i[0]) not in dropped_info
-	]
+	with _watched_cursor(watched_indicators) as dbcur:
+		return [
+			{'media_ids': {'tmdb': i[0]}, 'last_played': i[2], 'season': i[3], 'episode': i[4]}
+			for i in dbcur.execute(command, ('episode', cutoff)).fetchall() if int(i[0]) not in dropped_info
+		]
 
 def get_next_episodes(watched_indicators):
 	command = """
@@ -322,20 +326,18 @@ def get_next_episodes(watched_indicators):
 		WHERE r = 1
 	"""
 	dropped_info = get_dropped_info_tv(watched_indicators)
-	dbcon = _database_connect(watched_indicators)
-	dbcur = set_PRAGMAS(dbcon)
-	return [
-		{'media_ids': {'tmdb': i[0]}, 'last_played': i[2], 'season': i[3], 'episode': i[4]}
-		for i in dbcur.execute(command, ('episode',)).fetchall() if int(i[0]) not in dropped_info
-	]
+	with _watched_cursor(watched_indicators) as dbcur:
+		return [
+			{'media_ids': {'tmdb': i[0]}, 'last_played': i[2], 'season': i[3], 'episode': i[4]}
+			for i in dbcur.execute(command, ('episode',)).fetchall() if int(i[0]) not in dropped_info
+		]
 
 def get_watched_info_movie(watched_indicators):
 	info = {}
 	try:
 		command = GET_MOVIE_SHOW % ('media_id, title, last_played')
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		for i in dbcur.execute(command, ('movie',)).fetchall(): info[i[0]] = i
+		with _watched_cursor(watched_indicators) as dbcur:
+			for i in dbcur.execute(command, ('movie',)).fetchall(): info[i[0]] = i
 	except: pass
 	return MappingProxyType(info)
 
@@ -343,11 +345,10 @@ def get_watched_info_tv(watched_indicators):
 	info = {}
 	try:
 		command = GET_MOVIE_SHOW % ('media_id, title, last_played, season, episode')
-		dbcon = _database_connect(watched_indicators)
-		dbcur = set_PRAGMAS(dbcon)
-		for i in dbcur.execute(command, ('episode',)).fetchall():
-			if i[0] in info: info[i[0]] += (i,)
-			else: info[i[0]] = (i,)
+		with _watched_cursor(watched_indicators) as dbcur:
+			for i in dbcur.execute(command, ('episode',)).fetchall():
+				if i[0] in info: info[i[0]] += (i,)
+				else: info[i[0]] = (i,)
 	except: pass
 	return MappingProxyType(info)
 

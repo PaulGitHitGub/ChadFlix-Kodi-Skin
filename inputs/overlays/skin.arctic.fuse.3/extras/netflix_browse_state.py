@@ -464,21 +464,27 @@ BOOT_READY_SECONDS = .3
 # Poll faster while the startup screen is up or a row is loading, so a finished
 # row is noticed (and the next one started) within 50 ms instead of 150 ms.
 FAST_TICK = .05
-# TMDb Helper looks up ratings on every focus change and pushes them into the screen, which
-# costs frames mid-scroll. Keep it paused on the Videos window while focus is moving and
-# release it once focus has rested on one title for this long.
+# R10.47 (owner, 17 Nov): TMDb Helper does no work on the browse rows; its per-focus lookups halved
+# hold-scroll fps. Its monitor stays paused on the Videos window and is never released there (the
+# R3-R10.46 release after a 0.8 s rest and its special://temp/netflix_tmdb_rest.txt override are gone).
+# TMDb Helper reads the pause from the TOP window, so a details page over Videos is not paused by it:
+# the movie and show pages feed TMDb Helper their own title (hidden list 9167, see Custom_1167).
 TMDB_PAUSE = 'TMDbHelper.ServicePause'
-TMDB_REST_SECONDS = .8
-# A title's details page needs that title's ratings, so the pause is released the moment one is open
-# (and stays released while it is) even if focus has not rested yet, and whatever the override file
-# says unless it says 'off'. The movie dialog is 11167; the series page is a Python dialog, whose id
-# comes from the 13000-13099 range (13000 when it is the only one), with Videos still underneath.
-TMDB_DETAILS = (11167,)
-TMDB_PYTHON_WINDOWS = range(13000, 13100)
-# Optional override for testing, read once a second: a number of seconds, 'never' (do not
-# release on rows) or 'off' (do not pause at all). No file means the default above.
-TMDB_REST_FILE = 'special://temp/netflix_tmdb_rest.txt'
 IDLE_TICK = .15
+# R10.48 (Shield, both units): every Kodi read below (info label, condition, window property, window id) takes
+# Kodi's GUI lock, and a full tick made ~50 of them. While a button is held on a row that cost about half the
+# frame rate (hold-scroll ~19 fps; ~34 fps with a 1 s tick). So each wake-up first reads only the focused control
+# and its selected item (Pacer). While the selected item of the SAME list keeps changing (sideways hold, or down
+# in a grid) the full tick is skipped, at most MOVING_FULL_SECONDS at a time (MOVING_BUSY_FULL_SECONDS while a
+# row, grid step or list refresh is loading), and the next look comes MOVING_TICK later. The first change after
+# a pause, a move to another control, focus nowhere, the boot gate and any wake-up that finds focus where it was
+# all run the full tick at once, as before: a stop is seen within 2 x MOVING_TICK (0.15 s, today's IDLE_TICK).
+# Inside a full tick each value is read from Kodi once (Kodi.begin_tick).
+MOVING_TICK = .075
+MOVING_GAP = .2            # a change this soon after the previous one = the viewer is still moving
+MOVING_FULL_SECONDS = 1.0  # while moving, a full tick still runs this often (refresh, grid steps, row starts)
+MOVING_BUSY_FULL_SECONDS = .3   # ... and this often while a row / grid step / list refresh is loading: a job (>= 0.4 s on the
+                                # Shield) is still seen updating, so it settles on its answer, not on the 1.5 s fallback
 BOOT_CATALOGS = ('movies', 'shows', 'movies')
 BOOT_PATHS = {
     'movies': 'plugin://plugin.video.pov/?mode=build_movie_list&action=trakt_movies_trending&name=32458',
@@ -486,22 +492,97 @@ BOOT_PATHS = {
 }
 
 
+class Pacer:
+    """R10.48: decides, per wake-up of the observer loop, whether the full tick runs (see MOVING_TICK). `sig` is
+    (focused control, its selected item) as Kodi labels. Pure: no Kodi call here."""
+
+    def __init__(self):
+        self.sig = None
+        self.slide_at = float('-inf')   # last wake-up that saw the selected item of the same list change
+        self.full_at = float('-inf')    # last full tick
+        self.moving = False             # a full tick was skipped in the current movement
+        self.skipped = 0
+
+    def wake(self, now, sig, hold=False, busy=False):
+        """True = run the full tick now. `hold` (the boot gate) never skips; `busy` (a load in flight) shortens the gap."""
+        slid = sig[0] not in ('', '0') and self.sig is not None and sig[0] == self.sig[0] and sig[1] != self.sig[1]
+        self.sig = sig
+        if slid:
+            again = now - self.slide_at <= MOVING_GAP
+            self.slide_at = now
+            if again and not hold and now - self.full_at < (MOVING_BUSY_FULL_SECONDS if busy else MOVING_FULL_SECONDS):
+                self.moving = True
+                self.skipped += 1
+                return False
+        elif now - self.slide_at > MOVING_GAP:
+            self.moving = False
+        self.full_at = now
+        return True
+
+    def delay(self, now, busy):
+        """Seconds to the next wake-up. `busy` is called only when the viewer is not moving."""
+        if self.moving and now - self.slide_at <= MOVING_GAP:
+            return MOVING_TICK
+        return FAST_TICK if busy() else IDLE_TICK
+
+
 class Kodi:
+    # R10.48: the per-tick read cache. None outside Coordinator.tick (every read goes to Kodi, as before). Inside a tick a
+    # value is read from Kodi once; this observer's own Home property writes update it. Kodi carries out a builtin
+    # (SetFocus, ...) later on its own thread, so a read after one in the same tick saw the old state before too.
+    memo = None
+
     def __init__(self):
         self.home = xbmcgui.Window(10000)
         self.hidden = frozenset()   # R10.10: slots turned off in Customize Home or taken off the page by home_break(); rows() leaves them out
         self.deferred = frozenset()   # R10.10: shown slots that are not part of the boot gate (A24, custom entries)
 
+    def begin_tick(self, seed=None):
+        self.memo = dict(seed) if seed else {}
+
+    def end_tick(self):
+        self.memo = None
+
+    def forget(self):
+        """Another module wrote Home properties in this tick (publish_profiles): read them from Kodi again."""
+        if self.memo is not None:
+            self.memo.clear()
+
+    def cached(self, key, read, arg):
+        memo = self.memo
+        if memo is None:
+            return read(arg)
+        try:
+            return memo[key]
+        except KeyError:
+            value = memo[key] = read(arg)
+            return value
+
+    def focus_probe(self):
+        """R10.48: the two reads every wake-up makes: (control, item) and the same values as a seed for the tick's cache
+        (remember() and focus_net() read exactly these)."""
+        control = xbmc.getInfoLabel('System.CurrentControlID')
+        item_label = 'Container(%s).CurrentItem' % control
+        item = xbmc.getInfoLabel(item_label) if control not in ('', '0') else ''
+        seed = {('l', 'System.CurrentControlID'): control}
+        if control not in ('', '0'):
+            seed[('l', item_label)] = item
+        return (control, item), seed
+
     def prop(self, key):
-        return self.home.getProperty(key)
+        return self.cached(('p', key.lower()), self.home.getProperty, key)   # Kodi property names ignore case
 
     def put(self, key, value):
         value = str(value)
         if self.prop(key) != value:
             self.home.setProperty(key, value)
+            if self.memo is not None:
+                self.memo[('p', key.lower())] = value
 
     def clear(self, key):
         self.home.clearProperty(key)
+        if self.memo is not None:
+            self.memo[('p', key.lower())] = ''
 
     def pov_calls(self, now):
         """R10.28: the live POV calls, [(start, token), ...] oldest first (POV_CALLS_DIR; `now` is time.monotonic(), the clock
@@ -545,11 +626,14 @@ class Kodi:
         return sorted(live)
 
     def visible(self, condition):
-        return xbmc.getCondVisibility(condition)
+        return self.cached(('v', condition), xbmc.getCondVisibility, condition)
+
+    def label(self, info):
+        return self.cached(('l', info), xbmc.getInfoLabel, info)
 
     def number(self, label):
         try:
-            return int(xbmc.getInfoLabel(label))
+            return int(self.label(label))
         except (TypeError, ValueError):
             return 0
 
@@ -560,10 +644,10 @@ class Kodi:
         return self.visible('Container(%d).IsUpdating' % row)
 
     def window(self):
-        return xbmcgui.getCurrentWindowId()
+        return self.cached(('w',), lambda _: xbmcgui.getCurrentWindowId(), None)
 
     def dialog(self):
-        return xbmcgui.getCurrentWindowDialogId()
+        return self.cached(('d',), lambda _: xbmcgui.getCurrentWindowDialogId(), None)
 
     def saved_marker(self, value=None):
         # A property on the My Lists window itself: kept across close/reopen, gone after a skin reload.
@@ -617,7 +701,7 @@ class Kodi:
         return tuple(row for row in rows if row not in self.hidden) if self.hidden else rows
 
     def skin_string(self, name):
-        return xbmc.getInfoLabel('Skin.String(%s)' % name)
+        return self.label('Skin.String(%s)' % name)
 
     def gate_rows(self, mode):
         # R10.10: the rows the boot gate waits for: the shown rows minus the deferred ones (A24, custom entries); those load
@@ -646,7 +730,7 @@ class Kodi:
 
     def page(self):
         """The page the Videos window shows: a grid over the root (Netflix.Grid.Shell) or its own directory."""
-        path = xbmc.getInfoLabel('Container.FolderPath')
+        path = self.label('Container.FolderPath')
         shell = self.prop(GRID_SHELL)
         return shell if shell and is_root(path) else path
 
@@ -721,6 +805,7 @@ def restore(api, mode):
 # the settled front page: the Videos list (when shown), then the loaded rows, focused row first, one plugin call at
 # a time through the row lease, with a gap between calls.
 REFRESH_REQUEST = 'Netflix.Browse.RefreshRequest'
+CONTINUE_REMOVALS = {'cw-remove:%d' % row: row for row in CONTINUE_ROWS}
 REFRESH_DELAY_SECONDS = 2.0   # after the request (POV asks ~0.5-1.5 s after the stop, once the bookmark is written)
 REFRESH_QUIET_SECONDS = 1.0   # the page must be settled (no loading, dialog, player, tab change) this long first
 REFRESH_GAP_SECONDS = .3      # between the end of one refresh call and the start of the next
@@ -747,6 +832,9 @@ def publish_profiles(api, now=None):
         netflix_profiles.main(['netflix_profiles.py', 'list'])
     except Exception as error:
         api.log('profiles list failed: %s' % error)
+    forget = getattr(api, 'forget', None)
+    if forget:
+        forget()   # R10.48: it wrote Home properties through its own window object: the tick's cache must not keep the old values
 
 
 class CatalogBootGate:
@@ -910,13 +998,10 @@ class Coordinator:
         self.nofocus_tries = 0
         self.grid = None
         self.grid_armed = True   # a previous observer may have left a route armed: cleared on the first tick off a grid page
-        self.rest_key = None
-        self.rest_since = 0
         self.tmdb_paused = None
-        self.tmdb_rest_seconds = TMDB_REST_SECONDS
         self.refresh_seen = None      # last RefreshRequest value seen (None until the first tick)
         self.refresh_pending = set()  # modes whose rows still owe a refresh
-        self.refresh_titles = {}      # per mode: tmdb ids to refresh; None = every loaded row (review M3)
+        self.refresh_titles = {}      # per mode: title / removal requests. None or '' in the set means all rows.
         self.refresh_focus = None     # (control, item) while waiting to start, and since when (review M4)
         self.refresh_moved = 0.0
         self.refresh_due = 0.0
@@ -1122,50 +1207,14 @@ class Coordinator:
                 xbmc.executebuiltin('SetFocus(%d)' % (3732 if tab == 'shows' else 3733))
         api.log('home layout: hidden=%s reloaded=%s dropped=%s refused=%s' % (sorted(hidden), reloaded, dropped, refused))
 
-    def tmdb_details_open(self, window):
-        dialog = self.api.dialog()
-        return (window in TMDB_DETAILS or dialog in TMDB_DETAILS
-                or window in TMDB_PYTHON_WINDOWS or dialog in TMDB_PYTHON_WINDOWS)
-
-    def tmdb_rest(self, window, now):
-        api = self.api
-        if self.tmdb_details_open(window):
-            # Release for the open details page. rest_key is kept: when the page closes over the same
-            # title nothing re-pauses, and the first focus move after that pauses again.
-            if self.tmdb_paused is not False:
-                api.videos_prop(TMDB_PAUSE, '')
-                self.tmdb_paused = False
-            return
+    def tmdb_pause(self, window):
+        """R10.47: keep TMDb Helper paused on the Videos window (MyVideoNav's onload sets it too). Written when
+        Videos comes back to the front, never cleared here."""
         if window != 10025:
-            self.rest_key = None
-            return
-        control = api.number('System.CurrentControlID')
-        key = (control, api.number('Container(%d).CurrentItem' % control))
-        if self.tmdb_rest_seconds is None:
-            if self.tmdb_paused is not False:
-                api.videos_prop(TMDB_PAUSE, '')
-                self.tmdb_paused = False
-            return
-        if key != self.rest_key:
-            self.rest_key, self.rest_since = key, now
-            if self.tmdb_paused is not True:
-                api.videos_prop(TMDB_PAUSE, '1')
-                self.tmdb_paused = True
-        elif self.tmdb_paused and now - self.rest_since >= self.tmdb_rest_seconds:
-            api.videos_prop(TMDB_PAUSE, '')
             self.tmdb_paused = False
-
-    def tmdb_override(self, text):
-        text = text.strip().lower()
-        if text == 'off':
-            self.tmdb_rest_seconds = None
-        elif text == 'never':
-            self.tmdb_rest_seconds = float('inf')
-        else:
-            try:
-                self.tmdb_rest_seconds = max(.2, float(text))
-            except ValueError:
-                self.tmdb_rest_seconds = TMDB_REST_SECONDS
+        elif not self.tmdb_paused:
+            self.api.videos_prop(TMDB_PAUSE, '1')
+            self.tmdb_paused = True
 
     def remember(self, mode):
         if not mode or self.api.visible('Container.IsUpdating'):
@@ -1290,6 +1339,8 @@ class Coordinator:
                 return True
             job = self.lease(row, now)
             job['refresh'] = True
+            if row in SAVED_FOCUS:
+                job['removal_index'] = self.focused_index(row)
             self.inflight = job
             api.put(PREFIX + 'Token.%d' % row, want)
             api.log('refresh mode=saved row=%d (content changed)' % row)
@@ -1321,11 +1372,16 @@ class Coordinator:
 
     def refresh_steps(self, mode, window):
         api = self.api
-        titles = self.refresh_titles.get(mode)
+        requests = self.refresh_titles.get(mode)
+        row = next((row for key, row in CONTINUE_REMOVALS.items() if requests == {key}), None)
+        if row is not None:
+            # The local hide changed just this CW row, so don't refresh the Videos list, other tabs or genres.
+            return [row] if self.completed(row) else []
+        titles = requests if requests and '' not in requests else None
         steps = []
         # The Videos list: the Movies root, or the Shows root's own list with the tab swap off (review L1; with the
         # swap on the Videos window keeps the Movies root and Shows Trending is row 592).
-        path = xbmc.getInfoLabel('Container.FolderPath')
+        path = api.label('Container.FolderPath')
         if (window == 10025 and api.visible('Control.IsVisible(591)') and is_root(path)
                 and ('build_movie_list' if mode == 'movies' else 'build_tvshow_list') in path
                 and self.holds(591, titles)):
@@ -1339,7 +1395,9 @@ class Coordinator:
             rows.remove(focused)
             rows.insert(0, focused)
         first = [row for row in api.rows(mode) if row in CONTINUE_ROWS and self.completed(row) and api.present(row)]
-        fresh = [row for row in first + rows if self.park_loaded.get(row, float('-inf')) >= self.refresh_seen_at]
+        removal_rows = {row for payload, row in CONTINUE_REMOVALS.items() if payload in (requests or ())}
+        fresh = [row for row in first + rows if row not in removal_rows
+                 and self.park_loaded.get(row, float('-inf')) >= self.refresh_seen_at]
         if fresh:
             # R10.23: these rows were parked and asked for again after the request (the post-stop return): they already show it
             first, rows = [row for row in first if row not in fresh], [row for row in rows if row not in fresh]
@@ -1373,20 +1431,32 @@ class Coordinator:
             self.refresh_seen = request
             api.put(REFRESH_TAKEN, '=' + request)
             title = request.partition('|')[2].strip()
-            for page in ROWS:
+            removal_row = CONTINUE_REMOVALS.get(title)
+            if title.startswith('cw-remove:') and removal_row is None:
+                return False
+            pages = (CONTINUE_ROWS[removal_row],) if removal_row else ROWS
+            for page in pages:
                 if page not in self.refresh_pending:
                     self.refresh_titles[page] = set()
-                if not title:
-                    self.refresh_titles[page] = None
-                elif self.refresh_titles[page] is not None:
-                    self.refresh_titles[page].add(title)
-            self.refresh_pending = set(ROWS)
-            self.refresh_seen_at = now      # R10.23: parked rows asked for again after this are not refreshed for it (refresh_steps)
-            self.refresh_due = now + REFRESH_DELAY_SECONDS
+                requests = self.refresh_titles[page]
+                if removal_row:
+                    self.refresh_titles[page] = ({''} if requests is None else requests) | {title}
+                elif not title:
+                    scoped = CONTINUE_REMOVALS.keys() & (requests or ())
+                    self.refresh_titles[page] = scoped | {''} if scoped else None
+                elif requests is not None:
+                    requests.add(title)
+            if not removal_row:
+                self.refresh_seen_at = now      # R10.23: parked rows loaded after this already include a playback refresh.
+                self.refresh_due = now + REFRESH_DELAY_SECONDS
+            elif not self.refresh_pending:
+                self.refresh_due = now          # the local hide already committed; use the same quiet/lease checks.
+            self.refresh_pending.update(pages)
             self.refresh_queue = None
             self.refresh_quiet = None
             api.log('refresh requested: pages refresh one row at a time once settled (%s)' %
-                    ('rows holding the title' if title else 'every loaded row'))
+                    ('continue watching removal %d' % removal_row if removal_row
+                     else 'rows holding the title' if title else 'every loaded row'))
         playing = api.visible('Player.HasMedia')
         if playing:
             self.player_last = now
@@ -1469,6 +1539,8 @@ class Coordinator:
             api.put(PREFIX + 'Token.%d' % item, str(time.time()))
             job['focus'] = api.number('System.CurrentControlID')
             job['first'] = self.first_title(item)   # review 3: focus moves to tile 1 only if this changes
+            if 'cw-remove:%d' % item in (self.refresh_titles.get(mode) or ()):
+                job['removal_index'] = self.focused_index(item)
         elif item in GENRE_ROWS:
             api.put(PREFIX + 'Retry.%d' % item, self.integer_prop('Retry', item) + 1)
         else:
@@ -1480,6 +1552,27 @@ class Coordinator:
                 (mode, item, min(gap, 999), now - self.refresh_moved, len(steps)))
         return True
 
+    def focused_index(self, row):
+        api = self.api
+        if api.number('System.CurrentControlID') == row:
+            return max(0, api.number('Container(%d).CurrentItem' % row) - 1)
+        return None
+
+    def saved_refreshed(self, row, job):
+        api = self.api
+        index = job.get('removal_index')
+        focused = api.number('System.CurrentControlID')
+        if index is None or focused not in (row, row + 8000, 0):
+            return
+        count = api.count(row)
+        if count:
+            api.focus(row, min(index, count - 1))
+        else:
+            other = 532 if row == 531 else 531
+            target = next((candidate for candidate in (other, 533) if api.count(candidate) > 0
+                           and api.visible('Control.IsVisible(%d)' % candidate)), 3734)
+            api.focus(target, 0)
+
     def continue_settled(self, row, job, now):
         """R10.5: a Continue Watching row has (re)loaded. After a refetch with focus in the row, focus goes to the first
         tile when the front title changed (the title just watched is now first). If the refetch emptied the row under focus, Trending takes it
@@ -1489,9 +1582,14 @@ class Coordinator:
         if not job.get('refresh'):
             return
         focused = api.number('System.CurrentControlID')
-        if focused == row and api.count(row) > 0 and self.first_title(row) != job.get('first'):
-            api.focus(row, 0)   # review 3: only when the front title changed (a plain refetch keeps the cursor)
-        elif job.get('focus') == row and api.count(row) == 0:
+        count = api.count(row)
+        index = job.get('removal_index')
+        if focused == row and count > 0:
+            if index is not None:
+                api.focus(row, min(index, count - 1))
+            elif self.first_title(row) != job.get('first'):
+                api.focus(row, 0)   # the playback refresh still follows a newly first title.
+        elif job.get('focus') == row and count == 0 and (index is None or focused in (0, row, row + 8000)):
             trending = SHOWS_TRENDING if row == CONTINUE_SHOWS and api.swap() else 591
             if api.count(trending) > 0 and api.visible('Control.IsVisible(%d)' % trending):
                 api.focus(trending, 0)
@@ -1908,7 +2006,7 @@ class Coordinator:
         api = self.api
         if api.swap():
             return 'shows' if api.prop(TAB) == 'shows' else 'movies'
-        return 'shows' if 'build_tvshow_list' in xbmc.getInfoLabel('Container.FolderPath') else 'movies'
+        return 'shows' if 'build_tvshow_list' in api.label('Container.FolderPath') else 'movies'
 
     def grid_wait(self, grid, now, quiet, count, updating):
         """R10.21: start the first load of a grid page once it may (the serial loading guard as before: no row job in flight, the list
@@ -2365,7 +2463,26 @@ class Coordinator:
         if now >= self.validation_due and not unresolved:
             self.validation_done = True
 
-    def tick(self, now):
+    def tick(self, now, seed=None):
+        """One full pass. R10.48: with the per-tick read cache (Kodi.begin_tick; `seed` = the loop's focus probe), so each
+        Kodi value is read once per pass; the pass itself (step) is unchanged."""
+        api = self.api
+        begin = getattr(api, 'begin_tick', None)
+        if begin is None:
+            return self.step(now)
+        begin(seed)
+        try:
+            return self.step(now)
+        finally:
+            api.end_tick()
+
+    def glance(self, now):
+        """R10.48: a wake-up whose full tick was skipped (the viewer is scrolling) still follows POV's marker, one read: the
+        quiet window before the next start counts from the last time another POV call was seen (pov_watch), so it must
+        not miss a short call between two full ticks."""
+        self.pov_watch(now)
+
+    def step(self, now):
         self.home_tick(now)  # R10.10: Customize Home changes, applied between row calls
         self.boot.tick(now)  # Also observe the expected busy/Home landing bridge.
         api = self.api
@@ -2388,13 +2505,13 @@ class Coordinator:
             # Which root the Videos window's own directory is on ('' for any other page). The Movies/Shows tabs in
             # Search / My Lists read it: when Videos already holds that root they reopen it without a path, so Kodi
             # does not force a refresh of the same folder (review F3). Written only when it changes.
-            path = xbmc.getInfoLabel('Container.FolderPath')
+            path = api.label('Container.FolderPath')
             api.put(VIDEOS_ROOT, ('shows' if 'build_tvshow_list' in path else 'movies') if is_root(path) else '')
         if window == 10000 and api.prop(GRID_SHELL):
             # Home: the browse page was left for good. A grid must not come back over the next Movies/Shows visit
             # (Search / My Lists keep it: their tabs clear it themselves when they open the Movies/Shows root).
             api.clear(GRID_SHELL)
-        self.tmdb_rest(window, now)
+        self.tmdb_pause(window)
         self.remember(mode)
         self.rescue_hidden_focus(mode, window)
         self.grid_tick(now, window)
@@ -2500,6 +2617,8 @@ class Coordinator:
                 self.inflight = None
                 if row in CONTINUE_ROWS and not errored and not reason:
                     self.continue_settled(row, job, now)
+                elif row in SAVED_FOCUS and job.get('refresh') and not errored and not reason:
+                    self.saved_refreshed(row, job)
         if self.refresh_tick(now, mode, window):
             return
         if not mode or window != MODE_WINDOW[mode] or api.visible('Player.HasMedia') or api.visible('System.HasActiveModalDialog'):
@@ -2693,24 +2812,28 @@ def run():
         except ValueError:
             pass
         heartbeat = 0
-        rest_file = xbmcvfs.translatePath(TMDB_REST_FILE)
         api.log('observer started; serial queue ready')
         publish_profiles(api)
+        pacer = Pacer()   # R10.48: no full tick while the viewer keeps scrolling one list (MOVING_TICK)
+
+        def busy():
+            return coordinator.inflight or coordinator.grid_busy or api.prop(BOOT_PENDING) == 'true'
+
         try:
-            while not monitor.waitForAbort(
-                    FAST_TICK if coordinator.inflight or coordinator.grid_busy or api.prop(BOOT_PENDING) == 'true' else IDLE_TICK):
+            while not monitor.waitForAbort(pacer.delay(time.monotonic(), busy)):
                 if monitor.quitting:
                     break
                 now = time.monotonic()
                 if now - heartbeat >= 1:
+                    # every wake-up, skipped or not, as before: the watchdog (Timers.xml) never sees 5 s without a change
                     api.put(PREFIX + 'Heartbeat', time.time())
-                    try:
-                        with open(rest_file) as handle:
-                            coordinator.tmdb_override(handle.read(32))
-                    except OSError:
-                        coordinator.tmdb_override('')
                     heartbeat = now
-                coordinator.tick(now)
+                sig, seed = api.focus_probe()
+                if pacer.wake(now, sig, hold=coordinator.boot.started is not None,
+                              busy=bool(coordinator.inflight or coordinator.grid_busy or coordinator.refresh_step)):
+                    coordinator.tick(now, seed)
+                else:
+                    coordinator.glance(now)
         except Exception as error:
             xbmc.log('Netflix Browse: stopped: %s' % error, xbmc.LOGERROR)
         finally:
@@ -2718,7 +2841,6 @@ def run():
                 api.clear(PREFIX + 'Running')
                 api.clear(PREFIX + 'Heartbeat')
                 api.clear('Netflix.CatalogGenre.Loading')
-                api.videos_prop(TMDB_PAUSE, '')
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 

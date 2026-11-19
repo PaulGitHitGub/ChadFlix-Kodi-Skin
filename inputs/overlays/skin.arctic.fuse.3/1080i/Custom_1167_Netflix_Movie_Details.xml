@@ -51,7 +51,24 @@
     <!-- R10-playback: a play request ends with its page (POV closes the page when video starts; POV reads the
          cleared property as "cancelled" if it is still loading). -->
     <onunload>ClearProperty(Netflix.Play.Loading,Home)</onunload>
+    <!-- R10.47: TMDb Helper no longer looks titles up on the browse rows (paused there: MyVideoNav.xml, Custom_1165).
+         It looks up this page's title instead. The skin runs TMDb Helper in its local widget-container mode
+         (skinvariables startup: Skin.SetBool(TMDbHelper.UseLocalWidgetContainer)), where it reads the container id
+         from the top window, i.e. this page: the page names its hidden list 9167, and show_movie()
+         (netflix_movie_details.py) puts the movie in that list once the page is up. TMDb Helper then fills
+         Window(Home).Property(TMDbHelper.ListItem.*), which the ratings row below reads. -->
+    <onload>SetProperty(TMDbHelper.WidgetContainer,9167,1167)</onload>
     <controls>
+        <!-- R10.47: the one item TMDb Helper reads on this page (see the onload above). Never shown or focused. -->
+        <control type="list" id="9167">
+            <left>-10</left>
+            <top>-10</top>
+            <width>1</width>
+            <height>1</height>
+            <visible>false</visible>
+            <itemlayout width="1" height="1" />
+            <focusedlayout width="1" height="1" />
+        </control>
         <control type="button" id="16">
             <left>-2</left>
             <top>-2</top>

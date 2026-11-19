@@ -155,7 +155,7 @@ def title_rows(collection, api):
         item.setArt({'poster': poster, 'thumb': poster, 'icon': poster,
                      'fanart': browse_art(data['backdrop'], 'w1280'),
                      'detail_fanart': data['backdrop'], 'clearlogo': data['logo']})
-        item.addContextMenuItems([('Remove from Watchlist', script('remove', identifier, kind, media_id))])
+        item.addContextMenuItems([('Remove From Watchlist', script('remove', identifier, kind, media_id))])
         if kind == 'movie':
             path = route('play_media', mediatype='movie', tmdb_id=media_id)
         else:
@@ -192,9 +192,9 @@ def episode_row(entry, favorite_id=None, identifier=''):
     still = browse_art(entry.get('still') or entry.get('poster'), STILL_ART)
     item.setArt({'thumb': still, 'icon': still, 'poster': still, 'landscape': still})
     if favorite_id:
-        item.addContextMenuItems([('Remove from Favorites', script('unfavorite-episode', favorite_id))])
+        item.addContextMenuItems([('Remove From Favorites', script('unfavorite-episode', favorite_id))])
     else:
-        item.addContextMenuItems([('Remove from Watchlist', script('remove-episode', identifier, entry['show_id'], str(entry['season']), str(entry['episode'])))])
+        item.addContextMenuItems([('Remove From Watchlist', script('remove-episode', identifier, entry['show_id'], str(entry['season']), str(entry['episode'])))])
     return (route('build_season_list', tmdb_id=entry['show_id']), item, True)
 
 

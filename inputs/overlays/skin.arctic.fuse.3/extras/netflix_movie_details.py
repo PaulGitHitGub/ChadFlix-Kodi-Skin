@@ -53,11 +53,23 @@ POV_DATA = "special://profile/addon_data/plugin.video.pov/"
 # its Back withdraws the request (clears Netflix.Play.Loading), which POV and settle_quality() read as "cancelled".
 LOADER_FOCUS = 42
 FACT_FIELDS = ("Res", "SpecA", "SpecB")   # Netflix.Movie.QualityHighest*: POV's netflix_quality_preview FACT_FIELDS
-# R10.9: the ratings row reads TMDb Helper's list-item monitor, which describes the title focused on the browse page
-# under this page. After playback or a trailer the browse focus is not that title any more, so the page keeps its own
-# copy (Netflix.Movie.<field>, Custom_1167's second ratings row), carried through the return stash.
+# R10.9: the ratings row reads TMDb Helper's list-item monitor. Since R10.47 that monitor describes the page's own
+# title (feed_tmdb_helper), not the browse focus. The page still keeps its own copy (Netflix.Movie.<field>,
+# Custom_1167's second ratings row), carried through the return stash, so a reopened page shows them at once.
 RATING_FIELDS = ("IMDb_Rating", "RottenTomatoes_Rating", "Letterboxd_Rating")
 KEPT_RATING_FIELDS = RATING_FIELDS + ("RottenTomatoes_Icon",)
+# R10.47: TMDb Helper no longer looks up the title focused on the browse rows (its monitor stays paused on the Videos
+# window). The page names its hidden list as TMDb Helper's widget container (Custom_1167 onload) and show_movie() puts
+# the movie in it, so TMDb Helper looks this title up while the page is open.
+TMDB_ITEM_LIST = 9167
+TMDB_FEED_WAIT = 2.0      # seconds show_movie() waits for the page to come up before it hands the movie over
+# Every feed is a new item (a fresh token in its path), so TMDb Helper always looks the title up again (from its cache
+# when it has it), and it clears TMDb Helper's ratings first: TMDb Helper drops ratings that arrive after its item left
+# the top window (page closed or covered during the fetch), which would otherwise leave the PREVIOUS title's ratings
+# beside this title's monitor.tmdb_id. TMDB_FEED names the last title fed ("<movie|tvshow>|<tmdb id>|<token>"); ratings
+# are only taken from TMDb Helper while it names the page's title (page_ratings; netflix_series.ratings).
+TMDB_FEED = "Netflix.TMDbFeed"
+TMDB_RATING_PROPS = ("IMDb_Rating", "RottenTomatoes_Rating", "Letterboxd_Rating", "RottenTomatoes_Image")
 LEAVE_AFTER_LAUNCH = 0.3  # seconds play_movie() stays after PlayMedia, so it never ends as POV starts
 COVER_SECONDS = 20        # fail-safe of the transition cover held by Play (renewed while anyone still works on it)
 
@@ -303,8 +315,11 @@ def page_ratings(home, movie_id):
     Reads properties only; called from the Play and Trailer scripts, never per key press."""
     # TMDb Helper's flags IsUpdating / IsUpdatingRatings are not checked here (review 4): when its monitor names this
     # movie, its values are this movie's even mid-update, and a Play pressed then must not lose them.
+    # R10.47: and only while this movie was the last title fed to TMDb Helper (its ratings were cleared at that feed,
+    # so whatever is there now came from this movie's lookup).
     live = (bool(movie_id) and home.getProperty("TMDbHelper.ListItem.monitor.tmdb_id") == movie_id
-            and home.getProperty("TMDbHelper.ListItem.monitor.tmdb_type") == "movie")
+            and home.getProperty("TMDbHelper.ListItem.monitor.tmdb_type") == "movie"
+            and home.getProperty(TMDB_FEED).split("|")[:2] == ["movie", movie_id])
     values = {field: home.getProperty("TMDbHelper.ListItem." + field) for field in RATING_FIELDS} if live else {}
     if not any(values.values()):
         return {field: home.getProperty(PREFIX + field) for field in KEPT_RATING_FIELDS}
@@ -317,6 +332,51 @@ def page_ratings(home, movie_id):
     else:
         values["RottenTomatoes_Icon"] = "rtfresh.png" if tomatoes.isdecimal() and int(tomatoes) > 59 else "rtrotten.png"
     return values
+
+
+def feed_tmdb_helper(home, movie_id, title):
+    """R10.47: put this movie in the page's hidden list 9167 (TMDb Helper's widget container while the page is open),
+    as a movie with its TMDb id, so TMDb Helper looks it up and fills the TMDbHelper.ListItem.* properties that
+    Custom_1167's ratings row and page_ratings() read. Waits up to TMDB_FEED_WAIT for the page to come up; does
+    nothing when another movie's page took over meanwhile. True when the item was handed over."""
+    if not movie_id:
+        return False
+    # The page is up AND its controls are built: Window.IsVisible turns true as the dialog registers, before Kodi has
+    # loaded its XML; Container(9167).NumItems (read in the top window) is empty until the list exists.
+    ready = "Window.IsVisible(%d) + !String.IsEmpty(Container(%d).NumItems)" % (DETAILS, TMDB_ITEM_LIST)
+    monitor, end = xbmc.Monitor(), monotonic() + TMDB_FEED_WAIT
+    while not xbmc.getCondVisibility(ready):
+        if monotonic() >= end:
+            xbmc.log("Netflix Movie: page not up after %.1f s, TMDb Helper not fed (no ratings)" % TMDB_FEED_WAIT,
+                     xbmc.LOGWARNING)
+            return False
+        if monitor.waitForAbort(0.02):
+            return False
+    if home.getProperty(PREFIX + "ID") != movie_id:
+        return False
+    token = uuid4().hex[:12]
+    for field in TMDB_RATING_PROPS:
+        home.clearProperty("TMDbHelper.ListItem." + field)
+    home.setProperty(TMDB_FEED, "movie|%s|%s" % (movie_id, token))
+    # Not offscreen: the item goes into a live GUI list that TMDb Helper reads from its own thread.
+    item = xbmcgui.ListItem(title, path="netflix-details://movie/%s?open=%s" % (movie_id, token))
+    tag = item.getVideoInfoTag()
+    tag.setMediaType("movie")
+    tag.setTitle(title)
+    tag.setUniqueIDs({"tmdb": movie_id}, "tmdb")
+    # R10.48 device crash (Scudo "invalid chunk state", heap corruption on the first movie page): the page's Window
+    # wrapper MUST stay referenced while its control is used. The R10.47 one-liner took the control from a temporary
+    # wrapper, which Python freed at once; freeing a wrapper of an existing window detaches the controls it handed out
+    # (their window and control ids become 0). Reproduced on the test Shield: that one line back = crash, as below = none.
+    page = xbmcgui.Window(DETAILS)
+    try:
+        items = page.getControl(TMDB_ITEM_LIST)
+        items.reset()
+        items.addItem(item)
+    except (RuntimeError, TypeError) as error:   # the page closed in between, or an older skin without the list
+        xbmc.log("Netflix Movie: TMDb Helper item not set: %s" % error, xbmc.LOGWARNING)
+        return False
+    return True
 
 
 def flight(home):
@@ -397,6 +457,7 @@ def show_movie(values, check_sources=True):
             for field in FACT_FIELDS:
                 home.clearProperty(PREFIX + "QualityHighest" + field)
     xbmc.executebuiltin("ActivateWindow(1167)")
+    feed_tmdb_helper(home, movie_id, values.get("Title", ""))   # R10.47: the page's ratings (see TMDB_ITEM_LIST)
     sync_saved()
     # The sync can take a second: the page may have closed or been replaced, or Play may be on its way.
     if auto and home.getProperty(PREFIX + "QualityToken") == token:

@@ -5,13 +5,15 @@ Run once after installing. Safe to run again: every step checks first and only c
 
 What it does, in order:
   1. checks that the add-ons the look needs are installed and enabled (installs or enables any that are not);
-  2. offers YouTube (for trailers), optional;
+  2. offers YouTube (for trailers), optional: Kodi's own install question is the only one;
   3. initializes missing or zero-byte Skin Variables menus and writes the ChadFlix layout settings for Arctic Fuse 3, including the flag that skips the
      skin's own setup wizard;
   4. switches the skin to Arctic Fuse 3 after asking, and answers Kodi's own "Keep skin?" question
      itself (see _switch_once for why; it answers that question only, never another yes/no dialog);
   5. copies five remote-control key files into userdata/keymaps and reloads them;
-  6. offers to close Kodi once so every add-on restarts on its new version.
+  6. closes Kodi once so every add-on restarts on its new version, if the person chose Close Kodi. When the skin is
+     switched, that question is asked BEFORE the switch (see ask_close_kodi); when Arctic Fuse 3 is already
+     the skin, it is asked at the end, as before.
 
 The first menu also offers "Undo ChadFlix Keymaps": it removes the five key files (putting back any file they
 replaced) so Back works normally again in another skin.
@@ -125,11 +127,13 @@ def ensure_addons():
 
 
 def offer_youtube():
+    """One question, not two. Kodi's InstallAddon always asks its own "Add-on required ... Would you like to
+    download this add-on?" (No focused; No skips YouTube), so Setup no longer asks first. A silent notification says what
+    YouTube is for while Kodi's question is up. Setup never answers Kodi's question."""
     if addon_state('plugin.video.youtube') is not None:
         return
-    if DIALOG.yesno(TITLE, 'Trailers play through the YouTube add-on, which is not installed.[CR][CR]'
-                           'Install YouTube now? (Optional. You can skip this.)', nolabel='Skip', yeslabel='Install'):
-        xbmc.executebuiltin('InstallAddon(plugin.video.youtube)', True)
+    DIALOG.notification(TITLE, 'Trailers Use YouTube (Optional)', xbmcgui.NOTIFICATION_INFO, 10000, False)
+    xbmc.executebuiltin('InstallAddon(plugin.video.youtube)', True)
 
 
 # 3. skin layout settings ---------------------------------------------------------------------------
@@ -396,21 +400,43 @@ def _switch_once():
 DECLINED = 'declined'
 
 
+def ask_close_kodi(before_switch):
+    """True when the person chose Close Kodi.
+
+    On the switch path this is asked BEFORE the switch. The first start of Arctic Fuse 3 is followed by skin
+    reloads (Skin Variables builds the Home include and runs ReloadSkin()), and a reload closes every dialog on screen.
+    Asked after the switch (Setup 1.0.5 and older), the question was closed by such a reload on an NVIDIA Shield and
+    Python read the closed dialog as "Later", so nobody was told to restart. Asked here, nothing can close it; the answer is
+    acted on only once the skin is kept and the key files are in. Already on the skin, nothing reloads before the
+    question, so it is asked at the end with the old text."""
+    if before_switch:
+        text = ('When the new look has loaded, Kodi needs to close once so every add-on restarts on its new version. '
+                'Close Kodi then? Open Kodi again afterwards.')
+    else:
+        text = ('All set.[CR][CR]Kodi needs to close once so every add-on restarts on its new version. '
+                'Close Kodi now? Then open Kodi again.')
+    return DIALOG.yesno(TITLE, text + '[CR][CR]After that: gear (top right) > Real-Debrid to sign in.',
+                        nolabel='Later', yeslabel='Close Kodi')
+
+
 def switch_skin():
-    """True when Arctic Fuse 3 is the skin afterwards, DECLINED when the person chose Not now, else False."""
+    """(kept, close_now). kept: True when Arctic Fuse 3 is the skin afterwards, DECLINED when the person chose Not now,
+    else False. close_now: the answer to ask_close_kodi, asked here before the switch; None when no switch was needed or
+    the person chose Not now."""
     if xbmc.getSkinDir() == SKIN:
-        return True
+        return True, None
     if not DIALOG.yesno(TITLE, 'Ready to switch Kodi to the new look.[CR][CR]'
                                'The screen goes dark for a few seconds while it loads. Switch now?',
                         nolabel='Not now', yeslabel='Switch'):
-        return DECLINED
+        return DECLINED, None
+    close_now = ask_close_kodi(before_switch=True)
     kept = False
     for attempt in (1, 2):
         kept = _switch_once()
         log('skin switch attempt %d kept: %s' % (attempt, kept))
         if kept:
             break
-    return kept
+    return kept, close_now
 
 
 # 5. keymaps ----------------------------------------------------------------------------------------
@@ -536,7 +562,7 @@ def setup():
         apply_settings_file(reset_home_build=bool(nodes_created))
         xbmc.executebuiltin('SetProperty(Netflix.MoviesBoot.SessionSeen,true,Home)', True)
 
-    kept = switch_skin()
+    kept, close_now = switch_skin()
     save_state(kept is True)
     if kept == DECLINED:
         DIALOG.ok(TITLE, 'The layout settings are saved, but the skin was not switched.[CR][CR]'
@@ -550,10 +576,9 @@ def setup():
         apply_settings_live()  # in case the skin started before reading the file (no-op when it did)
     install_keymaps()
 
-    close_now = DIALOG.yesno(TITLE, 'All set.[CR][CR]Kodi needs to close once so every add-on restarts on its new version. '
-                           'Close Kodi now? Then open Kodi again.[CR][CR]'
-                           'After that: gear (top right) > Real-Debrid to sign in.',
-                    nolabel='Later', yeslabel='Close Kodi')
+    if close_now is None:  # no switch happened, so no reload is pending: ask now, as before
+        close_now = ask_close_kodi(before_switch=False)
+    log('close Kodi now: %s' % bool(close_now))
     if close_now:
         xbmc.executebuiltin('Quit')
     elif rebuild_on_active_skin:
@@ -562,7 +587,8 @@ def setup():
 
 
 def main():
-    choice = DIALOG.select(TITLE, ['Set up ChadFlix (sign-ins, keys and watch history are not touched)',
+    # short enough not to scroll (the old line did); same promise
+    choice = DIALOG.select(TITLE, ['Set Up ChadFlix (Keeps Sign-Ins, Keys, History)',
                                    'Undo ChadFlix Keymaps (do this before going back to another skin)'])
     if choice == 0:
         setup()

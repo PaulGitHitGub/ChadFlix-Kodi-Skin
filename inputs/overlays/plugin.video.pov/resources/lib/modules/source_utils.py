@@ -130,6 +130,8 @@ def get_aliases_titles(aliases):
 	return result
 
 def internal_results(provider, sources):
+	from modules.netflix_next_context import ephemeral
+	if ephemeral(): return
 	quality_count = sources_quality_count(sources)
 	kodi_utils.set_property('%s.internal_results' % provider, json.dumps(quality_count))
 

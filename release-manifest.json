@@ -1,24 +1,24 @@
 {
  "addons": [
   {
-   "added": 11,
-   "changed": 36,
-   "content_sha256": "7350d321032c0c30dbd9c8a85c8fd265e5e9ba1711263fbbdcbc0d84b5927bcf",
-   "files": 222,
+   "added": 15,
+   "changed": 44,
+   "content_sha256": "0281d6ed036951a365155345ece07343c2a08fd2b1a9b0668087c7ccb0c50e03",
+   "files": 226,
    "id": "plugin.video.pov",
    "overlay": "inputs/overlays/plugin.video.pov",
-   "overlay_sha256": "26069c741adff2143359cf9d3bd5d56386fa87ba1b46771af2f28511b95490c5",
+   "overlay_sha256": "04aa9cab3c7ff3b007ce3edbea125db7c2570351f96a15a4c573a54d68ea81d6",
    "removed": 0,
-   "sha256": "c4384a7c0e7b3b37efab4820d1b5201f6d4332fd827ae1e76ee85e48d57becba",
-   "size": 854301,
+   "sha256": "b5ded7fcc834280cb9b42c560272dbcda073a38c1ae5352d3f0eb30e4f3690b2",
+   "size": 868116,
    "source": "upstream+overlay",
    "upstream": {
     "file": "plugin.video.pov-6.11.03.zip",
     "sha256": "9ac93ad045910774503cbfeeb45b63bbd9b23837c9e76749885076c9b11edfba",
     "url": "https://raw.githubusercontent.com/kodifitzwell/repo/2c8390c6e65213853a862a00044597946b946132/plugin.video.pov/plugin.video.pov-6.11.03.zip"
    },
-   "version": "6.99.1103.5",
-   "zip": "zips/plugin.video.pov/plugin.video.pov-6.99.1103.5.zip"
+   "version": "6.99.1103.6",
+   "zip": "zips/plugin.video.pov/plugin.video.pov-6.99.1103.6.zip"
   },
   {
    "carried_from": "zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip",
@@ -97,16 +97,16 @@
    "zip": "zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
   },
   {
-   "content_sha256": "73af40812b081ba6f30f2497c611fd13d1496099521e575f5d970ef44029d41b",
+   "content_sha256": "cfd3b6d95950d818f2e8180c2025a9dbf12d24d540e082236b5758b2b3801527",
    "files": 18,
    "id": "script.chadflix.setup",
-   "sha256": "09e4ce290dd7d0fafedb6f3be0ae4ea3747d0cfcadce92d77832369a85315a2c",
-   "size": 34290,
+   "sha256": "b4a550d4a380478345501766b667d81503786f751a2a4548b52b39005e14b0e7",
+   "size": 34472,
    "source": "tree",
    "tree": "src/script.chadflix.setup",
-   "tree_sha256": "73af40812b081ba6f30f2497c611fd13d1496099521e575f5d970ef44029d41b",
-   "version": "1.0.5",
-   "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.5.zip"
+   "tree_sha256": "cfd3b6d95950d818f2e8180c2025a9dbf12d24d540e082236b5758b2b3801527",
+   "version": "1.0.6",
+   "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.6.zip"
   },
   {
    "carried_from": "zips/script.module.infotagger/script.module.infotagger-0.1.0.zip",
@@ -189,24 +189,24 @@
    "zip": "zips/script.texturemaker/script.texturemaker-0.2.11.zip"
   },
   {
-   "added": 91,
-   "changed": 46,
-   "content_sha256": "c50f8492adeb7b3bf26042ea9bfbb58b96a4dd0b1578dc417c9a39f57d2d7660",
-   "files": 3828,
+   "added": 102,
+   "changed": 48,
+   "content_sha256": "da79328d0e389b6fcfa43095978b7336c942018b2eaa8d5d883bc5aa6da61fcb",
+   "files": 3839,
    "id": "skin.arctic.fuse.3",
    "overlay": "inputs/overlays/skin.arctic.fuse.3",
-   "overlay_sha256": "ddcbf5fe656b55716400ba770123fe5ebc0225fa0d5c68eff32d5d91609aa7a3",
+   "overlay_sha256": "c2709a6adb7f3e75c3efd1c77f04ddd8a76383828daa8ae061c6c139e3c81667",
    "removed": 2,
-   "sha256": "f82d8880e1080990a9aa6c334e15fe2d1a2db184894b77bcb5992f29633365e7",
-   "size": 60420851,
+   "sha256": "7f6b41582fb6bb3c63572b7c4ba9dabcccb4a290dd705ebe05f3cd59669b6e76",
+   "size": 60492010,
    "source": "upstream+overlay",
    "upstream": {
     "file": "skin.arctic.fuse.3-3.4.18.zip",
     "sha256": "ed7ec6ba9845bc3ae4a07b9ab6577b41617c6c32705b3ccbdbca343cba545e1a",
     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/dbecc1eab3384007e8ff36a9dde2fec1336a96e6/omega/zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.4.18.zip"
    },
-   "version": "3.99.418.6",
-   "zip": "zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.99.418.6.zip"
+   "version": "3.99.418.7",
+   "zip": "zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.99.418.7.zip"
   }
  ],
  "base_url": "https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/",
@@ -217,10 +217,10 @@
  },
  "index": {
   "file": "zips/addons.xml",
-  "md5": "d5d6f2f3269e4152170a1fce79bdf989",
-  "sha256": "1aa6fd09d635a9eeda0a5e044c9c0817c4df68aa2f84495d0ad6924d2adeea79"
+  "md5": "eb668bfb726b1e21eea063e35c00be68",
+  "sha256": "7cf69f6fc60e4ee22c3e6c6a2ba3b6c8ab5e799a82e2958e9d9dbf01f7b3f884"
  },
- "lock_sha256": "20975980bf389078c4cfd2cbddadf3e49ef931c62cc8e1a3edce6c0d81f83629",
- "release": "6 (release 5 + R10.37 start-up splash; Setup 1.0.5 with the R10.38 home-row recipe)",
+ "lock_sha256": "a34427a5168d4ec09532bc2507c6ebebbf92071c26594bd85d05a4af65de2b62",
+ "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.51-plot-text-2026-11-18; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files, unchanged in R10.51)",
  "repository_zip": "repository.chadflix-1.0.1.zip"
 }

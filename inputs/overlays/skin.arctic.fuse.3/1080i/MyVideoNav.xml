@@ -18,14 +18,14 @@
     <onload condition="$EXP[Netflix_Shows_Swap] + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + !String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)">SetProperty(Netflix.Refocus,shows,Home)</onload>
     <!-- R10.2: one guarded timer does the delayed refocus (Timers.xml netflix_refocus), never over the top bar. -->
     <onload>Skin.TimerStart(netflix_refocus)</onload>
-    <!-- Pause TMDb Helper's per-focus monitor while this window is in front: its lookups and
-         property pushes on every focus change cost frames while scrolling rows. The details
-         page is a separate window, so ratings still load there. Clear the last looked-up
-         ratings so a stale value cannot show on a row card. -->
+    <!-- R10.47: TMDb Helper's per-focus monitor stays paused while this window is in front (owner,
+         17 Nov: no TMDb Helper work on the Movies / Shows / My Lists rows; the row observer keeps it
+         paused too and never releases it; My Lists: Custom_1165). TMDb Helper reads the pause from the
+         top window, so a details page (Custom_1167, the show page) is not paused: each feeds TMDb Helper
+         its own title through its hidden list 9167. The last looked-up ratings are no longer cleared
+         here: no row shows them (R3), and clearing them made TMDb Helper skip the next lookup of the
+         same title (it only looks up again when the item changes). -->
     <onload>SetProperty(TMDbHelper.ServicePause,1)</onload>
-    <onload>ClearProperty(TMDbHelper.ListItem.IMDb_Rating,Home)</onload>
-    <onload>ClearProperty(TMDbHelper.ListItem.RottenTomatoes_Rating,Home)</onload>
-    <onload>ClearProperty(TMDbHelper.ListItem.Letterboxd_Rating,Home)</onload>
     <controls>
         <control type="group">
             <visible>!$EXP[Netflix_CatalogResults]</visible>

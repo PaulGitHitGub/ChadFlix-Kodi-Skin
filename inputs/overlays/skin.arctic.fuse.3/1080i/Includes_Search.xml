@@ -1313,13 +1313,64 @@
         </definition>
     </include>
 
+
+    <include name="Netflix_Row_Removal_Poster">
+        <param name="split_label">false</param>
+        <definition>
+            <control type="group">
+                <width>$PARAM[width]</width><height>$PARAM[height]</height>
+                <visible>$EXP[Netflix_Row_Removal_Overlay] + $PARAM[focused]</visible>
+                <!-- Keep the white focus border and dim only the art inside it. -->
+                <control type="image">
+                    <left>4</left><right>4</right><top>4</top><bottom>4</bottom>
+                    <texture colordiffuse="99000000" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                </control>
+                <control type="image">
+                    <centerleft>50%</centerleft><centertop>50%</centertop>
+                    <height>$PARAM[badge]</height><width>$PARAM[badge]</width>
+                    <texture colordiffuse="FFFFFFFF">common/circle.png</texture>
+                </control>
+                <!-- xmark.png has a 40 px mark in a 128 px square; scale the
+                     control for the approved 28 px visible mark on the 84 px badge. -->
+                <control type="image">
+                    <centerleft>50%</centerleft><centertop>50%</centertop>
+                    <height>$PARAM[cross]</height><width>$PARAM[cross]</width>
+                    <texture colordiffuse="FF111111">special://skin/extras/icons/xmark.png</texture>
+                </control>
+                <control type="label">
+                    <visible>$PARAM[inside_label] + !$PARAM[split_label]</visible>
+                    <left>8</left><right>8</right><bottom>14</bottom><height>52</height>
+                    <font>font_tiny_bold</font><align>center</align><aligny>center</aligny>
+                    <textcolor>FFFFFFFF</textcolor><scroll>false</scroll>
+                    <label>Remove From Row</label>
+                </control>
+                <!-- List labels do not wrap inside Kodi item layouts. The
+                     narrow Saved rails need two fixed lines in the same band. -->
+                <control type="label">
+                    <visible>$PARAM[inside_label] + $PARAM[split_label]</visible>
+                    <left>8</left><right>8</right><bottom>40</bottom><height>26</height>
+                    <font>font_tiny_bold</font><align>center</align><aligny>center</aligny>
+                    <textcolor>FFFFFFFF</textcolor><scroll>false</scroll>
+                    <label>Remove</label>
+                </control>
+                <control type="label">
+                    <visible>$PARAM[inside_label] + $PARAM[split_label]</visible>
+                    <left>8</left><right>8</right><bottom>14</bottom><height>26</height>
+                    <font>font_tiny_bold</font><align>center</align><aligny>center</aligny>
+                    <textcolor>FFFFFFFF</textcolor><scroll>false</scroll>
+                    <label>From Row</label>
+                </control>
+            </control>
+        </definition>
+    </include>
+
     <!-- One tile (the approved A3 tile of R10.1): the poster, a 5 px bar 10 px under it (only for a title stopped
          part-way), the caption under that ("1h 31m left", "S1: E3 · 21m left", "Next · S1: E4": POV's route writes it).
          Unfocused row: dimmed like every unfocused row (60 % black over the posters). -->
     <include name="Netflix_Continue_Tile">
         <definition>
             <control type="group">
-                <animation effect="fade" start="100" end="40" time="0" condition="!Control.HasFocus($PARAM[id])">Conditional</animation>
+                <animation effect="fade" start="100" end="40" time="0" condition="!Control.HasFocus($PARAM[id]) + ![$EXP[Netflix_Row_Removal_Overlay] + String.IsEqual(Window(Videos).Property(TMDbHelper.WidgetContainer),$PARAM[id])]">Conditional</animation>
                 <control type="group">
                     <width>220</width>
                     <height>330</height>
@@ -1368,6 +1419,11 @@
                         </control>
                     </control>
                 </control>
+                <include content="Netflix_Row_Removal_Poster">
+                    <param name="width">220</param><param name="height">330</param>
+                    <param name="badge">84</param><param name="cross">90</param>
+                    <param name="focused">$PARAM[focused]</param><param name="inside_label">false</param>
+                </include>
                 <control type="progress">
                     <left>0</left>
                     <top>340</top>
@@ -1398,7 +1454,13 @@
                     <aligny>center</aligny>
                     <textcolor>FFFFFFFF</textcolor>
                     <label>$INFO[ListItem.Property(Netflix.CW.Caption)]</label>
-                    <visible>$PARAM[focused]</visible>
+                    <visible>$PARAM[focused] + !$EXP[Netflix_Row_Removal_Overlay]</visible>
+                </control>
+                <control type="label">
+                    <left>2</left><top>352</top><width>232</width><height>30</height>
+                    <font>font_tiny_bold</font><aligny>center</aligny><textcolor>FFFFFFFF</textcolor>
+                    <label>Remove From Row</label>
+                    <visible>$PARAM[focused] + $EXP[Netflix_Row_Removal_Overlay]</visible>
                 </control>
             </control>
         </definition>
@@ -1445,7 +1507,7 @@
     </variable>
 
     <variable name="Netflix_Catalog_Empty_Message">
-        <value condition="$EXP[Netflix_WatchlistResults]">This Watchlist is empty. Add titles using Add to Watchlist.</value>
+        <value condition="$EXP[Netflix_WatchlistResults]">This Watchlist is empty. Add titles using Add To Watchlist.</value>
         <value>No titles available.</value>
     </variable>
 
@@ -2883,12 +2945,7 @@
                     <label>$INFO[Window(Home).Property(Netflix.Home.ViewName.$PARAM[id])]</label>
                     <visible>Control.HasFocus(7$PARAM[id])</visible>
                 </control>
-                <control type="label">
-                    <left>26</left><top>312</top><width>260</width><height>36</height>
-                    <aligny>center</aligny><font>font_mini</font><textcolor>FF8C8C8C</textcolor>
-                    <label>OK to change</label>
-                    <visible>Control.HasFocus(7$PARAM[id])</visible>
-                </control>
+                <!-- R10.44: remote-button hint row removed (owner rule: no button tutorials in ChadFlix UI) -->
                 <control type="image">
                     <left>26</left><top>372</top><width>44</width><height>44</height>
                     <aspectratio align="left">keep</aspectratio>

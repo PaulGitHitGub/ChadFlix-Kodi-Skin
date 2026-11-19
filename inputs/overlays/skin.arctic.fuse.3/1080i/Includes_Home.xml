@@ -914,6 +914,14 @@
         </definition>
     </include>
 
+    <!-- Resolve when the queued Back relay executes: Videos may already have returned to My Lists. -->
+    <variable name="Netflix_Catalog_Back_Relay_Action">
+        <value condition="Window.Is(1165)">SetFocus(3734)</value>
+        <value condition="Window.Is(Videos) + String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">SetFocus(3732)</value>
+        <value condition="Window.Is(Videos)">SetFocus(3733)</value>
+        <value>noop</value>
+    </variable>
+
     <include name="Netflix_Top_Navigation">
         <param name="active">Movies</param>
         <param name="reference">false</param>
@@ -935,14 +943,29 @@
                     <texture colordiffuse="FF080808">common/white.png</texture>
                     <visible>!$PARAM[reference]</visible>
                 </control>
+                <control type="label">
+                    <left>96</left><top>54</top><width>130</width><height>28</height>
+                    <align>left</align><aligny>center</aligny>
+                    <font>font_tiny</font><textcolor>FF999999</textcolor>
+                    <label>$INFO[System.FPS,, FPS]</label>
+                    <visible>
+                        !Player.HasMedia + !System.HasActiveModalDialog + !System.HasVisibleModalDialog +
+                        ![Window.IsVisible(1198) | Window.IsVisible(1167) | Window.IsVisible(1169) | Window.IsVisible(1173) |
+                          Window.IsVisible(busydialog) | Window.IsVisible(busydialognocancel)] +
+                        !String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true) +
+                        !$EXP[Netflix_Cover_Held] + !$EXP[Netflix_GenreMenu_Open] +
+                        [Window.IsActive(Home) |
+                         [Window.IsActive(Videos) + [$EXP[Netflix_Movies_Catalog] | $EXP[Netflix_Shows_Catalog]] + !String.Contains(Container.FolderPath,new_page=)] |
+                         [Window.IsActive(1165) + String.IsEmpty(Window(Home).Property(Netflix.MyLists.View))]]
+                    </visible>
+                </control>
                 <!-- Relay for Back on a header tab over a genre grid (staged/genre-over-root, Netflix_Grid_Over_Back): Kodi will
                      not take a Back target equal to the focused tab itself, so Back goes here and comes straight back
                      to the tab the grid belonged to (Netflix.Tab was set by that same Back). Never visible as such. -->
                 <control type="button" id="3762">
                     <left>0</left><top>0</top><width>1</width><height>1</height>
                     <texturefocus /><texturenofocus /><label />
-                    <onfocus condition="String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">SetFocus(3732)</onfocus>
-                    <onfocus condition="!String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">SetFocus(3733)</onfocus>
+                    <onfocus>$VAR[Netflix_Catalog_Back_Relay_Action]</onfocus>
                     <onup>noop</onup><ondown>noop</ondown><onleft>noop</onleft><onright>noop</onright>
                     <onback condition="String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">3732</onback>
                     <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">3733</onback>
@@ -2692,11 +2715,14 @@
                     <label>$INFO[Container($PARAM[id]).ListItem.MPAA]</label>
                     <visible>String.IsEmpty(Container($PARAM[id]).ListItem.Genre) + String.IsEmpty(Container($PARAM[id]).ListItem.Year) + String.IsEmpty(Container($PARAM[id]).ListItem.Duration) + !String.IsEmpty(Container($PARAM[id]).ListItem.MPAA)</visible>
                 </control>
-                <control type="textbox">
+                <control type="label">
                     <left>72</left>
                     <top>615</top>
                     <width>896</width>
-                    <height>119</height>
+                    <height>33</height>
+                    <aligny>top</aligny>
+                    <wrapmultiline>false</wrapmultiline>
+                    <scroll>false</scroll>
                     <font>font_mini</font>
                     <textcolor>FFBBBBBB</textcolor>
                     <label>$INFO[Container($PARAM[id]).ListItem.Plot]</label>
@@ -2979,7 +3005,7 @@
             <control type="label">
                 <left>460</left><top>238</top><width>1040</width><height>76</height>
                 <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
-                <label>No watchlists yet. Choose New Watchlist, or use Add to Watchlist on any title.</label>
+                <label>No watchlists yet. Choose New Watchlist, or use Add To Watchlist on any title.</label>
             </control>
         </control>
         <control type="fixedlist" id="533">
@@ -3641,7 +3667,7 @@
                 <control type="label">
                     <left>104</left><top>196</top><width>780</width><height>76</height>
                     <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor>
-                    <label>This watchlist is empty. Use Add to Watchlist on a title page.</label>
+                    <label>This watchlist is empty. Use Add To Watchlist on a title page.</label>
                     <visible>!String.IsEqual(Window(Home).Property(Netflix.MyLists.ViewID),episodes)</visible>
                 </control>
                 <control type="image">
@@ -3780,6 +3806,13 @@
                             <texture colordiffuse="FFFFFFFF">special://skin/extras/mylists/still-corners-220x330.png</texture>
                         </control>
                     </control>
+                    <!-- Dense grids have only 16 px between posters, so keep the action
+                         caption inside the lower scrim and out of the following cell. -->
+                    <include content="Netflix_Row_Removal_Poster">
+                        <param name="width">220</param><param name="height">330</param>
+                        <param name="badge">84</param><param name="cross">90</param>
+                        <param name="focused">true</param><param name="inside_label">true</param>
+                    </include>
             </focusedlayout>
             <focusedlayout width="236" height="346" condition="!Control.HasFocus(534)">
                     <control type="group">
@@ -4442,6 +4475,12 @@
                             <param name="width">152</param><param name="height">232</param>
                         </include>
                     </control>
+                    <include content="Netflix_Row_Removal_Poster">
+                        <param name="width">160</param><param name="height">240</param>
+                        <param name="badge">62</param><param name="cross">66</param>
+                        <param name="focused">true</param><param name="inside_label">true</param>
+                        <param name="split_label">true</param>
+                    </include>
                 </focusedlayout>
                 <focusedlayout width="176" height="240" condition="!Control.HasFocus($PARAM[id])">
                     <include content="Netflix_Focus_Rail_Poster">
@@ -4615,9 +4654,9 @@
         <value condition="!String.IsEmpty(Window(Home).Property(Netflix.MyLists.Go.all)) + !String.IsEmpty(Window(Home).Property(Netflix.MyLists.View))">plugin://plugin.video.pov/?mode=netflix_watchlists&amp;view=all&amp;token=$INFO[Window(Home).Property(Netflix.MyLists.AllToken)]&amp;netflix_open=$INFO[Window(Home).Property(Netflix.MyLists.OpenSeq.all)]</value>
     </variable>
     <variable name="Netflix_Saved_Movies_Path">
-        <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Enabled.531))">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=favorites_movies&amp;name=342&amp;netflix_saved_revision=$INFO[Window(Home).Property(Netflix.Browse.Token.531)]</value>
+        <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Enabled.531))">plugin://plugin.video.pov/?mode=build_movie_list&amp;action=favorites_movies&amp;name=342&amp;netflix_saved_revision=r$INFO[Window(Home).Property(Netflix.Browse.Token.531)]</value>
     </variable>
     <variable name="Netflix_Saved_Shows_Path">
-        <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.SavedShowsEnabled))">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=favorites_tvshows&amp;name=20343&amp;netflix_saved_revision=$INFO[Window(Home).Property(Netflix.Browse.Token.532)]</value>
+        <value condition="!String.IsEmpty(Window(1165).Property(Netflix.Browse.Window)) + !String.IsEmpty(Window(Home).Property(Netflix.Browse.SavedShowsEnabled))">plugin://plugin.video.pov/?mode=build_tvshow_list&amp;action=favorites_tvshows&amp;name=20343&amp;netflix_saved_revision=r$INFO[Window(Home).Property(Netflix.Browse.Token.532)]</value>
     </variable>
 </includes>

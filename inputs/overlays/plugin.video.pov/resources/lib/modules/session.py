@@ -27,6 +27,17 @@ def _load():
 						requests.Session.__init__(self)
 						self.timeout = timeout or (3.05, 6.05)
 
+					def get_adapter(self, url):
+						from modules.netflix_next_context import current
+						scope = current()
+						if scope is None: return requests.Session.get_adapter(self, url)
+						adapter = getattr(scope.local, 'adapter', None)
+						if adapter is None:
+							adapter = _loaded['PreparationAdapter'](max_retries=_Retry(total=0, connect=0, read=0, status=0, other=0))
+							scope.local.adapter = adapter
+							scope.retain_closer(adapter.close)
+						return adapter
+
 					def request(self, *args, **kwargs):
 						kwargs.setdefault('timeout', self.timeout)
 						return requests.Session.request(self, *args, **kwargs)
@@ -73,7 +84,15 @@ def _load():
 						except Exception: return None
 						return None if value is None else min(value, self.RETRY_AFTER_CAP)
 
-				_loaded = {'urllib3': urllib3, 'requests': requests, 'TimeoutSession': TimeoutSession,
+				class PreparationAdapter(_HTTPAdapter):
+					def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):
+						from modules.netflix_next_context import current
+						scope = current()
+						# R10.43: cleanup DELETEs (e.g. Real-Debrid removing a torrent prep just added) still go out after Stop.
+						if scope is None or (scope.cancelled.is_set() and request.method != 'DELETE'): raise RuntimeError('Preparation cancelled')
+						return _HTTPAdapter.send(self, request, stream=stream, timeout=(3.05, 6.05), verify=verify, cert=cert, proxies=proxies)
+
+				_loaded = {'PreparationAdapter': PreparationAdapter, 'urllib3': urllib3, 'requests': requests, 'TimeoutSession': TimeoutSession,
 							'HTTPAdapter': _HTTPAdapter, 'Retry': _Retry, 'BoundedAdapter': BoundedAdapter, 'BoundedRetry': BoundedRetry, 'ServiceRetry': ServiceRetry}
 	return _loaded
 
@@ -139,6 +158,26 @@ class _LazySession(_Lazy):
 			else: self._obj.mount(prefix, _real(adapter))
 
 class _LazyHttp(_Lazy):
+	def _get(self):
+		from modules.netflix_next_context import current
+		scope = current()
+		if scope is None: return super()._get()
+		if scope.cancelled.is_set(): raise RuntimeError('Preparation cancelled')
+		pool = getattr(scope.local, 'http', None)
+		if pool is None:
+			urllib3 = _load()['urllib3']
+			class PreparationPool(urllib3.PoolManager):
+				def urlopen(self, method, url, redirect=True, **kw):
+					if scope.cancelled.is_set(): raise RuntimeError('Preparation cancelled')
+					kw['retries'] = urllib3.util.Retry(total=0, connect=0, read=0, status=0, other=0)
+					kw['timeout'] = urllib3.util.Timeout(connect=3.05, read=6.05)
+					return super().urlopen(method, url, redirect=redirect, **kw)
+			pool = PreparationPool(maxsize=4)
+			pool.headers.update(urllib3.util.make_headers(keep_alive=True, accept_encoding=True))
+			scope.local.http = pool
+			scope.retain_closer(pool.clear)
+		return pool
+
 	def _create(self):
 		urllib3 = _load()['urllib3']
 		# R10.25 (F-11): finite (was total=None: no limit for a failed connection). At most 3 retries per call.

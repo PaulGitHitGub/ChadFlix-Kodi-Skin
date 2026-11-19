@@ -33,6 +33,8 @@ FULLSCREEN_VIDEO = 12005
 PROMPT = 11178
 NO_DIALOG = 9999
 RETURN = "Netflix.Exit.Return"
+NO_NEXT = "Netflix.Exit.NoNext"
+RUNNING_SECONDS = 10
 RUNNING = "Netflix.Exit.Running"
 LOG = "Netflix Exit: "
 RESUME_FROM, WATCHED_FROM = 5, 80   # POV player.py: set_resume, set_watched (percent)
@@ -60,42 +62,51 @@ def playing_title(player):
         return "", 0.0, 0.0
 
 
-def stash():
+def stash(raw):
     try:
-        value = json.loads(xbmcgui.Window(HOME).getProperty(RETURN) or "{}")
+        value = json.loads(raw or "{}")
     except ValueError:
         return {}
     return value if isinstance(value, dict) else {}
+
 
 
 def main(mode):
     home = xbmcgui.Window(HOME)
     stamp = home.getProperty(RUNNING)
     try:
-        if stamp and time.time() - float(stamp) < 10:
-            return  # a second Stop / long-press while this one is still working
+        if stamp and time.time() - float(stamp) < RUNNING_SECONDS:
+            # A repeated Stop still stops media right away; only the original
+            # script can reopen its captured title or release its cover.
+            home.setProperty(NO_NEXT, str(time.time()))
+            xbmc.executebuiltin("PlayerControl(Stop)")
+            return
     except ValueError:
         pass
-    home.setProperty(RUNNING, str(time.time()))
+    running = str(time.time())
+    home.setProperty(RUNNING, running)
     monitor = xbmc.Monitor()
     player = xbmc.Player()
     cover = None
+    raw = home.getProperty(RETURN)
+    go = home.getProperty("Netflix.Exit.Go")
+    target = stash(raw)
+    stopped = False
     try:
         trailer = bool(home.getProperty("Netflix.Trailer.Active"))
-        target = stash()
-        if not player.isPlayingVideo():
-            log("%s: nothing playing" % mode)
-            return
+        playing = player.isPlayingVideo()
         tmdb, position, total = playing_title(player)
-        if not trailer and target.get("kind") == "movie" and (not tmdb or tmdb == target.get("ID")):
+        if playing and not trailer and target.get("kind") == "movie" and (not tmdb or tmdb == target.get("ID")):
             # Up before the stop: Videos is drawn under it from its first frame. Trailers keep their own (the
             # trailer script holds one through the trailer); episodes too (netflix_series.play_and_wait).
             cover = hold_cover(target.get("Backdrop", ""), seconds=20)   # stop 4 s + settle 3 s + page + release
+        # Stamp the original exit intent for POV, then stop without waiting for its worker or Flight.
+        play = target.get("play") if target.get("kind") == "episode" and (not tmdb or target.get("ID") == tmdb) else None
+        home.setProperty(NO_NEXT, str(time.time()) + ("|" + play if isinstance(play, str) and play else ""))
         home.setProperty("Netflix.Exit.Fast", str(time.time()))
-        # R9: POV may already have the next episode queued (its Up Next preparation); its play loop
-        # (Sources.factory) drops the queue when this stamp is newer than the start of the episode being left.
-        home.setProperty("Netflix.Exit.NoNext", str(time.time()))
         xbmc.executebuiltin("PlayerControl(Stop)")
+        if not playing:
+            return  # an async successor may still be opening; retain the NoNext intent
         stopped = wait(monitor, lambda: not player.isPlaying()
                        and xbmcgui.getCurrentWindowId() != FULLSCREEN_VIDEO, 4)
         if xbmcgui.getCurrentWindowDialogId() == PROMPT:
@@ -135,9 +146,14 @@ def main(mode):
         cover = None
     finally:
         release_cover(cover)  # no reopen: down at once
-        home.clearProperty(RETURN)
-        home.clearProperty("Netflix.Exit.Go")
-        home.clearProperty(RUNNING)
+        if home.getProperty(RUNNING) == running:
+            if home.getProperty(RETURN) == raw:
+                # Episodes is consumed by SeriesPlayer after the existing Videos settle wait.
+                if not (stopped and target.get("kind") == "episode" and target.get("episodes")):
+                    home.clearProperty(RETURN)
+                if home.getProperty("Netflix.Exit.Go") == go:
+                    home.clearProperty("Netflix.Exit.Go")
+            home.clearProperty(RUNNING)
 
 
 if __name__ == "__main__":

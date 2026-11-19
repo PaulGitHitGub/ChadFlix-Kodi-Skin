@@ -171,6 +171,11 @@ class Movies:
 			cm_append((self.cm_sort['exit'], exit_str, container_refresh % self.exit_list_params))
 			cm.sort(key=lambda k: k[0])
 			cm = [v for k, *v in cm if k]
+			if self.action == 'favorites_movies' and self.params.get('netflix_saved_revision'):
+				saved_id = string(tmdb_id).lstrip('0')
+				if saved_id.isascii() and saved_id.isdecimal():
+					cm.insert(0, ('Remove From Row',
+					              'RunScript(special://skin/extras/netflix_row_remove.py,favorite,movie,%s)' % saved_id))
 			props = {'pov_sort_order': string(position), 'watchedprogress': progress}
 			listitem = kodi_utils.make_listitem()
 			listitem.addContextMenuItems(cm)

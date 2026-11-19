@@ -4,6 +4,11 @@
     <menucontrol>3734</menucontrol>
     <!-- restore-row only does something when returning from a watchlist; do not start a script otherwise. -->
     <onload condition="String.IsEqual(Window(Home).Property(Netflix.Watchlists.Return),true)">RunScript(special://skin/extras/netflix_saved_lists.py,restore-row)</onload>
+    <!-- R10.47 (owner, 17 Nov): no TMDb Helper work on the browse rows. The rows here name themselves TMDb Helper's
+         widget container on focus (local mode), so its monitor looked up every focused title; keep it paused while
+         this window is in front, as on Videos (MyVideoNav.xml). A details page opened from here is the top window,
+         so it is not paused and looks up its own title (Custom_1167, the show page). -->
+    <onload>SetProperty(TMDbHelper.ServicePause,1,1165)</onload>
     <!-- Rows stay loaded between visits (Kodi keeps this window in memory and does not refetch an unchanged
          path). The row coordinator refreshes a row, one at a time, only when its content changed. -->
     <controls>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <defaultcontrol always="true">20</defaultcontrol>
+    <controls>
+        <control type="group">
+            <visible>!String.IsEqual(Window.Property(tikiskins.nextep_function),handoff)</visible>
+            <control type="image">
+                <left>1000</left><top>744</top><width>920</width><height>336</height>
+                <texture>special://skin/extras/next-episode/scrim.png</texture>
+            </control>
+            <control type="button" id="10">
+                <left>1249</left><top>920</top><width>252</width><height>64</height>
+                <onright>20</onright><onleft>10</onleft>
+                <texturefocus border="8" colordiffuse="F226272A">special://skin/extras/next-episode/button.png</texturefocus>
+                <texturenofocus border="8" colordiffuse="F226272A">special://skin/extras/next-episode/button.png</texturenofocus>
+                <align>center</align><aligny>center</aligny>
+                <font>font_mini_bold</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+            </control>
+            <control type="button" id="20">
+                <left>1517</left><top>920</top><width>300</width><height>64</height>
+                <onleft>10</onleft><onright>20</onright>
+                <texturefocus>-</texturefocus><texturenofocus>-</texturenofocus>
+                <textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
+            </control>
+            <control type="label" id="30">
+                <left>1517</left><top>872</top><width>300</width><height>32</height>
+                <align>center</align><aligny>center</aligny>
+                <font>font_mini</font><textcolor>FFFFFFFF</textcolor>
+            </control>
+            <control type="progress" id="31">
+                <left>1517</left><top>920</top><width>300</width><height>64</height>
+                <visible>String.IsEqual(Window.Property(tikiskins.nextep_function),ready)</visible>
+                <texturebg>special://skin/extras/next-episode/ready.png</texturebg>
+                <lefttexture>-</lefttexture>
+                <midtexture>special://skin/extras/next-episode/fill.png</midtexture>
+                <righttexture>-</righttexture><overlaytexture>-</overlaytexture>
+                <reveal>true</reveal>
+            </control>
+            <control type="group">
+                <visible>String.IsEqual(Window.Property(tikiskins.nextep_function),preparing)</visible>
+                <control type="image">
+                    <left>1517</left><top>920</top><width>300</width><height>64</height>
+                    <texture border="8" colordiffuse="F226272A">special://skin/extras/next-episode/button.png</texture>
+                </control>
+                <control type="image">
+                    <left>1570</left><top>942</top><width>20</width><height>20</height>
+                    <texture colordiffuse="9FFFFFFF">special://skin/extras/next-episode/spinner.png</texture>
+                    <animation effect="rotate" start="0" end="360" center="auto" time="900" loop="true" condition="true">Conditional</animation>
+                </control>
+                <control type="label">
+                    <left>1600</left><top>920</top><width>200</width><height>64</height>
+                    <font>font_mini_bold</font><aligny>center</aligny>
+                    <textcolor>9FFFFFFF</textcolor><label>Next Episode</label>
+                </control>
+            </control>
+            <control type="group">
+                <visible>String.IsEqual(Window.Property(tikiskins.nextep_function),failed)</visible>
+                <control type="image">
+                    <left>1517</left><top>920</top><width>300</width><height>64</height>
+                    <texture border="8">special://skin/extras/next-episode/button.png</texture>
+                </control>
+                <control type="label">
+                    <left>1517</left><top>920</top><width>300</width><height>64</height>
+                    <font>font_mini_bold</font><align>center</align><aligny>center</aligny>
+                    <textcolor>FF101012</textcolor><label>Try Again</label>
+                </control>
+            </control>
+            <control type="image">
+                <left>1242</left><top>913</top><width>266</width><height>78</height>
+                <visible>Control.HasFocus(10)</visible>
+                <texture border="16">special://skin/extras/next-episode/focus.png</texture>
+            </control>
+            <control type="image">
+                <left>1510</left><top>913</top><width>314</width><height>78</height>
+                <visible>Control.HasFocus(20)</visible>
+                <texture border="16">special://skin/extras/next-episode/focus.png</texture>
+            </control>
+        </control>
+        <control type="image">
+            <left>0</left><top>0</top><width>1920</width><height>1080</height>
+            <visible>String.IsEqual(Window.Property(tikiskins.nextep_function),handoff)</visible>
+            <texture>special://skin/extras/next-episode/black.png</texture>
+            <animation effect="fade" start="0" end="100" time="300">Visible</animation>
+        </control>
+    </controls>
+</window>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog" id="1157">
+    <!-- Like 1156, this modeless relay reads the real Videos focus and closes in the same action.
+         Only a Continue Watching hold opens the native modal with an immutable title target. -->
+    <visible>false</visible>
+    <onload>Dialog.Close(1157,true)</onload>
+    <onload condition="Window.IsActive(Videos) + !System.HasActiveModalDialog + String.IsEqual(System.CurrentControlID,594)">RunScript(special://skin/extras/netflix_row_remove.py,594)</onload>
+    <onload condition="Window.IsActive(Videos) + !System.HasActiveModalDialog + String.IsEqual(System.CurrentControlID,595)">RunScript(special://skin/extras/netflix_row_remove.py,595)</onload>
+    <onload condition="Window.IsActive(Videos) + !System.HasActiveModalDialog + ![String.IsEqual(System.CurrentControlID,594) | String.IsEqual(System.CurrentControlID,595)]">ActivateWindow(1156)</onload>
+    <controls />
+</window>

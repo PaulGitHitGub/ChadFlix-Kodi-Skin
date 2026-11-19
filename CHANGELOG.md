@@ -1,5 +1,54 @@
 # Changelog
 
+## Release 7 (2026-11-18)
+
+Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
+don't need to run ChadFlix Setup again: Setup 1.0.6 updates its two changed key files by itself.
+
+**Versions:** Arctic Fuse 3 **3.99.418.7**, POV **6.99.1103.6**, ChadFlix Setup **1.0.6**. ChadFlix Repository (1.0.1) is
+unchanged.
+
+### Added
+
+- **Next Episode** card: near the end of an episode a card with a picture of the next episode counts down and plays it
+  by itself.
+- **Remove From Row:** hold **OK** on a title in **Continue Watching** or a favorites row to take it off that row.
+- **Save To Watchlists:** a new picker on the movie page for choosing which of your watchlists a movie is on.
+- **All Sources** on the show page: press **Right** from **Resume** (or **Play**) to open an **All Sources** side menu,
+  the same look as on the movie page.
+
+### Changed
+
+- Quality picks: **Highest** is the top source in **All Sources**. **Medium** is the first confirmed HDR or Dolby Vision
+  file in the **All Sources** list that isn't a remux (Dolby Vision preferred). **Play** starts **Medium**.
+- Smoother scrolling: TMDb Helper pauses its extra lookups while you browse rows.
+- **All Sources** lists also show **Unchecked** rows: sources Real-Debrid hasn't confirmed as cached, at the bottom of
+  the list with a grey **Unchecked** line. **Play**, the quality picks and the next-episode preparation are unchanged.
+- The plot on the Home rows is now cut short to one line (a plot with its own line break shows two). The full plot is still on the movie and show pages. Holding
+  **Left** or **Right** on Home now scrolls much more smoothly (about 40 → 57 frames per second on a Shield).
+- The lines of remote-button hints are gone from the gear menu, the subtitle style picker, the Showing tile and the
+  source info screen.
+- ChadFlix Setup asks "Close Kodi?" before it switches the look, so the question can no longer vanish while the new look
+  loads. YouTube is asked about once (Kodi's own question).
+
+### Fixed
+
+- Stability fixes.
+
+### Known trade-offs
+
+- A short press of **OK** reacts about 0.1 s later than before (Kodi waits to tell a short press from a hold).
+- The next episode starts 3–4 seconds after the countdown ends.
+- **Play** now starts a much bigger file: usually about 31–37 GB instead of about 5–6 GB (**Highest** is usually a
+  60–90 GB remux). On a slower connection you will notice.
+- On a movie page the ratings appear 0.2–3 seconds after the page opens, and the logo and title move up slightly when
+  they do.
+- **Menu** and **C** no longer open **Add to Another Watchlist** on a movie page. Holding **OK** on **Watchlist** still
+  does.
+- The Home rows no longer show the whole plot, only its first line.
+- An **Unchecked** row may not play. After a few seconds you get "No Results" and the page comes back. The "N sources"
+  line under **All Sources** on a movie page still counts confirmed sources only.
+
 ## Release 6 (2026-11-16)
 
 Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You

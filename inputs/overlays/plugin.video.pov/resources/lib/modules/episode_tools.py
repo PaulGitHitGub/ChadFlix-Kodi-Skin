@@ -72,7 +72,7 @@ def get_random_episode(tmdb_id, continual=False):
 	}
 	return meta, url_params
 
-def nextep_playback_info(meta):
+def nextep_playback_info(meta, *, next_runtime=False):
 	adjust_hours, current_date = settings.date_offset(), get_datetime()
 	meta_get = meta.get
 	try:
@@ -91,6 +91,7 @@ def nextep_playback_info(meta):
 			'mediatype': 'episode', 'rootname': display_name, 'season': season, 'episode': episode,
 			'premiered': premiered, 'ep_name': ep_data['title'], 'plot': ep_data['plot']
 		})
+		if next_runtime: meta['duration'] = ep_data.get('duration') or 0
 		url_params = {
 			'mode': 'play_media', 'mediatype': 'episode', 'season': season, 'episode': episode,
 			'tmdb_id': meta_get('tmdb_id'), 'tvshowtitle': meta_get('rootname')

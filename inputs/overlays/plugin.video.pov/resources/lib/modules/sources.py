@@ -4,14 +4,15 @@ import time
 import pkgutil
 import importlib
 from concurrent.futures import ThreadPoolExecutor as TPE, as_completed
-from threading import Event, Thread
+from threading import Event
+from modules.netflix_next_context import PreparationScope, Thread, bind, current, ephemeral
 from caches.providers_cache import ExternalProvidersCache
 from indexers.pov_api import sources as pov_sources
 from indexers.metadata import get_title, movie_meta, season_episodes_meta, tvshow_meta
 from modules import kodi_utils, player, settings, source_utils
 from modules.debrid import DebridCheck, Source, debrid_enabled, debrid_type_enabled
 from modules.utils import get_datetime, safe_string, string_to_float
-from modules.source_presentation import available_sources, play_facts, prefer_dynamic_range, rank_playback_sources
+from modules.source_presentation import available_sources, play_facts, prefer_dynamic_range, rank_playback_sources, source_is_unchecked
 from windows import create_window, open_window
 # from modules.kodi_utils import logger
 
@@ -69,9 +70,16 @@ class PlayFlight:
 		now = time.time()
 		set_property(FLIGHT, '%s|%s|%s|%.2f|%.2f' % (kind, self.media_id, self.token, now, now + seconds))
 
-	def renew(self):
+	def owns_playback(self):
 		entry = self.entry()
-		if entry is None or entry[0] == 'play': self.write('play', self.VALID)
+		return entry is not None and entry[:3] == ['play', self.media_id, self.token]
+
+	def renew(self, starting=False):
+		entry = self.entry()
+		loader = (starting and get_property(LOADING) == self.token and entry
+		          and entry[:2] == ['play', self.media_id])
+		if entry is None or loader or entry[:3] == ['play', self.media_id, self.token]:
+			self.write('play', self.VALID)
 		# The movie page's transition cover carries this request's token until playback starts (on_ready clears it):
 		# keep its fail-safe alarm alive only while the page still waits for this request (Back withdraws it) and for
 		# at most COVER_CAP s, so a request that died, was withdrawn or hangs frees it within 20 s (review M2).
@@ -83,7 +91,7 @@ class PlayFlight:
 		while not self.stopping.wait(self.RENEW): self.renew()
 
 	def start(self):
-		self.renew()
+		self.renew(starting=True)
 		self.thread = Thread(target=self.run, name='netflix_play_flight', daemon=True)
 		self.thread.start()
 
@@ -108,6 +116,11 @@ def prefer_available_quality(results, mediatype):
 	if not any(item.get('quality') == preferred and available(item) for item in results): return results
 	return [item for item in results if item.get('quality') != fallback]
 
+def all_sources_picks(results, mediatype):
+	"""(top, medium) rows of All Sources (owner, 16 Nov); see quality_presets.all_sources_picks."""
+	from modules.quality_presets import all_sources_picks as picks
+	return picks(prefer_available_quality(available_sources(results), mediatype))
+
 class Sources:
 	nextep_params = []
 
@@ -123,17 +136,72 @@ class Sources:
 			# R9: the viewer left this episode with Exit / Stop (skin extras/netflix_exit_return.py stamps the
 			# property just before it stops the player). A next episode queued by execute_nextep must not start.
 			# A normal end, or "Play" on the Up Next pop-up, does not stamp it, so those still continue.
-			if cls.exit_requested(began): cls.nextep_params.clear()
+			if cls.exit_requested(began, params.get('netflix_playback_cover')): cls.nextep_params.clear()
 
 	@staticmethod
-	def exit_requested(since):
-		try: return float(get_property('Netflix.Exit.NoNext')) >= since
-		except: return False
+	def exit_requested(since, play=None):
+		fields = get_property('Netflix.Exit.NoNext').split('|')
+		try: return since <= float(fields[0]) <= time.time() and (len(fields) == 1 or fields[1] == play)
+		except ValueError: return False
 
 	@classmethod
 	def nextep_callback(cls, params):
 		if not isinstance(params, dict): return
 		cls.nextep_params.insert(0, params)
+
+	@classmethod
+	def prepare_next(cls, current_meta, cancelled, publish):
+		"""Resolve one candidate into this request's memory and drain its workers."""
+		from copy import deepcopy
+		from urllib.parse import urlsplit
+		from modules.episode_tools import nextep_playback_info
+		from modules.netflix_next_model import Episode, PreparedEpisode
+
+		scope = PreparationScope(cancelled)
+		episode = prepared = None
+		with bind(scope):
+			try:
+				if cancelled.is_set(): return None, None
+				meta = deepcopy(current_meta)
+				for field in ('url', 'bookmark', 'search_info'):
+					meta.pop(field, None)
+				meta, params = nextep_playback_info(meta, next_runtime=True)
+				if not isinstance(params, dict) or cancelled.is_set(): return None, None
+				show = str(params['tmdb_id'])
+				if any(type(params[key]) is bool for key in ('season', 'episode')): return None, None
+				season, number = int(params['season']), int(params['episode'])
+				if (not show.isascii() or not show.isdecimal() or show != str(current_meta['tmdb_id']) or season < 0 or number < 1
+						or (season, number) == (int(current_meta['season']), int(current_meta['episode']))):
+					return None, None
+				episode = Episode(show, season, number, int(meta.get('duration') or 0))
+				publish(episode)
+				source = cls()
+				source.config_loader.apply(source, {**params, 'meta': json.dumps(meta),
+					'background': 'true', 'autoplay': 'true'})
+				source.full_screen, source.bg = False, quiet_progress
+				source.meta = source.meta_builder.build(source)
+				if (str(source.meta['tmdb_id']), int(source.meta['season']), int(source.meta['episode'])) != episode.identity:
+					return episode, None
+				results = rank_playback_sources(available_sources(source.get_sources() or []), quality_ranks)
+				for item in results[:source.limit_resolve]:
+					if cancelled.is_set(): break
+					link = item.get('unrestricted_link')
+					# R10.43: external (Torrentio etc.) results resolve too, also when an internal source is active.
+					if not link and item.get('scrape_provider') in (*source.active_internal_scrapers, 'external'):
+						link = Source(item, source.meta).resolve_sources()
+					if not isinstance(link, str) or not link.strip() or '\n' in link or '\r' in link:
+						continue
+					try: scheme = urlsplit(link.split('|', 1)[0]).scheme.lower()
+					except ValueError: continue
+					if scheme not in ('', 'http', 'https', 'file', 'smb', 'nfs', 'special'): continue
+					prepared = PreparedEpisode(episode, link, str(item.get('name') or ''), source.meta)
+					break
+			except Exception:
+				# Provider failures can contain links in their tracebacks.
+				scope.failed.set()
+			finally:
+				scope.drain()
+		return episode, prepared if not cancelled.is_set() and not scope.failed.is_set() else None
 
 	@classmethod
 	def background_prep(cls, params):
@@ -198,6 +266,8 @@ class Sources:
 
 	def cancelled(self):
 		"""R10-playback: the page withdrew this request (Back during loading, or the page went away)."""
+		scope = current()
+		if scope is not None: return scope.cancelled.is_set()
 		return self.quiet and get_property(LOADING) != self.params.get('netflix_playback_cover')
 
 	def publish_play(self, **fields):
@@ -348,7 +418,11 @@ class Sources:
 			return self.source_select()
 
 	def play_source(self, results):
-		results = available_sources(results)
+		# R10.50: only the All Sources list (not autoplay, not background) also lists unchecked Real-Debrid torrents;
+		# Play, the movie quality tiers and background checks keep confirmed sources only.
+		listing = not self.autoplay and not self.background
+		results = available_sources(results, include_unchecked=listing)
+		picks = all_sources_picks(results, self.mediatype) if self.autoplay and self.mediatype == 'movie' else None
 		if self.autoplay:
 			results = rank_playback_sources(results, quality_ranks)
 		else:
@@ -358,22 +432,29 @@ class Sources:
 		if self.background: self.pov_background_url = bool(results)
 		elif self.autoplay:
 			if self.mediatype == 'movie':
-				results = self.movie_quality_candidates(results)
+				results = self.movie_quality_candidates(results, picks)
 				if not results: return
 			return self.play_file(results)
 		else: return self.display_results(results)
 
-	def movie_quality_indices(self, results):
+	def movie_quality_indices(self, results, picks=None):
 		from modules.quality_presets import build_presets
 		duration = string_to_float(str(self.meta.get('duration') or 0), '0') / 60
-		indices = {item['key']: item['original_index'] for item in build_presets(results, 'movie', duration)}
+		find = lambda wanted: next((i for i, item in enumerate(results) if item is wanted), None) if wanted is not None else None
+		top, medium = picks or (None, None)
+		indices = {item['key']: item['original_index'] for item in build_presets(results, 'movie', duration, find(top), find(medium))}
 		if indices['highest'] is None and results: indices['highest'] = 0
 		return indices
 
-	def movie_quality_candidates(self, results):
-		"""Keep ordinary Play and the Highest menu entry on the same path."""
+	def movie_quality_candidates(self, results, picks=None):
+		"""Plain Play = Medium (owner, 16 Nov); it falls back to Highest when no HDR/DV encode exists."""
 		key = self.movie_quality
-		index = self.movie_quality_indices(results)[key]
+		indices = self.movie_quality_indices(results, picks)
+		if key == 'play':
+			index = indices['medium'] if indices['medium'] is not None else indices['highest']
+			key = 'highest'
+		else:
+			index = indices[key]
 		if index is None:
 			notification('No distinct %s Quality 4K source available' % ('Medium' if key == 'medium' else 'Low'))
 			return []
@@ -388,7 +469,10 @@ class Sources:
 				source_index, items = 0, results
 			elif source in results:
 				source_index = results.index(source)
-				items = [i for i in results[source_index:] if 'Uncached' not in i.get('cache_provider', '')]
+				# R10.50: the picked row first (it may be unchecked), then later rows as before, but never another
+				# unchecked one: a failing unchecked torrent costs ~1.5 s and an add/delete in the debrid account.
+				items = [source, *(i for i in results[source_index + 1:] if 'Uncached' not in i.get('cache_provider', '')
+					and not source_is_unchecked(i))]
 			else: source_index, items = None, [source]
 			if self.progress_dialog.full_screen:
 				self.progress_dialog.make(self.meta)
@@ -410,7 +494,7 @@ class Sources:
 					elif self.progress_dialog.full_screen and self.progress_dialog.iscanceled(): break
 					percent = int(((total_items := len(items))-count)/total_items*100)
 					from modules.source_presentation import build_source_groups, format_source_size
-					group = next(iter(build_source_groups([item])), {})
+					group = next(iter(build_source_groups([item], include_unchecked=True)), {})
 					line1 = group.get('label', 'Opening source')
 					line2 = ' · '.join(value for value in (format_source_size(item),
 						' / '.join(group.get('video_badges', ())), ' / '.join(group.get('audio_badges', ()))) if value)
@@ -444,8 +528,45 @@ class Sources:
 				if progress_media: progress_media()
 				self.clear_playback_cover()
 			on_ready = finish_loading if self.params.get('netflix_playback_cover') else progress_media
-			return POVPlayer().run(link, item.get('name'), self.meta, on_ready, resume_action)
+			if self.params.get('netflix_series') != 'true' or self.flight is None:
+				return POVPlayer().run(link, item.get('name'), self.meta, on_ready, resume_action)
+			from modules.netflix_next_model import PreparedEpisode
+			from modules.player import HANDOFF_DEFERRED, HANDOFF_FAILED
+
+			owner = POVPlayer()
+			next_episode = owner.run(link, item.get('name'), self.meta, on_ready, resume_action, self.flight)
+			while isinstance(next_episode, PreparedEpisode):
+				replacement = POVPlayer()
+				outcome = replacement.run(next_episode.link, next_episode.filename, next_episode.meta,
+				                          resume_action='resume', next_flight=self.flight, previous=owner)
+				if outcome is HANDOFF_DEFERRED:
+					owner.next_episode.restore(next_episode)
+					next_episode = owner.watch()
+				elif outcome is HANDOFF_FAILED:
+					original = owner.next_episode
+					if original.owns_playback():
+						self.update_series_return(self.flight, 'video', original.identity)
+						original.model.fail(next_episode.episode)
+						next_episode = owner.watch()
+					else:
+						owner.finish_watch()
+						return
+				else:
+					owner, next_episode = replacement, outcome
 		except: pass
+
+	@staticmethod
+	def update_series_return(flight, field, identity):
+		if not flight.owns_playback() or field not in ('video', 'episodes'): return False
+		raw = get_property('Netflix.Exit.Return')
+		try: target = json.loads(raw)
+		except ValueError: return False
+		if not isinstance(target, dict) or (target.get('kind'), target.get('ID'), target.get('play')) != ('episode', identity[0], flight.token):
+			return False
+		if get_property('Netflix.Exit.Return') != raw: return False
+		target[field] = list(identity[1:])
+		set_property('Netflix.Exit.Return', json.dumps(target))
+		return True
 
 class ConfigLoader:
 	def _as_bool(self, value, default=False):
@@ -471,7 +592,7 @@ class ConfigLoader:
 		source.background = self._as_bool(params_get('background'), False)
 		source.quiet = bool(params_get('netflix_playback_cover')) and not source.background
 		source.bg = quiet_progress if source.quiet else progressDialogBG
-		if not params_get('netflix_quality_preview') and not source.quiet:
+		if not ephemeral() and not params_get('netflix_quality_preview') and not source.quiet:
 			if source.background: hide_busy_dialog()
 			else: show_busy_dialog()
 		source.disabled_ignored = self._as_bool(params_get('disabled_ignored'), False)
@@ -489,7 +610,7 @@ class ConfigLoader:
 		# An internal-only prescan can find a usable source before the best one.
 		if source.autoplay: source.prescrape = False
 		quality = params_get('movie_quality')
-		source.movie_quality = quality if quality in ('medium', 'lowest') else 'highest'
+		source.movie_quality = quality if quality in ('highest', 'medium', 'lowest') else 'play'
 		source.active_internal_scrapers = settings.active_internal_scrapers()
 		source.active_external = 'external' in source.active_internal_scrapers
 		source.display_uncached_torrents = settings.display_uncached_torrents()
@@ -626,6 +747,9 @@ class ScraperProcessor:
 
 	def activate_external(self):
 		self.source.external_providers = []
+		# R10.43 (owner, 17 Nov): the Next Episode preparation searches the same external scrapers as Play (for most
+		# setups Torrentio etc. are the only sources). Its links still never reach disk: ExternalManager.results binds the
+		# scope in its pool workers, so ExternalProvidersCache/MainCache skip writes and kodi_utils stays quiet there.
 		if 'aiostreams' in self.source.active_internal_scrapers: return
 		self.source.debrid_enabled = debrid_enabled()
 		self.source.debrid_torrent_enabled = debrid_type_enabled('torrent', self.source.debrid_enabled)
@@ -821,12 +945,22 @@ class ExternalManager:
 	@dialog_hook
 	def results(self, info):
 		tpe = TPE(max(1, len(self.external_providers), len(self.debrid_torrents)))
+		# R10.43: stdlib pool workers don't inherit the preparation scope (threading.local), so bind it in each job;
+		# otherwise Next Episode prep would write provider links/hashes to disk and log from the workers.
+		scope = current()
+		def scoped(fn):
+			if scope is None: return fn
+			def run(*args):
+				with bind(scope):
+					if scope.cancelled.is_set(): return []
+					return fn(*args)
+			return run
 		try:
 			threads = set()
 			total_results = []
 			for provider, module, *pack in self.external_providers:
 				args = (provider, module, *pack) if pack else (provider, module)
-				fut = tpe.submit(ExternalSource(self.meta, self.resolutions).results, info, args)
+				fut = tpe.submit(scoped(ExternalSource(self.meta, self.resolutions).results), info, args)
 				fut.name = pack_display % (provider, *pack) if pack and pack[0] else provider
 				threads.add(fut)
 			self.monitor(threads, remaining_format, False)
@@ -838,7 +972,9 @@ class ExternalManager:
 			DebridCheck.set_cached_hashes(result_hashes)
 			threads = set()
 			for item in self.debrid_torrents:
-				fut = tpe.submit(DebridCheck(self.meta, item).cache_check)
+				check = DebridCheck(self.meta, item)
+				if scope is not None: check.cache_write = lambda hashes: None  # prep keeps debrid hashes in memory only
+				fut = tpe.submit(scoped(check.cache_check))
 				fut.name = item
 				threads.add(fut)
 			self.monitor(threads, debrid_format, True)
@@ -851,7 +987,9 @@ class ExternalManager:
 					for i in torrent_sources
 				)
 		except: kodi_utils.notify_error()
-		finally: tpe.shutdown(False)
+		finally:
+			if scope is None: tpe.shutdown(False)
+			else: scope.retain_closer(lambda: tpe.shutdown(wait=True, cancel_futures=True))  # drain waits for pool workers
 		return self.final_sources
 
 	def monitor(self, threads, status_line='', debrid=False):
