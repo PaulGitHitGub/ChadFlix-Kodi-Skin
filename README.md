@@ -135,7 +135,8 @@ Open the **gear** (top right). Keys stay on your Shield.
 
 ## Updating
 
-Kodi updates ChadFlix by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once after an update**; no
+Kodi updates ChadFlix by itself (or **Add-ons** → **Check for updates**). Select **Check for updates** once, then wait
+a minute or two; Kodi swaps the skin by itself. **Restart Kodi once after an update**; no
 need to run the setup again. Changes: [CHANGELOG.md](CHANGELOG.md).
 
 > [!NOTE]
