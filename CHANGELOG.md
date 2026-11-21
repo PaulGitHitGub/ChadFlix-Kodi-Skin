@@ -1,5 +1,65 @@
 # Changelog
 
+## Release 8 (2026-11-21)
+
+Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You
+don't need to run ChadFlix Setup again: Setup 1.0.7 updates its changed key file by itself.
+
+**Versions:** Arctic Fuse 3 **3.99.418.8**, POV **6.99.1103.7**, ChadFlix Setup **1.0.7**. ChadFlix Repository (1.0.1) is
+unchanged.
+
+### Changed
+
+- Faster start: Kodi opens on **Movies** as soon as the **Movies** rows are ready. **Shows** loads the first time you
+  open it.
+- A new, quieter loading look: while rows, grids, episode lists and **My Lists** load you see dark cards with a slow,
+  faint shimmer, and the titles fade in once. **Continue Watching** shows as many loading cards as it had last time.
+  While new **Search** results load, the old ones dim.
+- Pages react at once: **Play**, **Start Over** and **Trailer** show their loading screen the moment you press them, and
+  the **All Sources** menu, the **Options** sheet, the **Showing** picker and yes/no questions open straight away.
+- Movie and show pages settle sooner: the show page usually opens with the right **Resume** or **Play** button, and the
+  ratings keep their place on later visits.
+- A long plot on a movie or show page now scrolls through once and then stays still (it used to loop and keep the
+  Shield busy). Press any key to scroll it again.
+- Leaving the **Trending** row on **Movies** or **Shows** puts it back on its first title, so you don't come back to a
+  half-scrolled row.
+- The lines of remote-button hints are gone from **Customize Home**, the exit question and the video menu.
+- POV's menu shows the focused item clearly, and **Favorites** has a heart.
+- Messages appear on a dark panel, above the mute icon.
+
+### Fixed
+
+- **Back** reacts at once after **Play** (it could be ignored for up to 5 seconds). A quick **OK** then **Back** no
+  longer starts a play, on a movie page, a show page or a **Trending** poster.
+- **Back** while an episode is starting stops it before it shows and brings back the show page.
+- **Stop** brings back the movie or show page, also on very large files and when the video menu or one of its cards
+  is open.
+- **Resume** starts 5 seconds before where you stopped (it used to jump back to the last whole percent).
+- Part-watched movies in **My Lists** say **Resume** and resume where you stopped.
+- **Back** from **Search** returns to the tab bar with **Continue Watching** in view, instead of the first **Trending**
+  title.
+- **Back** while a trailer is starting returns in about 2 seconds instead of 20.
+- Closing a show page or the **Save To Watchlists** picker could crash Kodi.
+- A reopened **More Titles** grid no longer flashes other posters first.
+- **Video add-ons** and POV's menus no longer show the last title's backdrop, and the audio and subtitle card no longer
+  shows the previous title's tracks for a moment.
+
+### Known trade-offs
+
+- Playing a movie from outside ChadFlix's rows (Kore, TMDb Helper's playmedia fallback, POV Extras' **Play**) is
+  ignored when that movie is in the **Trending** or **Movies** row.
+- The first **Shows** visit after a cold start shows loading cards for a few seconds while its rows load.
+- After a late **Back** on a show page the loading screen stays up to a second longer, then the show page closes for
+  about 1.5 seconds and comes back. The episode never starts. Sometimes, a **Back** pressed 1–2 seconds before an
+  episode starts is still missed and the episode plays.
+- A plot longer than about 12 lines doesn't reach its end on the first pass, and a very long plot (about 15 lines or
+  more) never scrolls to its end.
+- On the first movie page after Kodi starts, the ratings can still make the page jump once. With a slow POV, a show
+  page's **Play** button can still change to **Resume** once, about 1.2 seconds after the page opens.
+- A **More Titles** grid you scrolled down shows its loading cards about 0.3 seconds longer when you reopen it.
+- For up to 3 seconds after you leave **Search**, the first time the **Trending** row on **Movies** takes focus it
+  moves to the tab bar instead.
+
 ## Release 7 (2026-11-18)
 
 Kodi installs this update by itself (or **Add-ons** → **Check for updates**). **Restart Kodi once afterwards.** You

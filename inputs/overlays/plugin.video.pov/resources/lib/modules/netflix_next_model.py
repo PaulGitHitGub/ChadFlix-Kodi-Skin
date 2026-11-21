@@ -4,7 +4,7 @@ from math import isfinite
 
 
 COUNTDOWN = 10.0
-FADE = 0.3
+FADE = 0.12  # R10.53: the skin's handoff fade (netflix_next_episode.xml, 120 ms); keep them equal
 
 
 def episode_times(duration, credits):

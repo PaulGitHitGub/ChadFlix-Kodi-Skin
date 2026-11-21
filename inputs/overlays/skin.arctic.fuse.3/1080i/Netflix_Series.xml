@@ -57,6 +57,14 @@
         </control>
         <control type="group">
             <visible>!String.IsEqual(Window.Property(Series.Page),episodes) + !String.IsEqual(Window.Property(Series.Page),related)</visible>
+            <!-- R10.54 reveal once: the text stack and the actions stay transparent (still focusable) until the script
+                 says the page is settled (netflix_series.py Series.Settled: the Play episode is known, the 1.2 s cap, an
+                 arrow or Play), then fade in over 0.1 s. A Conditional animation whose condition holds when the window
+                 loads starts in its end state, never animating: a page settled from its first frame shows at once.
+                 Two animations so that hiding is instant (a More Like This show replacing a settled one never shows
+                 its first frames fading out) and only the reveal fades. -->
+            <animation effect="fade" start="100" end="0" time="0" condition="String.IsEmpty(Window.Property(Series.Settled))">Conditional</animation>
+            <animation effect="fade" start="0" end="100" time="100" condition="!String.IsEmpty(Window.Property(Series.Settled))">Conditional</animation>
             <!-- Layout (owner request: same spacing on every show, no added delay; plain XML, nothing measured
                  at run time). Two stacks meet at one fixed line, y 560:
                  * this text stack ends just above that line and grows UPWARD (align bottom): a longer description
@@ -117,6 +125,7 @@
                     <width>700</width>
                     <height>36</height>
                     <visible>!String.IsEmpty(Window.Property(Series.IMDb)) | !String.IsEmpty(Window.Property(Series.RottenTomatoes)) | !String.IsEmpty(Window.Property(Series.Letterboxd))</visible>
+                    <animation effect="fade" start="0" end="100" time="100">Visible</animation>
                     <orientation>horizontal</orientation>
                     <usecontrolcoords>false</usecontrolcoords>
                     <itemgap>20</itemgap>
@@ -181,6 +190,16 @@
                         </control>
                     </control>
                 </control>
+                <!-- R10.54: the ratings line's place (same top and height as the row above), held while this show's ratings
+                     are not in yet, so they fade into it and nothing moves. Only once ratings have been seen in this Kodi
+                     session (Series.RatingsSlot: netflix_series.py RATINGS_SEEN): with ratings off there is no gap. Draws nothing. -->
+                <control type="image">
+                    <top>4</top>
+                    <width>1</width>
+                    <height>36</height>
+                    <texture />
+                    <visible>String.IsEqual(Window.Property(Series.RatingsSlot),1) + String.IsEmpty(Window.Property(Series.IMDb)) + String.IsEmpty(Window.Property(Series.RottenTomatoes)) + String.IsEmpty(Window.Property(Series.Letterboxd))</visible>
+                </control>
                 <!-- Only for the R2 script, which blanks the description while the first episode loads: hold
                      roughly the space a typical episode title + description takes, so the logo barely moves when
                      they arrive. Draws nothing. With staged/show-page-load the page is ready from its first frame
@@ -226,7 +245,7 @@
                     <width>748</width>
                     <!-- 1 to 5 lines; a longer description stops after the fifth line (Read Full Description removed). -->
                     <height min="42" max="178">auto</height>
-                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + ![System.IdleTime(1) + ControlGroup(29).HasFocus + !Control.HasFocus(47)]</visible>
+                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + ![System.IdleTime(1) + !System.IdleTime(30) + ControlGroup(29).HasFocus + !Control.HasFocus(47)]</visible>
                 </control>
                 <control type="textbox">
                     <font>font_main</font>
@@ -237,7 +256,7 @@
                     <top>-4</top>
                     <width>748</width>
                     <height min="42" max="178">auto</height>
-                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + System.IdleTime(1) + ControlGroup(29).HasFocus + !Control.HasFocus(47)</visible>
+                    <visible>!String.IsEmpty(Window.Property(Series.Plot)) + System.IdleTime(1) + !System.IdleTime(30) + ControlGroup(29).HasFocus + !Control.HasFocus(47)</visible>
                 </control>
             </control>
             <!-- R10.49: 29 and 30 are 1180 wide (were 750) only so the All Sources menu right of Play (x 684 to 1244)
@@ -902,12 +921,13 @@
                             <control type="image">
                                 <width>437</width>
                                 <height>247</height>
-                                <texture border="14" colordiffuse="FF222222">common/box.png</texture>
+                                <texture border="14" colordiffuse="FF141414">common/box.png</texture>
                             </control>
                             <control type="image">
                                 <width>437</width>
                                 <height>247</height>
                                 <aspectratio scalediffuse="false">scale</aspectratio>
+                                <fadetime>150</fadetime>
                                 <texture background="true" diffuse="diffuse/landscape_w410_h231.png">$INFO[ListItem.Art(thumb)]</texture>
                             </control>
                         </control>
@@ -988,12 +1008,13 @@
                             <control type="image">
                                 <width>437</width>
                                 <height>247</height>
-                                <texture border="14" colordiffuse="FF222222">common/box.png</texture>
+                                <texture border="14" colordiffuse="FF141414">common/box.png</texture>
                             </control>
                             <control type="image">
                                 <width>437</width>
                                 <height>247</height>
                                 <aspectratio scalediffuse="false">scale</aspectratio>
+                                <fadetime>150</fadetime>
                                 <texture background="true" diffuse="diffuse/landscape_w410_h231.png">$INFO[ListItem.Art(thumb)]</texture>
                             </control>
                         </control>
@@ -1021,6 +1042,7 @@
                             <height>245</height>
                             <visible>Control.HasFocus(21) + !String.IsEmpty(ListItem.Art(thumb))</visible>
                             <aspectratio scalediffuse="false">scale</aspectratio>
+                            <fadetime>150</fadetime>
                             <texture background="true" diffuse="diffuse/landscape_w410_h231.png">$INFO[ListItem.Art(thumb)]</texture>
                         </control>
                         <control type="image">
@@ -1176,10 +1198,13 @@
                     <left>786</left><top>226</top>
                     <visible>String.IsEqual(Window.Property(Series.RelatedLoading),1)</visible>
                     <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
-                    <!-- R10.12: the shared loading look: FF222222, the loaded poster's silhouette, the 26 px third-row sliver, one sweep. -->
+                    <!-- R10.12: the shared loading look: FF141414 (R10.56), the loaded poster's silhouette, the 26 px third-row sliver, one sweep. -->
                     <include content="Netflix_Loading_Related_Grid"><param name="condition">String.IsEqual(Window.Property(Series.RelatedLoading),1)</param></include>
                 </control>
                 <control type="panel" id="22">
+                    <!-- R10.56 (loading look A): hidden at once while similar shows load, then one 250 ms fade in -->
+                    <animation effect="fade" start="100" end="0" time="0" condition="String.IsEqual(Window.Property(Series.RelatedLoading),1)">Conditional</animation>
+                    <animation effect="fade" start="0" end="100" time="250" reversible="false" condition="!String.IsEqual(Window.Property(Series.RelatedLoading),1)">Conditional</animation>
                     <left>786</left>
                     <top>226</top>
                     <width>1080</width>
@@ -1194,7 +1219,7 @@
                             <top>0</top>
                             <width>240</width>
                             <height>350</height>
-                            <texture border="14" colordiffuse="FF222222">common/box.png</texture>
+                            <texture border="14" colordiffuse="FF141414">common/box.png</texture>
                         </control>
                         <control type="image">
                             <left>3</left>

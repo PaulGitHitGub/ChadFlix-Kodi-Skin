@@ -36,7 +36,8 @@
             </control>
             <control type="label">
                 <left>0</left>
-                <top>444</top>
+                <!-- R10.55 (review L5): centred on the screen now that the hint line below is gone (was 444) -->
+                <top>492</top>
                 <width>1920</width>
                 <height>96</height>
                 <align>center</align>
@@ -46,18 +47,7 @@
                 <shadowcolor>E0000000</shadowcolor>
                 <label>Are you sure you want to exit?</label>
             </control>
-            <control type="label">
-                <left>0</left>
-                <top>552</top>
-                <width>1920</width>
-                <height>48</height>
-                <align>center</align>
-                <aligny>center</aligny>
-                <font>font_midi</font>
-                <textcolor>C8F5F5F5</textcolor>
-                <shadowcolor>E0000000</shadowcolor>
-                <label>Press Back again to exit   ·   OK to keep watching</label>
-            </control>
+            <!-- R10.55: the hint line under the question ("Press Back again to exit · OK to keep watching") is gone (owner rule: no hint rows). -->
         </control>
         <!-- the only control: invisible 1x1 button that owns OK, arrows and Back -->
         <control type="button" id="9001">

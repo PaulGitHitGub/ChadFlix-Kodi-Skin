@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <window>
     <zorder>1000</zorder>
+    <!-- R10.53.1 busy-back: Play's PlayMedia of POV opens this (modal, invisible) dialog 0.2 s in; its Back cancels the plugin
+         and Kodi then waits 5 s for POV to stop. While a title page's loader is up, close it at once (POV's quiet_busy,
+         moved to the moment the dialog opens), so Back reaches the page's loader. -->
+    <onload condition="[Window.IsVisible(1167) | Window.IsVisible(Netflix_Series.xml)] + !String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">Dialog.Close(busydialog,true)</onload>
+    <!-- R10.55.3 FIX A: the same on the show page after a Back that withdrew Play once its PlayMedia was queued: the loader is
+         already down, so the line above does not apply (extras/netflix_series.py WITHDRAWN). -->
+    <onload condition="Window.IsVisible(Netflix_Series.xml) + !String.IsEmpty(Window(Home).Property(Netflix.Series.Withdrawn))">Dialog.Close(busydialog,true)</onload>
     <controls>
 
         <include content="Furniture_Busy">

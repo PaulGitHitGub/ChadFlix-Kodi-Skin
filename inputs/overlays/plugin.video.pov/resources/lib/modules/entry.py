@@ -123,18 +123,32 @@ def _open_native_movie_card(params, handle):
 	from xbmcgui import getCurrentWindowId, ListItem
 	if getCurrentWindowId() != 10025: return False
 	control = kodi_utils.get_infolabel('System.CurrentControlID')
-	if control not in ('590', '591'): return False
-	item = 'Container(%s).ListItem.' % control
-	path = kodi_utils.get_infolabel(item + 'FileNameAndPath')
-	if (kodi_utils.get_infolabel(item + 'DBType') != 'movie'
-			or not path.startswith('plugin://plugin.video.pov/')
-			or kodi_utils.parsed_query(path) != params):
-		return False
-	if handle >= 0:
-		from xbmcplugin import setResolvedUrl
-		setResolvedUrl(handle, False, ListItem())
-	kodi_utils.execute_builtin('RunScript(special://skin/extras/netflix_movie_details.py,%s)' % control)
-	return True
+	# sweep 2 #1 (R10.55.4): a Back or arrow that lands before this runs has moved focus off 590/591 or to another title. If
+	# the selected title of 590 or 591 is still this movie, the request came from an OK on it: swallow it (never play), and
+	# open the page only while focus is still on that title. Back on the row also moves the row back to its first title and
+	# Left/Right select another one, so when the selected title is not this movie any title of 590/591 counts (swallowed,
+	# no page).
+	def is_this(prefix):
+		path = kodi_utils.get_infolabel(prefix + 'FileNameAndPath')
+		return (kodi_utils.get_infolabel(prefix + 'DBType') == 'movie' and path.startswith('plugin://plugin.video.pov/')
+				and kodi_utils.parsed_query(path) == params)
+	for listed in ('590', '591'):
+		selected = is_this('Container(%s).ListItem.' % listed)
+		found = selected
+		if not found:
+			try: count = min(int(kodi_utils.get_infolabel('Container(%s).NumAllItems' % listed) or 0), 60)
+			except ValueError: count = 0
+			found = any(is_this('Container(%s).ListItemAbsolute(%d).' % (listed, i)) for i in range(count))
+		if not found: continue
+		if handle >= 0:
+			from xbmcplugin import setResolvedUrl
+			setResolvedUrl(handle, False, ListItem())
+		if control == listed and selected:
+			kodi_utils.execute_builtin('RunScript(special://skin/extras/netflix_movie_details.py,%s)' % control)
+		else:
+			logger('POV', 'ChadFlix: OK on a movie ignored, focus moved to %s first' % control)
+		return True
+	return False
 
 def routing(sys_obj):
 	params = kodi_utils.parsed_query(sys_obj.argv[2])
@@ -454,10 +468,16 @@ class SettingsMonitor(kodi_utils.xbmc_monitor):
 	def onNotification(self, sender, method, data):
 		if method == 'System.OnSleep': set_property('pov_pause_services', 'true')
 		elif method == 'System.OnWake': clear_property('pov_pause_services')
+		# R10.55.4: the ChadFlix skin's RunScript holds (R10.52 show page, R10.55.2 Watchlist picker) never see
+		# abortRequested; this tells them Kodi is quitting so they end at once instead of being killed after 5 s. Only on
+		# System.OnQuit (Kodi quits or restarts): never when just this service stops (add-on update, disable, profile load),
+		# which would end every later hold early for the rest of the session.
+		elif method == 'System.OnQuit': set_property('Netflix.Quitting', 'true')
 
 	def __call__(self):
 		ver = '%s-%s' % (kodi_utils.get_addoninfo('id'), kodi_utils.get_addoninfo('version'))
 		logger('POV', 'Settings Monitor Service Starting (%s)' % ver)
+		clear_property('Netflix.Quitting')   # R10.55.4: a Kodi that is running is not quitting (see onNotification)
 		initializeDatabases()
 		checkSettingsFile()
 		try: chadflixReuseOff()

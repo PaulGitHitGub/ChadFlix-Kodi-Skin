@@ -19,12 +19,124 @@
         <control type="group">
             <visible>!String.IsEqual(Control.GetLabel(401),$LOCALIZE[39177])</visible>
 
+            <!-- R10.55: the toast sits on the skin's dark panel (common/box.png FA08090B, as the Options dialog) instead of bare
+                 text over the art, and while the mute / volume icon is up (DialogVolumeBar, same corner) the whole toast
+                 rises above it instead of running into it; while the Next Episode card is up it rises above the card (review L2).
+                 One-line toasts get a one-line panel centred on the icon (review L4). -->
+            <animation effect="slide" start="0,0" end="0,-96" time="200" tween="sine" easing="out" condition="Window.IsVisible(DialogVolumeBar.xml) + !Window.IsVisible(netflix_next_episode.xml)">Conditional</animation>
+            <animation effect="slide" start="0,0" end="0,-168" time="200" tween="sine" easing="out" condition="Window.IsVisible(netflix_next_episode.xml)">Conditional</animation>
             <include content="Furniture_Busy_Main">
                 <param name="minilabel">$INFO[Control.GetLabel(402)]</param>
                 <param name="mainlabel">$INFO[Control.GetLabel(401)]</param>
+                <param name="haslabel">false</param>
                 <param name="visible_condition">!$EXP[Exp_FurnitureBusy_AnimationCond_DialogNotification]</param>
                 <param name="windowopen_condition">!$EXP[Exp_FurnitureBusy_AnimationCond_DialogNotification]</param>
             </include>
+            <!-- The panel: one disabled auto-width button per line (transparent text, same font and label as the line it
+                 measures), right-aligned at the same edge; the wider one is the panel, the narrower lies inside it. -->
+            <control type="grouplist">
+                <left>-80</left>
+                <right>84</right>
+                <top>-8</top>
+                <height>96</height>
+                <orientation>horizontal</orientation>
+                <align>right</align>
+                <usecontrolcoords>true</usecontrolcoords>
+                <visible>!String.IsEmpty(Control.GetLabel(402))</visible>
+                <control type="button">
+                    <width min="0" max="666">auto</width>
+                    <height>96</height>
+                    <enable>false</enable>
+                    <font>font_main_bold</font>
+                    <label>$INFO[Control.GetLabel(401)]</label>
+                    <textoffsetx>26</textoffsetx>
+                    <textcolor>00FFFFFF</textcolor>
+                    <disabledcolor>00FFFFFF</disabledcolor>
+                    <texturenofocus border="24" colordiffuse="FA08090B">common/box.png</texturenofocus>
+                    <texturefocus border="24" colordiffuse="FA08090B">common/box.png</texturefocus>
+                </control>
+            </control>
+            <control type="grouplist">
+                <left>-80</left>
+                <right>84</right>
+                <top>-8</top>
+                <height>96</height>
+                <orientation>horizontal</orientation>
+                <align>right</align>
+                <usecontrolcoords>true</usecontrolcoords>
+                <visible>!String.IsEmpty(Control.GetLabel(402))</visible>
+                <control type="button">
+                    <width min="0" max="666">auto</width>
+                    <height>96</height>
+                    <enable>false</enable>
+                    <font>font_hint_bold</font>
+                    <label>$INFO[Control.GetLabel(402)]</label>
+                    <textoffsetx>26</textoffsetx>
+                    <textcolor>00FFFFFF</textcolor>
+                    <disabledcolor>00FFFFFF</disabledcolor>
+                    <texturenofocus border="24" colordiffuse="FA08090B">common/box.png</texturenofocus>
+                    <texturefocus border="24" colordiffuse="FA08090B">common/box.png</texturefocus>
+                </control>
+            </control>
+            <!-- one line only: a 56 px panel centred on the toast's icon -->
+            <control type="grouplist">
+                <left>-80</left>
+                <right>84</right>
+                <top>12</top>
+                <height>56</height>
+                <orientation>horizontal</orientation>
+                <align>right</align>
+                <usecontrolcoords>true</usecontrolcoords>
+                <visible>String.IsEmpty(Control.GetLabel(402))</visible>
+                <control type="button">
+                    <width min="0" max="666">auto</width>
+                    <height>56</height>
+                    <enable>false</enable>
+                    <font>font_main_bold</font>
+                    <label>$INFO[Control.GetLabel(401)]</label>
+                    <textoffsetx>26</textoffsetx>
+                    <textcolor>00FFFFFF</textcolor>
+                    <disabledcolor>00FFFFFF</disabledcolor>
+                    <texturenofocus border="24" colordiffuse="FA08090B">common/box.png</texturenofocus>
+                    <texturefocus border="24" colordiffuse="FA08090B">common/box.png</texturefocus>
+                </control>
+            </control>
+            <control type="label">
+                <left>-4</left>
+                <right>110</right>
+                <top>20</top>
+                <height>40</height>
+                <font>font_main_bold</font>
+                <textcolor>main_fg_90</textcolor>
+                <label>$INFO[Control.GetLabel(401)]</label>
+                <align>right</align>
+                <aligny>center</aligny>
+                <visible>String.IsEmpty(Control.GetLabel(402))</visible>
+            </control>
+            <!-- the two lines, as Furniture_Busy_FloatingText drew them (main above, small line below), 26 px inside the panel -->
+            <control type="label">
+                <visible>!String.IsEmpty(Control.GetLabel(402))</visible>
+                <left>-4</left>
+                <right>110</right>
+                <top>6</top>
+                <height>40</height>
+                <font>font_main_bold</font>
+                <textcolor>main_fg_90</textcolor>
+                <label>$INFO[Control.GetLabel(401)]</label>
+                <align>right</align>
+                <aligny>center</aligny>
+            </control>
+            <control type="label">
+                <left>-4</left>
+                <right>110</right>
+                <top>42</top>
+                <height>32</height>
+                <font>font_hint_bold</font>
+                <textcolor>main_fg_70</textcolor>
+                <label>$INFO[Control.GetLabel(402)]</label>
+                <align>right</align>
+                <aligny>center</aligny>
+            </control>
 
             <include content="Furniture_Busy_Base">
                 <param name="hasicon">false</param>

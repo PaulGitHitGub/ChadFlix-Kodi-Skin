@@ -1490,6 +1490,8 @@
 
     <variable name="Netflix_Rail_Label">
         <value condition="ListItem.IsParentFolder">Back</value>
+        <!-- R10.53: the Trending row's own Next Page tile (not another row's More tile) while Kodi fetches the next page -->
+        <value condition="$EXP[Netflix_Rail_More] + Control.HasFocus(591) + Window.IsActive(DialogBusy.xml) + String.IsEqual(ListItem.FolderPath,Container(591).ListItem.FolderPath)">Loading…</value>
         <value condition="$EXP[Netflix_Rail_More]">More Titles  ›</value>
         <value>$INFO[ListItem.Label]</value>
     </variable>

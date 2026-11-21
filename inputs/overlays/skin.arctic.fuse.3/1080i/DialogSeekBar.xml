@@ -59,58 +59,9 @@
                         </control>
                     </control>
 
-                    <!-- scrubber-finish: helper swap in place (option A: old line out 120 ms, then new line in 160 ms; shown only with a live owner). -->
-                    <control type="group">
-                        <animation effect="fade" start="100" end="0" time="120" tween="sine" easing="out" reversible="false" condition="![String.IsEmpty(Window(Home).Property(Netflix.Scrub.UI)) | String.IsEmpty(Window(Home).Property(Netflix.Scrub.Owner))]">Conditional</animation>
-                        <animation effect="fade" start="0" end="100" delay="120" time="160" tween="sine" easing="out" reversible="false" condition="[String.IsEmpty(Window(Home).Property(Netflix.Scrub.UI)) | String.IsEmpty(Window(Home).Property(Netflix.Scrub.Owner))]">Conditional</animation>
-                    <include content="OSD_CastInfo_HintText">
-                        <param name="label">$VAR[Label_OSD_HintText]</param>
-                        <param name="visible">[Window.IsActive(videoosd) | Window.IsVisible(1140) | Window.IsVisible(1141) | Window.IsVisible(videobookmarks)] + [!Window.IsVisible(1141) | Skin.String(VideoOSD.PersonCredits.CastCrew,cast)] + !Window.IsVisible(1146) + !Window.IsVisible(1147)</param>
-                    </include>
-                    </control>
-                    <control type="group">
-                        <centerbottom>20</centerbottom>
-                        <height>40</height>
-                        <visible>Window.IsActive(videoosd) + ![String.IsEmpty(Window(Home).Property(Netflix.Scrub.UI)) | String.IsEmpty(Window(Home).Property(Netflix.Scrub.Owner))]</visible>
-                        <animation effect="fade" start="0" end="100" delay="120" time="160" tween="sine" easing="out" reversible="true">Visible</animation>
-                        <animation effect="fade" start="100" end="0" time="120" tween="sine" easing="out" reversible="true">Hidden</animation>
-                        <control type="grouplist">
-                            <left>80</left>
-                            <orientation>horizontal</orientation>
-                            <align>left</align>
-                            <control type="label">
-                                <textcolor>main_fg_30</textcolor>
-                                <width>auto</width>
-                                <font>font_tiny_bold</font>
-                                <label>OK</label>
-                            </control>
-                            <control type="label">
-                                <top>-2</top>
-                                <textcolor>main_fg_30</textcolor>
-                                <width>auto</width>
-                                <font>font_tiny</font>
-                                <label> to Play Here  ·  </label>
-                            </control>
-                            <control type="label">
-                                <textcolor>main_fg_30</textcolor>
-                                <width>auto</width>
-                                <font>font_tiny_bold</font>
-                                <label>Back</label>
-                            </control>
-                            <control type="label">
-                                <top>-2</top>
-                                <textcolor>main_fg_30</textcolor>
-                                <width>auto</width>
-                                <font>font_tiny</font>
-                                <label> to Cancel</label>
-                            </control>
-                        </control>
-                    </control>
-
-                    <include content="OSD_CastInfo_HintText">
-                        <param name="label">$LOCALIZE[31346]</param>
-                        <param name="visible">Window.IsActive(musicosd) + !Window.IsVisible(1142) + !Window.IsVisible(script-cu-lrclyrics-main.xml)</param>
-                    </include>
+                    <!-- R10.55 (owner rule: no remote-button hint rows): the OSD hint row ("Press down: Bookmarks and Chapters" /
+                         "Playlist" / "Cast and More Info"), the Jump To row's "OK to Play Here · Back to Cancel" and the music OSD
+                         hint are gone. The Jump To header above is kept. -->
                 </control>
 
                 <!-- R8.4: the top-right clock is now "Ends at <finish time>" (same group/line/label/font as Furniture_Header_Right);

@@ -8,7 +8,15 @@
 
     <defaultcontrol always="true">6007</defaultcontrol>
     <!-- fill the rows each time the card pops up (cheap), so a subtitle added mid-play or streams found late show up -->
+    <!-- R10.56: the columns stay transparent until populate() has written this opening's rows (Netflix.AV.Ready), so the previous title's
+         tracks never show and nothing reshuffles. Fallback: the alarm shows them after 2 s anyway (AlarmClock counts whole seconds). -->
+    <onload>CancelAlarm(NetflixAVReady,true)</onload>
+    <onload>ClearProperty(Netflix.AV.Ready,Home)</onload>
+    <onload>ClearProperty(Netflix.AV.Gen,Home)</onload>
+    <onload>AlarmClock(NetflixAVReady,SetProperty(Netflix.AV.Ready,1,Home),00:02,silent)</onload>
     <onload>RunScript(special://skin/extras/netflix_av_streams.py,populate)</onload>
+    <onunload>CancelAlarm(NetflixAVReady,true)</onunload>
+    <onunload>ClearProperty(Netflix.AV.Ready,Home)</onunload>
 
     <controls>
 
@@ -30,6 +38,9 @@
                  evidence/spacing-options (13 Nov): less dead space beside the short list; longer labels end in "..." when
                  not focused and scroll when focused. -->
             <control type="group">
+                <!-- R10.56: shown once the rows are this title's -->
+                <animation effect="fade" start="100" end="0" time="0" condition="String.IsEmpty(Window(Home).Property(Netflix.AV.Ready))">Conditional</animation>
+                <animation effect="fade" start="0" end="100" time="150" reversible="false" condition="!String.IsEmpty(Window(Home).Property(Netflix.AV.Ready))">Conditional</animation>
                 <include content="NfAV_Card_A">
                     <param name="id">6206</param>
                     <param name="buttonid">6007</param>
@@ -47,6 +58,8 @@
 
             <!-- Subtitles: the right column, over the button (the one slot left of the info button) -->
             <control type="group">
+                <animation effect="fade" start="100" end="0" time="0" condition="String.IsEmpty(Window(Home).Property(Netflix.AV.Ready))">Conditional</animation>
+                <animation effect="fade" start="0" end="100" time="150" reversible="false" condition="!String.IsEmpty(Window(Home).Property(Netflix.AV.Ready))">Conditional</animation>
                 <include content="NfAV_Card_S">
                     <param name="id">6207</param>
                     <param name="buttonid">6007</param>
@@ -70,6 +83,8 @@
                     <param name="posy">48</param>
                 </include>
                 <animation effect="fade" start="100" end="0" condition="Integer.IsEqual(Container(6207).NumItems,0)">Conditional</animation>
+                <animation effect="fade" start="100" end="0" time="0" condition="String.IsEmpty(Window(Home).Property(Netflix.AV.Ready))">Conditional</animation>
+                <animation effect="fade" start="0" end="100" time="150" reversible="false" condition="!String.IsEmpty(Window(Home).Property(Netflix.AV.Ready))">Conditional</animation>
                 <right>110</right>
                 <width>480</width>
                 <bottom>220</bottom>
@@ -126,9 +141,11 @@
                 <font />
                 <texturefocus />
                 <texturenofocus />
-                <onfocus condition="Integer.IsGreater(Container(6207).NumItems,0)">SetFocus(6207,$INFO[Window(Home).Property(Netflix.AV.S.Cur)],absolute)</onfocus>
-                <onfocus condition="!Integer.IsGreater(Container(6207).NumItems,0) + Integer.IsGreater(Container(6206).NumItems,0)">SetFocus(6206,$INFO[Window(Home).Property(Netflix.AV.A.Cur)],absolute)</onfocus>
-                <onfocus condition="!Integer.IsGreater(Container(6207).NumItems,0) + !Integer.IsGreater(Container(6206).NumItems,0)">SetFocus(6007)</onfocus>
+                <!-- R10.56: into a list only once this opening's rows are shown (Netflix.AV.Ready); before that Up / OK leave focus on the
+                     button, so no hidden or previous-title row can be focused or clicked -->
+                <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.AV.Ready)) + Integer.IsGreater(Container(6207).NumItems,0)">SetFocus(6207,$INFO[Window(Home).Property(Netflix.AV.S.Cur)],absolute)</onfocus>
+                <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.AV.Ready)) + !Integer.IsGreater(Container(6207).NumItems,0) + Integer.IsGreater(Container(6206).NumItems,0)">SetFocus(6206,$INFO[Window(Home).Property(Netflix.AV.A.Cur)],absolute)</onfocus>
+                <onfocus condition="![!String.IsEmpty(Window(Home).Property(Netflix.AV.Ready))] | [!Integer.IsGreater(Container(6207).NumItems,0) + !Integer.IsGreater(Container(6206).NumItems,0)]">SetFocus(6007)</onfocus>
             </control>
 
             <!-- the card's own copy of the play-bar button: focus stays here when the card pops up; Up or OK goes into

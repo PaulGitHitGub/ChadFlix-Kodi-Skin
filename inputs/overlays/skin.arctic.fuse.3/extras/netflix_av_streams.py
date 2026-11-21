@@ -11,6 +11,7 @@ Netflix.AV.A.Cur / Netflix.AV.S.Cur (slot of the current choice, used to focus i
 import json
 import re
 import sys
+import time
 
 try:
     import xbmc
@@ -387,6 +388,18 @@ def set_flag(letter, on):
         win.clearProperty('%s%s.Full' % (PREFIX, letter))
 
 
+def ready(token=None):
+    """R10.56: the card's columns show once this opening's rows are written (Custom_1147 clears it on load / unload).
+    token: the opening's populate run. Each opening clears Netflix.AV.Gen and its run writes its own token, so a run left over
+    from an earlier opening (closed and reopened quickly) finds another value and leaves Ready to the current run."""
+    home = xbmcgui.Window(10000)
+    if token is not None and home.getProperty(PREFIX + 'Gen') != token:
+        xbmc.log('Netflix AV: a populate from an earlier card opening ended late; Ready left to the current one', xbmc.LOGINFO)
+        return
+    home.setProperty(PREFIX + 'Ready', '1')
+    xbmc.executebuiltin('CancelAlarm(NetflixAVReady,true)')
+
+
 def populate(override=None):
     props = read_props()
     # Kodi applies SetAudioStream / SetSubtitle on its player thread: right after the call the properties can still show
@@ -419,9 +432,14 @@ def focus(letter, slot):
 
 def main(arg):
     if arg == 'populate':  # a card popped up: always start from the simplified lists
-        set_flag('A', False)
-        set_flag('S', False)
-        populate()
+        token = '%.6f.%d' % (time.time(), id(sys.argv))   # this run (R10.56: see ready())
+        xbmcgui.Window(10000).setProperty(PREFIX + 'Gen', token)
+        try:
+            set_flag('A', False)
+            set_flag('S', False)
+            populate()
+        finally:
+            ready(token)  # R10.56: also after an error (the rows then are what they are; never an empty card)
         return
     kind, _, value = arg.partition('=')
     if kind in ('audio_view', 'sub_view'):  # Back from "All tracks"
@@ -481,6 +499,7 @@ def main(arg):
         xbmc.executebuiltin('Notification(Audio & Subtitles,Could not change the track,3000)')
         override = {}
     populate(override)  # moves the check to what Kodi really has now
+    ready()
 
 
 if __name__ == '__main__':

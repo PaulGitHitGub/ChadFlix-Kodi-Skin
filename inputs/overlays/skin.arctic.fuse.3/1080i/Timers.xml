@@ -119,9 +119,13 @@
     <timer>
         <name>netflix_cw_remember_594</name>
         <description>R10.12: Continue Watching row 594 has titles: remember it, so the next load shows grey cards (Netflix.CW.WasFull.594).</description>
-        <start reset="true">Window.IsActive(Videos) + Integer.IsGreater(Container(594).NumItems,0) + !Skin.HasSetting(Netflix.CW.WasFull.594)</start>
+        <start reset="true">Window.IsActive(Videos) + Integer.IsGreater(Container(594).NumItems,0) + [!Skin.HasSetting(Netflix.CW.WasFull.594) | [!Container(594).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.594)) + !String.IsEqual(Skin.String(Netflix.CW.Count.594),Container(594).NumItems)]]</start>
         <stop>true</stop>
-        <onstart>Skin.SetBool(Netflix.CW.WasFull.594)</onstart>
+        <!-- R10.56: the count too (Netflix_Loading_CW_Row draws that many cards next time). Review nit 4: only a settled row's count (its load
+             finished and it is not updating; never 0, the start needs titles), and only when it changed (Skin.SetString writes the skin
+             settings file). Conditions are read before the actions run. -->
+        <onstart condition="!Skin.HasSetting(Netflix.CW.WasFull.594)">Skin.SetBool(Netflix.CW.WasFull.594)</onstart>
+        <onstart condition="!Container(594).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.594)) + !String.IsEqual(Skin.String(Netflix.CW.Count.594),Container(594).NumItems)">Skin.SetString(Netflix.CW.Count.594,$INFO[Container(594).NumItems])</onstart>
     </timer>
     <timer>
         <name>netflix_cw_forget_594</name>
@@ -133,9 +137,13 @@
     <timer>
         <name>netflix_cw_remember_595</name>
         <description>R10.12: Continue Watching row 595 has titles: remember it, so the next load shows grey cards (Netflix.CW.WasFull.595).</description>
-        <start reset="true">Window.IsActive(Videos) + Integer.IsGreater(Container(595).NumItems,0) + !Skin.HasSetting(Netflix.CW.WasFull.595)</start>
+        <start reset="true">Window.IsActive(Videos) + Integer.IsGreater(Container(595).NumItems,0) + [!Skin.HasSetting(Netflix.CW.WasFull.595) | [!Container(595).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.595)) + !String.IsEqual(Skin.String(Netflix.CW.Count.595),Container(595).NumItems)]]</start>
         <stop>true</stop>
-        <onstart>Skin.SetBool(Netflix.CW.WasFull.595)</onstart>
+        <!-- R10.56: the count too (Netflix_Loading_CW_Row draws that many cards next time). Review nit 4: only a settled row's count (its load
+             finished and it is not updating; never 0, the start needs titles), and only when it changed (Skin.SetString writes the skin
+             settings file). Conditions are read before the actions run. -->
+        <onstart condition="!Skin.HasSetting(Netflix.CW.WasFull.595)">Skin.SetBool(Netflix.CW.WasFull.595)</onstart>
+        <onstart condition="!Container(595).IsUpdating + !String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.595)) + !String.IsEqual(Skin.String(Netflix.CW.Count.595),Container(595).NumItems)">Skin.SetString(Netflix.CW.Count.595,$INFO[Container(595).NumItems])</onstart>
     </timer>
     <timer>
         <name>netflix_cw_forget_595</name>

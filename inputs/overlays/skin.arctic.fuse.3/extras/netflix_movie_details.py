@@ -52,6 +52,11 @@ POV_DATA = "special://profile/addon_data/plugin.video.pov/"
 # R10-playback: the play loader (Includes_Netflix_Playback.xml) parks focus on this invisible catcher of the page;
 # its Back withdraws the request (clears Netflix.Play.Loading), which POV and settle_quality() read as "cancelled".
 LOADER_FOCUS = 42
+# R10.53 instant reactions: the page's Play, Start Over, quality rows, All Sources and Trailer raise the loader themselves
+# in the frame of the key press (Includes_Netflix_Playback.xml Netflix_Movie_Play_Request, Custom_1167's Trailer), with
+# this value in Netflix.Play.Loading. play_movie() / play_trailer() take it over (their request's token replaces it) or,
+# when they end without doing so, take it down (stop_loading only clears it while it still holds this value).
+SKIN_LOADER = "skin"
 FACT_FIELDS = ("Res", "SpecA", "SpecB")   # Netflix.Movie.QualityHighest*: POV's netflix_quality_preview FACT_FIELDS
 # R10.9: the ratings row reads TMDb Helper's list-item monitor. Since R10.47 that monitor describes the page's own
 # title (feed_tmdb_helper), not the browse focus. The page still keeps its own copy (Netflix.Movie.<field>,
@@ -72,6 +77,24 @@ TMDB_FEED = "Netflix.TMDbFeed"
 TMDB_RATING_PROPS = ("IMDb_Rating", "RottenTomatoes_Rating", "Letterboxd_Rating", "RottenTomatoes_Image")
 LEAVE_AFTER_LAUNCH = 0.3  # seconds play_movie() stays after PlayMedia, so it never ends as POV starts
 COVER_SECONDS = 20        # fail-safe of the transition cover held by Play (renewed while anyone still works on it)
+# R10.55.2 (trailer loader stall after Back): busydialog (cancel allowed) and busydialognocancel. With the page closed for
+# the trailer, Back on the busy dialog cancels YouTube's resolve and nothing plays. Once a busy dialog has come and gone
+# and nothing has played for TRAILER_CANCEL_GRACE seconds, the page comes back (it waited for the 20 s start deadline).
+BUSY_DIALOGS = (10138, 10160)
+TRAILER_CANCEL_GRACE = 1.5
+# R10.55.2 FIX 4 (Back 0.3 s after Play still played, 1 in 6 on the Shield): Window(Home) "true" once Back withdrew a loader
+# (Netflix_Movie_Loader_Back, catcher 42's onback); the skin clears it on every new Play / Trailer press, before it raises
+# the loader. Back sets it before it clears Netflix.Play.Loading, and start_loading() writes Netflix.Play.Loading last, so a
+# Back that lands between this script's withdrawn check and start_loading() is seen right after start_loading().
+WITHDRAWN = "Netflix.Play.Withdrawn"
+# R10.54 (title pages settle once): what a movie's page showed last, per person, kept in Window(Home) for this Kodi session
+# so its next page has it in the first frame: "ratings" (KEPT_RATING_FIELDS, from TMDb Helper's finished lookup: see
+# harvest_ratings) and "saved" (SAVED_FIELDS, as netflix_saved_lists last wrote them). The newest KNOWN_MOVIES are kept,
+# the scheme of netflix_series.remember().
+KNOWN = PREFIX + "Known."
+KNOWN_MOVIES = 60
+SAVED_FIELDS = ("Favorite", "Bookmarked", "FavoriteLabel", "BookmarkLabel")
+RATINGS_SEEN = "Netflix.Ratings.Seen"   # Window(Home): "1" once any title's ratings arrived (Custom_1167 reserves their line)
 
 
 def info(label):
@@ -205,15 +228,16 @@ def open_details(source):
     if native:
         catalog = urlsplit(info("Container.FolderPath"))
         control_id = info("System.CurrentControlID")
-        if xbmcgui.getCurrentWindowId() == VIDEOS and (open_trending_grid(control_id) or open_show_row(control_id)
-                                                       or show_page_claimed()):
+        # R10.55.4 (sweep 2 #1): 1156 starts this only with focus on 590/591. A Back or arrow that lands before this
+        # interpreter is up has moved focus (or closed the window): a Select now would press whatever has focus, and on a
+        # movie in 590/591 that is the native play path (POV play_media). The OK is dropped instead.
+        if xbmcgui.getCurrentWindowId() != VIDEOS or control_id not in ("590", "591"):
+            xbmc.log("Netflix Details: OK ignored, focus moved to %s before the page opened" % control_id, xbmc.LOGINFO)
             return
-        if (
-            xbmcgui.getCurrentWindowId() != VIDEOS
-            or control_id not in NATIVE_LISTS
-            or catalog.netloc != POV
-            or xbmc.getSkinDir() != "skin.arctic.fuse.3"
-        ):
+        if open_trending_grid(control_id) or open_show_row(control_id) or show_page_claimed():
+            return
+        # Select only for a non-POV folder or a foreign skin, focus still on 590/591 (checked just above).
+        if catalog.netloc != POV or xbmc.getSkinDir() != "skin.arctic.fuse.3":
             xbmc.executebuiltin("Action(Select)")
             return
         source = control_id
@@ -229,7 +253,7 @@ def open_details(source):
     media_type = selected("DBType")
     series = native and media_type == "tvshow"
     if (media_type != "movie" and not series) or path.scheme != "plugin" or path.netloc not in {POV, TMDB_HELPER}:
-        if native:
+        if native and info("System.CurrentControlID") == source:   # R10.55.4: only while focus is still on that list
             xbmc.executebuiltin("Action(Select)")
         return
 
@@ -244,7 +268,7 @@ def open_details(source):
             # Same interpreter: a second RunScript here would start right behind this one.
             from netflix_series import open_series
             open_series("native")
-        else:
+        elif info("System.CurrentControlID") == source:   # R10.55.4: only while focus is still on that list
             xbmc.executebuiltin("Action(Select)")
         return
 
@@ -332,6 +356,69 @@ def page_ratings(home, movie_id):
     else:
         values["RottenTomatoes_Icon"] = "rtfresh.png" if tomatoes.isdecimal() and int(tomatoes) > 59 else "rtrotten.png"
     return values
+
+
+def known_name(home, movie_id):
+    return "%s%s.%s" % (KNOWN, home.getProperty("Netflix.Profiles.Current.Index"), movie_id)
+
+
+def recall_known(home, movie_id):
+    """R10.54: this movie's remembered page state ({} when none)."""
+    try:
+        known = json.loads(home.getProperty(known_name(home, movie_id)) or "{}")
+    except ValueError:
+        return {}
+    return known if isinstance(known, dict) else {}
+
+
+def remember_known(home, movie_id, **parts):
+    """R10.54: merge `parts` into this movie's remembered page state; the newest KNOWN_MOVIES movies are kept."""
+    if not valid_id(movie_id):
+        return
+    name = known_name(home, movie_id)
+    known = recall_known(home, movie_id)
+    if all(known.get(key) == value for key, value in parts.items()):
+        return
+    home.setProperty(name, json.dumps({**known, **parts}))
+    names = [old for old in home.getProperty(KNOWN + "Keys").split("|") if old and old != name] + [name]
+    for old in names[:-KNOWN_MOVIES]:
+        home.clearProperty(old)
+    home.setProperty(KNOWN + "Keys", "|".join(names[-KNOWN_MOVIES:]))
+
+
+def known_part(known, key, fields):
+    """A remembered {field: text} part, only when it has exactly `fields` as short strings."""
+    part = known.get(key)
+    if isinstance(part, dict) and set(part) == set(fields) and all(isinstance(v, str) and len(v) <= 120 for v in part.values()):
+        return part
+    return None
+
+
+def harvest_ratings(home):
+    """R10.54: before a page opens, keep the ratings TMDb Helper found for the last movie fed (they stay in its
+    properties until the next feed): under that movie's remembered state, when its lookup had finished (the live row's
+    test, Includes_Expressions.xml Exp_Netflix_MovieRatingsLive). Any title's ratings mark ratings as seen. Properties only."""
+    if any(home.getProperty("TMDbHelper.ListItem." + field) for field in RATING_FIELDS):
+        home.setProperty(RATINGS_SEEN, "1")
+    else:
+        return
+    feed = home.getProperty(TMDB_FEED).split("|")
+    movie_id = valid_id(feed[1]) if len(feed) > 2 and feed[0] == "movie" else ""
+    if (not movie_id or home.getProperty("TMDbHelper.ListItem.monitor.tmdb_id") != movie_id
+            or home.getProperty("TMDbHelper.ListItem.monitor.tmdb_type") != "movie"
+            or home.getProperty("TMDbHelper.IsUpdating") or home.getProperty("TMDbHelper.IsUpdatingRatings")):
+        return
+    values = page_ratings(home, movie_id)
+    if any(values.get(field) for field in RATING_FIELDS):
+        remember_known(home, movie_id, ratings={field: values.get(field, "") for field in KEPT_RATING_FIELDS})
+
+
+def remember_saved(home, movie_id):
+    """R10.54: the page's like/watchlist state as netflix_saved_lists last wrote it, for this movie's next page."""
+    if movie_id and home.getProperty(PREFIX + "ID") == movie_id:
+        saved = {field: home.getProperty(PREFIX + field) for field in SAVED_FIELDS}
+        if saved["FavoriteLabel"] and saved["BookmarkLabel"]:   # written by a finished read, not cleared
+            remember_known(home, movie_id, saved=saved)
 
 
 def feed_tmdb_helper(home, movie_id, title):
@@ -427,13 +514,25 @@ def show_movie(values, check_sources=True):
     """check_sources=False (back from a trailer or from playback): never start a source check from here. A check
     kept for this movie (10 minutes) fills the menu; without one the check waits for the first Right on Play.
     The same goes for a page opened while another launch is in flight (state idle)."""
-    values = {**values, "Backdrop": detail_backdrop(values.get("Backdrop", ""))}
+    # R10.54: the browse-size backdrop the row already loaded is shown under the full-size one (Custom_1167); none when
+    # the page reopens (the values carry the full-size one then)
+    raw = values.get("Backdrop", "")
+    full = detail_backdrop(raw)
+    values = {**values, "Backdrop": full, "BackdropQuick": raw if raw != full else ""}
     home = xbmcgui.Window(10000)
     stop_loading()  # a page opening fresh never shows a loader (a request whose page went away ends with it)
+    # R10.54: the first frame has what this movie's page showed last time: its ratings (unless the values carry the
+    # page's own, a reopen) and its like/watchlist state (sync_saved() below corrects it in place, no clearing first)
+    harvest_ratings(home)
+    known = recall_known(home, valid_id(values.get("ID", "")))
+    rated = known_part(known, "ratings", KEPT_RATING_FIELDS)
+    if rated and not any(values.get(field) for field in RATING_FIELDS):
+        values.update(rated)
+    saved = known_part(known, "saved", SAVED_FIELDS) or {}
     for key, value in values.items():
         home.setProperty(PREFIX + key, value)
-    for field in ("Favorite", "Bookmarked", "FavoriteLabel", "BookmarkLabel"):
-        home.clearProperty(PREFIX + field)
+    for field in SAVED_FIELDS:
+        home.setProperty(PREFIX + field, saved.get(field, ""))
     for field in KEPT_RATING_FIELDS:   # R10.9: only a reopen carries ratings; a fresh page shows TMDb Helper's
         if field not in values:
             home.clearProperty(PREFIX + field)
@@ -459,6 +558,7 @@ def show_movie(values, check_sources=True):
     xbmc.executebuiltin("ActivateWindow(1167)")
     feed_tmdb_helper(home, movie_id, values.get("Title", ""))   # R10.47: the page's ratings (see TMDB_ITEM_LIST)
     sync_saved()
+    remember_saved(home, movie_id)   # R10.54
     # The sync can take a second: the page may have closed or been replaced, or Play may be on its way.
     if auto and home.getProperty(PREFIX + "QualityToken") == token:
         if flight_busy(home) or play_pending(home):
@@ -505,18 +605,16 @@ def open_movie_quality():
             start = False
         else:
             home.setProperty(PREFIX + "QualityState", "checking")
-    home.setProperty(PREFIX + "QualityOpen", "true")
+    # R10.53: the skin opened the menu on the key press (Custom_1167, Play's onright). Closed again meanwhile (Left /
+    # Back): it stays closed, and the check waits for the next Right (the state "checking" without a check of this
+    # page restarts it there; Play's settle_quality() resets it).
+    # A row was pressed meanwhile (its loader is up): that request owns the page now; start no check beside it
+    # (review R10.53 #1). The menu itself (open, focus, close) is the skin's alone since R10.53: this script never
+    # focuses or closes it, so no second focus move can race a fast Left / Down / OK (one that lands in the same frame
+    # as a Left left focus on the closed, hidden list under load on the Mac).
+    if home.getProperty(PREFIX + "QualityOpen") != "true" or home.getProperty(LOADING):
+        return
     monitor = xbmc.Monitor()
-    for _ in range(12):
-        if xbmcgui.getCurrentWindowDialogId() != DETAILS:
-            return
-        if xbmc.getCondVisibility("Control.IsVisible(30)"):
-            xbmc.executebuiltin("SetFocus(30,0,absolute)")
-            break
-        if monitor.waitForAbort(0.025):
-            return
-    else:
-        home.clearProperty(PREFIX + "QualityOpen")
     if not start:
         return
 
@@ -616,7 +714,48 @@ def loader_facts(home, request, quality):
         set_loading(request, Phase="open")
 
 
-def play_movie(*, from_info=False, quality=None, restart=False):
+def page_identity(home):
+    """The movie page a press came from: a reopened page (another movie, or the same one again) has a new QualityToken
+    (show_movie), so a script of an earlier page never matches a newer page's press."""
+    return tuple(home.getProperty(PREFIX + field) for field in ("ID", "Origin", "QualityToken"))
+
+
+def play_movie(**kw):
+    """R10.53: the page raised the loader as SKIN_LOADER before this interpreter was up. A request that ends without
+    having taken it over takes it down, and Play gets the focus back (it rested on the loader's catcher). One that took
+    it over, or whose loader Back withdrew before, never touches a newer press's loader; nor does one whose page has
+    been replaced since it started."""
+    page = page_identity(xbmcgui.Window(10000))
+    handled = False
+    try:
+        handled = _play_movie(**kw)
+    finally:
+        release_skin_loader(handled, page, focus=10)
+
+
+def release_skin_loader(handled, page, focus):
+    if handled:
+        return
+    home = xbmcgui.Window(10000)
+    if home.getProperty(LOADING) != SKIN_LOADER or page_identity(home) != page:
+        return
+    stop_loading(SKIN_LOADER)
+    if xbmcgui.getCurrentWindowDialogId() == DETAILS and xbmc.getCondVisibility("Control.HasFocus(%d)" % LOADER_FOCUS):
+        # The button is visible again only on the next frame (the pattern of the catcher's onback and POV's sources.py)
+        xbmc.executebuiltin("AlarmClock(netflix_loader_done,SetFocus(%d),00:00,silent)" % focus)
+
+
+def restore_page_focus(focus):
+    """R10.55.2 FIX 4: focus back on a page button when it rests on the loader's catcher (42) or on 16 (Back's keep-open
+    target), as release_skin_loader() does; the button is visible again only on the next frame."""
+    if xbmcgui.getCurrentWindowDialogId() == DETAILS and xbmc.getCondVisibility(
+            "Control.HasFocus(%d) | Control.HasFocus(16)" % LOADER_FOCUS):
+        xbmc.executebuiltin("AlarmClock(netflix_loader_done,SetFocus(%d),00:00,silent)" % focus)
+
+
+def _play_movie(*, from_info=False, quality=None, restart=False):
+    """True when a SKIN_LOADER still up at the end is not this press's: this request took the page's loader over
+    (whatever happened after), or Back had withdrawn it."""
     expected_dialog = MOVIE_INFO if from_info else DETAILS
     if xbmcgui.getCurrentWindowDialogId() != expected_dialog:
         return
@@ -627,15 +766,21 @@ def play_movie(*, from_info=False, quality=None, restart=False):
     if from_info:
         if movie_id not in {info("ListItem.UniqueID(tmdb)"), info("ListItem.Property(tmdb_id)")}:
             return
-    if play_pending(home) or home.getProperty(LOADING):
-        return  # a second OK while the first Play is still on its way (its loader is up)
+    # A second OK while the first Play is still on its way (its loader is up). R10.53: from the page, the skin's loader
+    # must still be up: Back on it before this interpreter came up withdrew the request.
+    pre = home.getProperty(LOADING)
+    if pre != ("" if from_info else SKIN_LOADER):
+        return True
+    if play_pending(home):
+        return
     params = {"mode": "play_media", "mediatype": "movie", "tmdb_id": movie_id}
     params["autoplay"] = "false" if quality == "all" else "true"
     if quality is not None:
-        if home.getProperty(PREFIX + "QualityOpen") != "true":
+        # R10.53: a row pressed from the skin's loader is valid whatever happened to the menu since (the open-quality
+        # script may have closed it while the row's loader went up: review R10.53 #1). Focus is on the loader's catcher.
+        if pre != SKIN_LOADER and home.getProperty(PREFIX + "QualityOpen") != "true":
             return
         home.clearProperty(PREFIX + "QualityOpen")
-        xbmc.executebuiltin("SetFocus(10)")
         if quality != "all":
             params["movie_quality"] = quality
     home.setProperty(PLAY_PENDING, str(time() + PLAY_WAIT + 10))
@@ -650,8 +795,25 @@ def play_movie(*, from_info=False, quality=None, restart=False):
     resume = home.getProperty(PREFIX + "Action") == "Resume" and not restart
     params["netflix_resume"] = "resume" if resume else "restart"
     percent = home.getProperty(PREFIX + "Percent")
-    start_loading(request, verb="Resuming" if resume else "Starting", phase="find",
+    if pre == SKIN_LOADER and home.getProperty(LOADING) != SKIN_LOADER:
+        # R10.53: Back withdrew the skin's loader while this script got here; do not raise it again
+        release_cover(request)
+        home.clearProperty(PLAY_PENDING)
+        return True
+    # R10.53: taking the skin's loader over keeps the phase it shows (loader_facts() moves it on), so the label never
+    # flicks back to "find" for a frame.
+    phase = home.getProperty("Netflix.Play.Phase") if pre == SKIN_LOADER else ""
+    start_loading(request, verb="Resuming" if resume else "Starting", phase=phase if phase in ("find", "open") else "find",
                   watched="%s%% watched" % percent if resume and percent.isdecimal() else "")
+    # ---- R10.55.2 FIX 4 (see WITHDRAWN): Back withdrew the skin's loader after the check above: take ours down again.
+    if pre == SKIN_LOADER and home.getProperty(WITHDRAWN) == "true":
+        xbmc.log("Netflix Play: withdrawn by Back while the loader was taken over; not playing", xbmc.LOGINFO)
+        stop_loading(request)
+        release_cover(request)
+        home.clearProperty(PLAY_PENDING)
+        restore_page_focus(10)
+        return True
+    # ---- end FIX 4
     # All Sources always fetches its own list, as on R8.6 (a kept check holds only the available sources).
     reuse = quality != "all"
     loader_facts(home, request, quality)
@@ -664,7 +826,7 @@ def play_movie(*, from_info=False, quality=None, restart=False):
         home.clearProperty(PLAY_PENDING)
         if xbmcgui.getCurrentWindowDialogId() == DETAILS and xbmc.getCondVisibility("Control.HasFocus(%d)" % LOADER_FOCUS):
             xbmc.executebuiltin("SetFocus(10)")
-        return
+        return True
     if token and reuse:
         params["netflix_quality_token"] = token
         loader_facts(home, request, quality)   # the check Play waited for may have finished meanwhile
@@ -686,6 +848,7 @@ def play_movie(*, from_info=False, quality=None, restart=False):
     # R10-playback: this script's interpreter ends a moment after POV's has started, never in the same instant
     # (the Mac log showed 5 to 13 ms between them; same-instant start/stop is the crash pattern).
     xbmc.Monitor().waitForAbort(LEAVE_AFTER_LAUNCH)
+    return True
 
 
 class TrailerPlayer(xbmc.Player):
@@ -706,11 +869,25 @@ class TrailerPlayer(xbmc.Player):
 
 
 def play_trailer():
+    """R10.53: as play_movie(): the page raised the loader (no focus park for the trailer; focus goes back to Trailer)."""
+    page = page_identity(xbmcgui.Window(10000))
+    handled = False
+    try:
+        handled = _play_trailer()
+    finally:
+        release_skin_loader(handled, page, focus=12)
+
+
+def _play_trailer():
+    """True once the page was closed for the trailer (its onunload took the skin's loader down)."""
     if xbmcgui.getCurrentWindowDialogId() != DETAILS or not xbmc.getCondVisibility(
         f"System.AddonIsEnabled({YOUTUBE})"
     ):
         return
     home = xbmcgui.Window(10000)
+    pre = home.getProperty(LOADING)
+    if pre != SKIN_LOADER:
+        return True   # R10.53: Back withdrew the trailer's loader before this interpreter was up (Trailer's onback)
     values = {field: home.getProperty(PREFIX + field) for field in DETAIL_FIELDS}
     origin = xbmcgui.getCurrentWindowId()
     if values["Origin"] != str(origin):
@@ -720,6 +897,8 @@ def play_trailer():
     if (xbmcgui.getCurrentWindowDialogId() != DETAILS
             or any(home.getProperty(PREFIX + field) != value for field, value in values.items())):
         return
+    if home.getProperty(LOADING) != SKIN_LOADER:
+        return True   # R10.53: Back withdrew the trailer's loader during the lookup (Custom_1167, Trailer's onback)
     if not video_id:
         xbmcgui.Dialog().notification("Trailer", "No YouTube trailer found for this movie.")
         return
@@ -733,11 +912,25 @@ def play_trailer():
     # loop) until the page is back, so neither the trailer start nor its return shows the browse page. While
     # YouTube resolves, the cover carries the loader ("STARTING TRAILER").
     cover = hold_cover(values.get("Backdrop", ""))
+    # ---- R10.55.2 FIX 4 (see WITHDRAWN): Back on Trailer while the cover went up; the page is still open: keep it.
+    if home.getProperty(LOADING) != SKIN_LOADER or home.getProperty(WITHDRAWN) == "true":
+        release_cover(cover)
+        restore_page_focus(12)
+        return True
+    # ---- end FIX 4
     reopened = False
     try:
         # The movie page is modal, so release it for fullscreen video and reopen it on return.
         xbmc.executebuiltin("Dialog.Close(1167,true)", wait=True)
         start_loading(cover, verb="Trailer", phase="open")
+        # ---- R10.55.2 FIX 4: Back withdrew it while the page closed: no trailer, the page comes back (cover held).
+        if home.getProperty(WITHDRAWN) == "true":
+            xbmc.log("Netflix Trailer: withdrawn by Back while the page closed; restoring movie page", xbmc.LOGINFO)
+            stop_loading(cover)
+            show_movie(values, check_sources=False)
+            reopened = True
+            return True
+        # ---- end FIX 4
         folder = info("Container.FolderPath")
         # staged/exit-confirm: Back during the trailer gets no exit prompt (Custom_1178 stops it instead) while this is set.
         home.setProperty("Netflix.Trailer.Active", video_id)
@@ -748,6 +941,7 @@ def play_trailer():
     finally:
         stop_loading(cover)
         release_cover(cover, until="Window.IsVisible(1167)" if reopened else None, monitor=monitor)
+    return True   # R10.53: the page was closed (its onunload took the skin's loader down); a reopened page's is newer
 
 
 def wait_for_trailer(values, origin, folder, skin, monitor, player, query, cover=None):
@@ -761,6 +955,7 @@ def wait_for_trailer(values, origin, folder, skin, monitor, player, query, cover
     idle_since = None
     stop_requested = False
     renewed = monotonic()
+    busy_seen, quiet_since = False, None   # R10.55.2: see BUSY_DIALOGS
 
     while not monitor.waitForAbort(0.1):
         if cover and monotonic() - renewed >= 2:
@@ -785,6 +980,19 @@ def wait_for_trailer(values, origin, folder, skin, monitor, player, query, cover
 
         now = monotonic()
         if completed_at_start is None:
+            if dialog in BUSY_DIALOGS:
+                busy_seen, quiet_since = True, None
+            elif (busy_seen and dialog == NO_DIALOG and not player.isPlaying()
+                    and not xbmc.getCondVisibility("Player.HasMedia")):
+                if quiet_since is None:
+                    quiet_since = now
+                if now - quiet_since >= TRAILER_CANCEL_GRACE:
+                    xbmc.log("Netflix Trailer: start cancelled (busy dialog gone, nothing playing for %.1f s), "
+                             "restoring movie page" % (now - quiet_since), xbmc.LOGINFO)
+                    show_movie(values, check_sources=False)
+                    return True
+            else:
+                quiet_since = None
             if now >= start_deadline and dialog == NO_DIALOG and not player.isPlaying():
                 show_movie(values, check_sources=False)
                 return True

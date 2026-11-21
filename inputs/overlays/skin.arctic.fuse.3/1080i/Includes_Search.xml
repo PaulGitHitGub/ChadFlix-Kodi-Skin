@@ -119,8 +119,20 @@
                 </control>
                 <include>Netflix_Search_Poster</include>
             </focusedlayout>
+            <!-- R10.56: while the next query's titles load, the old ones dim (never hidden: Kodi only loads a visible list) -->
+            <animation effect="fade" start="100" end="25" time="150" condition="Container(310).IsUpdating | Container(501).IsUpdating">Conditional</animation>
             <!-- QA substitutes only this content URL in the disposable native copy. -->
             <content>$VAR[Netflix_Search_Grid_Path]</content>
+        </control>
+        <!-- R10.56: the quiet sign for the dimmed results, right end of the query line (the empty grid keeps "Loading titles…") -->
+        <control type="label">
+            <left>592</left><top>132</top><width>1248</width><height>56</height>
+            <align>right</align><aligny>center</aligny>
+            <font>font_mini</font><textcolor>FF8C8C8C</textcolor>
+            <label>Searching…</label>
+            <visible>Integer.IsGreater(Container(501).NumItems,0) + [Container(310).IsUpdating | Container(501).IsUpdating]</visible>
+            <animation effect="fade" start="0" end="100" time="150">Visible</animation>
+            <animation effect="fade" start="100" end="0" time="150">Hidden</animation>
         </control>
         <control type="label">
             <left>592</left><top>208</top><width>1248</width><height>60</height>
@@ -1032,6 +1044,36 @@
         $EXP[Netflix_Movies_Under] + !$EXP[Netflix_Grid_Over]
     </expression>
 
+    <!-- R10.53: Down from the Trending row (591) has a Movies genre row to go to (the movie values of
+         Netflix_Catalog_First_Genre; a shown row's placeholder 85xx counts too) -->
+    <expression name="Netflix_Movies_Genre_Below">
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.541)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.541))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.542)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.542))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.543)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.543))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.544)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.544))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.545)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.545))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.546)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.546))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.641)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.641))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.643)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.643))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.647)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.647))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.648)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.648))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.649)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.649))]
+    </expression>
+
+    <!-- R10.57 (sweep 2 #6): the same test for Down from Shows Trending (592): the show values of Netflix_Catalog_First_Genre -->
+    <expression name="Netflix_Shows_Genre_Below">
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.561)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.561))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.562)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.562))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.563)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.563))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.564)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.564))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.565)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.565))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.566)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.566))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.567)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.567))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.568)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.568))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.569)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.569))] |
+        [!String.IsEmpty(Window(Home).Property(Netflix.Home.Shown.570)) + String.IsEmpty(Window(Home).Property(Netflix.Home.Stale.570))]
+    </expression>
+
     <!-- The old path-only Shows test, kept separately so the panel-590 height include conditions below
          expand to exactly the text they had before (load-time conditions must not read the tab state). -->
     <expression name="Netflix_Shows_Root_Path">
@@ -1221,13 +1263,15 @@
                     <label>Continue Watching</label>
                     <visible>Integer.IsGreater(Container($PARAM[id]).NumItems,0) | [Skin.HasSetting(Netflix.CW.WasFull.$PARAM[id]) + !Integer.IsGreater(Container($PARAM[id]).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id]))]</visible>
                 </control>
-                <!-- R10.12: the row was non-empty last time and is still loading: the loaded tiles' shape as grey cards (shared loading look) -->
+                <!-- R10.12: the row was non-empty last time and is still loading: the loaded tiles' shape as dark cards (shared loading look; R10.56: last count) -->
                 <control type="group">
                     <visible>$PARAM[visible] + !$EXP[Netflix_Grid_Over] + Skin.HasSetting(Netflix.CW.WasFull.$PARAM[id]) + !Integer.IsGreater(Container($PARAM[id]).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id]))</visible>
                     <animation effect="fade" start="100" end="0" time="120">Hidden</animation>
-                    <include content="Netflix_Loading_CW_Row"><param name="condition">$PARAM[visible] + !$EXP[Netflix_Grid_Over] + Skin.HasSetting(Netflix.CW.WasFull.$PARAM[id]) + !Integer.IsGreater(Container($PARAM[id]).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id]))</param></include>
+                    <include content="Netflix_Loading_CW_Row"><param name="id">$PARAM[id]</param><param name="condition">$PARAM[visible] + !$EXP[Netflix_Grid_Over] + Skin.HasSetting(Netflix.CW.WasFull.$PARAM[id]) + !Integer.IsGreater(Container($PARAM[id]).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id]))</param></include>
                 </control>
                 <control type="fixedlist" id="$PARAM[id]">
+                    <!-- R10.56 (loading look A): after the placeholder cards the row fades in over 250 ms (while they show, the row is empty) -->
+                    <animation effect="fade" start="100" end="0" time="250" condition="Skin.HasSetting(Netflix.CW.WasFull.$PARAM[id]) + !Integer.IsGreater(Container($PARAM[id]).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.$PARAM[id]))">Conditional</animation>
                     <include content="Netflix_Reference_Rail_Origin">
                         <param name="left_inset">70</param>
                     </include>
@@ -1969,12 +2013,12 @@
             </control>
             <control type="image">
                 <left>4</left><top>4</top><width>226</width><height>344</height>
-                <texture colordiffuse="FF222222">common/white.png</texture>
+                <texture colordiffuse="FF141414">common/white.png</texture>
                 <visible>![ListItem.IsFolder + [String.Contains(ListItem.FolderPath,accumulate_to=) | String.Contains(ListItem.FolderPath,new_page=)]]</visible>
             </control>
             <control type="image">
                 <left>4</left><top>4</top><width>226</width><height>344</height>
-                <texture colordiffuse="FF222222">common/white.png</texture>
+                <texture colordiffuse="FF141414">common/white.png</texture>
                 <visible>[ListItem.IsFolder + String.Contains(ListItem.FolderPath,accumulate_to=)]</visible>
             </control>
             <control type="image">
@@ -2332,7 +2376,7 @@
                 <texture colordiffuse="FFF5F5F5">common/white.png</texture>
                 <visible>Control.HasFocus(8593)</visible>
             </control>
-                <!-- R10.12: the shared loading look (FF222222, the grid cell's square, one sweep per card row) -->
+                <!-- R10.12 / R10.56: the shared loading look (FF141414, the grid cell's square, one sweep per card row) -->
                 <include content="Netflix_Loading_Grid"><param name="condition">$EXP[Netflix_Grid_Shell] + !$EXP[Netflix_Grid_Ready] + !$EXP[Netflix_Grid_Failed]</param></include>
         </control>
         <!-- More titles are being fetched (seamless step): the grid stays as it is and usable; this small line is
@@ -2388,6 +2432,8 @@
                  hold the previous genre's titles until then; the grey cards are drawn instead). -->
             <visible>$EXP[Netflix_Grid_Shell]</visible>
             <animation effect="fade" start="100" end="0" time="0" condition="!$EXP[Netflix_Grid_Ready]">Conditional</animation>
+            <!-- R10.56 (loading look A): the titles arrive with one 250 ms fade (in only; the line above still hides at once) -->
+            <animation effect="fade" start="0" end="100" time="250" reversible="false" condition="$EXP[Netflix_Grid_Ready]">Conditional</animation>
             <preloaditems>0</preloaditems>
             <onup condition="$EXP[Netflix_Movie_Tab_Genre]">3733</onup>
             <onup condition="$EXP[Netflix_Show_Tab_Genre]">3732</onup>
@@ -2524,12 +2570,21 @@
                     <onright>noop</onright>
                     <onup condition="Integer.IsGreater(Container(595).NumItems,0)">595</onup>
                     <onup>3732</onup>
+                    <!-- R10.57 (sweep 2 #6): R10.53's Movies Trending reset (591, below) for Shows Trending too: leaving the row by Up,
+                         Down or Back puts it back on its first title, so it never sits parked on its last "More Titles" tile (shown
+                         alone as a dark card). Position only, after the line that moves focus; same two moves as 591. -->
+                    <onup>Control.Move(592,-$INFO[Container(592).CurrentItem])</onup>
+                    <onup>Control.Move(592,1)</onup>
                     <!-- R10.10.1: Back to the tab through Continue Watching (when it has titles), so the page scrolls back to the top -->
                     <onback condition="Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">SetProperty(Netflix.CWStep,1,Home)</onback>
                     <onback condition="Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">SetFocus(595)</onback>
                     <onback condition="Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">ClearProperty(Netflix.CWStep,Home)</onback>
                     <onback>3732</onback>
+                    <onback>Control.Move(592,-$INFO[Container(592).CurrentItem])</onback>
+                    <onback>Control.Move(592,1)</onback>
                     <ondown>$VAR[Netflix_Catalog_First_Genre]</ondown>
+                    <ondown condition="$EXP[Netflix_Shows_Genre_Below]">Control.Move(592,-$INFO[Container(592).CurrentItem])</ondown>
+                    <ondown condition="$EXP[Netflix_Shows_Genre_Below]">Control.Move(592,1)</ondown>
                     <onclick condition="String.StartsWith(Container(592).ListItem.FileNameAndPath,plugin://plugin.video.pov/) + String.IsEqual(Container(592).ListItem.DBType,tvshow) + [Integer.IsGreater(Container(592).ListItem.UniqueID(tmdb),0) | Integer.IsGreater(Container(592).ListItem.Property(tmdb_id),0) | String.Contains(Container(592).ListItem.FileNameAndPath,tmdb_id=)]">RunScript(special://skin/extras/netflix_series.py,592)</onclick>
                     <onclick condition="String.StartsWith(Container(592).ListItem.FileNameAndPath,plugin://plugin.video.pov) + String.IsEqual(Container(592).ListItem.DBType,movie)">RunScript(special://skin/extras/netflix_movie_details.py,592)</onclick>
                     <!-- "More Titles" tile: a list with any onclick never falls back to the provider's own click, so
@@ -2598,6 +2653,13 @@
                     <onup condition="$EXP[Netflix_WatchlistResults]">3734</onup>
                     <onup condition="$EXP[Netflix_Shows_Catalog]">3732</onup>
                     <onup>3733</onup>
+                    <!-- R10.53 (owner): leaving the Movies Trending row by Up, Down or Back puts it back on its first title,
+                         so it never sits parked on its last "More Titles" tile. Position only (Control.Move: the list's
+                         selection, no focus), after the line that moves focus, so the row is already unfocused and its
+                         feature (shown only while 591 has focus) never switches. ".." is item 0: the first move lands on it,
+                         the second on the first title. Opening a title (OK) and coming back keep the position. -->
+                    <onup condition="$EXP[Netflix_Movies_Catalog]">Control.Move(591,-$INFO[Container(591).CurrentItem])</onup>
+                    <onup condition="$EXP[Netflix_Movies_Catalog]">Control.Move(591,1)</onup>
                     <onback condition="$EXP[Netflix_WatchlistResults]">ActivateWindow(1165)</onback>
             <onback condition="$EXP[Netflix_WatchlistResults] | Window.IsActive(1165)">3734</onback>
             <!-- R10.10.1: Back to the tab through Continue Watching (when it has titles), so the page scrolls back to the top -->
@@ -2605,12 +2667,19 @@
             <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Movies_Catalog] + Integer.IsGreater(Container(594).NumItems,0) + $EXP[Netflix_Movies_Under]">SetFocus(594)</onback>
             <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Movies_Catalog] + Integer.IsGreater(Container(594).NumItems,0) + $EXP[Netflix_Movies_Under]">ClearProperty(Netflix.CWStep,Home)</onback>
             <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Movies_Catalog]">3733</onback>
+            <!-- R10.53: the same reset, with the condition of the line above (Back moves focus to the tab; on page 2+ no
+                 onback line applies and Kodi's own parent-folder Back stays) -->
+            <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Movies_Catalog]">Control.Move(591,-$INFO[Container(591).CurrentItem])</onback>
+            <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Movies_Catalog]">Control.Move(591,1)</onback>
             <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Shows_Catalog] + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">SetProperty(Netflix.CWStep,1,Home)</onback>
             <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Shows_Catalog] + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">SetFocus(595)</onback>
             <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Shows_Catalog] + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">ClearProperty(Netflix.CWStep,Home)</onback>
             <onback condition="$EXP[Netflix_Tab_Catalog_Root] + $EXP[Netflix_Shows_Catalog]">3732</onback>
                     <ondown condition="$EXP[Netflix_WatchlistResults]">noop</ondown>
                     <ondown condition="!$EXP[Netflix_WatchlistResults]">$VAR[Netflix_Catalog_First_Genre]</ondown>
+                    <!-- R10.53: the same reset, only when a genre row below takes the focus -->
+                    <ondown condition="$EXP[Netflix_Movies_Catalog] + $EXP[Netflix_Movies_Genre_Below]">Control.Move(591,-$INFO[Container(591).CurrentItem])</ondown>
+                    <ondown condition="$EXP[Netflix_Movies_Catalog] + $EXP[Netflix_Movies_Genre_Below]">Control.Move(591,1)</ondown>
                     <onfocus condition="$EXP[Netflix_Grid_Ready] + Integer.IsGreater(Container(593).NumItems,0)">SetFocus(593)</onfocus>
                     <!-- staged/trending-grid: Back from a Trending grid focuses 591 in the same frame in which the grid's Back
                          list read Netflix.Grid.Shell, and Kodi caches every condition leaf for the frame: Netflix_Grid_Over still
@@ -2642,6 +2711,28 @@
                     <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(Window(Home).Property(Netflix.TabDwellTarget),3732) + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">SetFocus(595)</onfocus>
                     <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + String.IsEqual(Window(Home).Property(Netflix.TabDwellTarget),3732) + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">ClearProperty(Netflix.CWStep,Home)</onfocus>
                     <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget))">SetFocus($INFO[Window(Home).Property(Netflix.TabDwellTarget)])</onfocus>
+                    <!-- R10.55: Back from the Video add-ons list (Back twice) reloads this folder and Kodi refocuses this list; give
+                         focus straight back to the header control the viewer left from (tab, Options or genre button), in this
+                         focus move, so the Trending feature never shows focused (it did for ~0.15 s until the timer
+                         netflix_back_twice_return moved it; the timer still clears the other properties). My Lists stays with the timer. -->
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Away)) + !String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Focus)) + !String.IsEqual(Window(Home).Property(Netflix.BackTwice.Focus),mylists) + String.IsEqual(Container.FolderPath,Window(Home).Property(Netflix.BackTwice.Return)) + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget))">SetFocus($INFO[Window(Home).Property(Netflix.BackTwice.Focus)])</onfocus>
+                    <!-- R10.55 (review M1): same condition (read before any action runs; the SetFocus above has already read Focus):
+                         forget the return focus here, so the timer's later SetFocus cannot pull a quick Down back to the tab -->
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Away)) + !String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Focus)) + !String.IsEqual(Window(Home).Property(Netflix.BackTwice.Focus),mylists) + String.IsEqual(Container.FolderPath,Window(Home).Property(Netflix.BackTwice.Return)) + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget))">ClearProperty(Netflix.BackTwice.Focus,Home)</onfocus>
+                    <!-- R10.57 (sweep 2 #8): Back from Search (Netflix_Search_Back_Return, Includes_Home.xml): Kodi's refocus of this list
+                         after Videos reloaded its folder goes through Continue Watching (when it has titles) to the tab that page
+                         shows, once. Only while the folder is not loading (Kodi's refocus comes after the load); last lines of
+                         this list, so they win over the tab-swap and Back-twice lines above. -->
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3733) + Integer.IsGreater(Container(594).NumItems,0) + $EXP[Netflix_Movies_Under]">SetProperty(Netflix.CWStep,1,Home)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3733) + Integer.IsGreater(Container(594).NumItems,0) + $EXP[Netflix_Movies_Under]">SetFocus(594)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3733) + Integer.IsGreater(Container(594).NumItems,0) + $EXP[Netflix_Movies_Under]">ClearProperty(Netflix.CWStep,Home)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3732) + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">SetProperty(Netflix.CWStep,1,Home)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3732) + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">SetFocus(595)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3732) + Integer.IsGreater(Container(595).NumItems,0) + $EXP[Netflix_Shows_Under]">ClearProperty(Netflix.CWStep,Home)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3733)">SetFocus(3733)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating + String.IsEmpty(Window(Home).Property(Netflix.TabArrival)) + String.IsEmpty(Window(Home).Property(Netflix.TabDwellTarget)) + !$EXP[Netflix_Grid_Over] + String.IsEqual(Window(Home).Property(Netflix.SearchBack),3732)">SetFocus(3732)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating">ClearProperty(Netflix.SearchBack,Home)</onfocus>
+                    <onfocus condition="!String.IsEmpty(Window(Home).Property(Netflix.SearchBack)) + !Container.IsUpdating">CancelAlarm(netflix_search_back,true)</onfocus>
                     <include content="Netflix_Reference_Rail_Shift">
                         <param name="id">591</param>
                     </include>

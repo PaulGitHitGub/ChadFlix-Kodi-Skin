@@ -21,6 +21,46 @@
             <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
         </remote>
     </FullscreenVideo>
+    <!-- R10.57 (main Shield 2026-11-21, r1056 AV (e)): with the video OSD or one of the cards its buttons open on focus
+         (1145 info, 1147 Audio & Subtitles, 1148 video) in front, Kodi reads that window's section, not FullscreenVideo:
+         the Stop keys fell through to the global "Stop", which stopped without this script, so the movie page never came
+         back (landed on the Movies row, no "Netflix Exit" line). The same one-shot script as above; Back is unchanged. -->
+    <VideoOSD>
+        <keyboard>
+            <x>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</x>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </keyboard>
+        <remote>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </remote>
+    </VideoOSD>
+    <window11145>
+        <keyboard>
+            <x>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</x>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </keyboard>
+        <remote>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </remote>
+    </window11145>
+    <window11147>
+        <keyboard>
+            <x>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</x>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </keyboard>
+        <remote>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </remote>
+    </window11147>
+    <window11148>
+        <keyboard>
+            <x>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</x>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </keyboard>
+        <remote>
+            <stop>RunScript(special://home/addons/skin.arctic.fuse.3/extras/netflix_exit_return.py,stop)</stop>
+        </remote>
+    </window11148>
     <!-- Inside the prompt: short Back reaches control 9001's <onback> (= exit) through the global Back mapping.
          Long-press Back would otherwise be the global "ActivateWindow(Home)": make it Back too.
          Play/Pause and Stop keys must not toggle the player under the prompt. -->
