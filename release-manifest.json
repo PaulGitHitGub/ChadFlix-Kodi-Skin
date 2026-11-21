@@ -3,22 +3,22 @@
   {
    "added": 15,
    "changed": 44,
-   "content_sha256": "0281d6ed036951a365155345ece07343c2a08fd2b1a9b0668087c7ccb0c50e03",
+   "content_sha256": "8fa1a92cb247bb3b61d061d986c484b48c8da44779c175bec41fd25f9f344aca",
    "files": 226,
    "id": "plugin.video.pov",
    "overlay": "inputs/overlays/plugin.video.pov",
-   "overlay_sha256": "04aa9cab3c7ff3b007ce3edbea125db7c2570351f96a15a4c573a54d68ea81d6",
+   "overlay_sha256": "0d9774357b6b59b2c848eab02ccecec05d9bb056d3bb2f87fdb0452b8222e100",
    "removed": 0,
-   "sha256": "b5ded7fcc834280cb9b42c560272dbcda073a38c1ae5352d3f0eb30e4f3690b2",
-   "size": 868116,
+   "sha256": "a1d27401bf6a24d9c7a47c8b35ca7e79f6564bd82ee5a579199d480ff5b90ccc",
+   "size": 870175,
    "source": "upstream+overlay",
    "upstream": {
     "file": "plugin.video.pov-6.11.03.zip",
     "sha256": "9ac93ad045910774503cbfeeb45b63bbd9b23837c9e76749885076c9b11edfba",
     "url": "https://raw.githubusercontent.com/kodifitzwell/repo/2c8390c6e65213853a862a00044597946b946132/plugin.video.pov/plugin.video.pov-6.11.03.zip"
    },
-   "version": "6.99.1103.6",
-   "zip": "zips/plugin.video.pov/plugin.video.pov-6.99.1103.6.zip"
+   "version": "6.99.1103.7",
+   "zip": "zips/plugin.video.pov/plugin.video.pov-6.99.1103.7.zip"
   },
   {
    "carried_from": "zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip",
@@ -29,9 +29,9 @@
    "size": 9569600,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "dd50ba2a474cf040cb960397bd1973e21750477e6d32158ccb78e24f4bc36d6e",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/0781b0f0c1e7aeea9c10c655f69bd0265631853e/omega/zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip"
    },
    "version": "6.20.8",
    "zip": "zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip"
@@ -57,9 +57,9 @@
    "size": 51487529,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "58c3e32cafbbf0984896c4ab317c820e555f3deacae977598e4a03a0f8139743",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/00f4160e62ea3dfa6b2f399c8a4ba2f58d903448/omega/zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip"
    },
    "version": "0.0.3",
    "zip": "zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip"
@@ -73,9 +73,9 @@
    "size": 70320656,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "3d5f377f4c0c1e0459948b1b1fc635038fa9a5a8fffbc1d60aed505b62d34714",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/02954377908f657cda6d509e7692572e5e97f07a/repo/zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip"
    },
    "version": "1.1.0",
    "zip": "zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip"
@@ -89,24 +89,24 @@
    "size": 59035048,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "a7e84af8747611c8517bfb278b7610053653c95107a10307dc48ee15e6cef0c4",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/cb876b5273ca2a7943f731448d19cb7af28fd1a1/repo/zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
    },
    "version": "1.0.4",
    "zip": "zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip"
   },
   {
-   "content_sha256": "cfd3b6d95950d818f2e8180c2025a9dbf12d24d540e082236b5758b2b3801527",
+   "content_sha256": "623ede7cceb64ceb52f9595d8aad9f5ade68e21c1288bdcdab467d715404a79e",
    "files": 18,
    "id": "script.chadflix.setup",
-   "sha256": "b4a550d4a380478345501766b667d81503786f751a2a4548b52b39005e14b0e7",
-   "size": 34472,
+   "sha256": "93b12cb2cf43baaafec52727130d5d45fc7b602cfe50c4d7a7240f9dea0d4784",
+   "size": 34839,
    "source": "tree",
    "tree": "src/script.chadflix.setup",
-   "tree_sha256": "cfd3b6d95950d818f2e8180c2025a9dbf12d24d540e082236b5758b2b3801527",
-   "version": "1.0.6",
-   "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.6.zip"
+   "tree_sha256": "623ede7cceb64ceb52f9595d8aad9f5ade68e21c1288bdcdab467d715404a79e",
+   "version": "1.0.7",
+   "zip": "zips/script.chadflix.setup/script.chadflix.setup-1.0.7.zip"
   },
   {
    "carried_from": "zips/script.module.infotagger/script.module.infotagger-0.1.0.zip",
@@ -117,9 +117,9 @@
    "size": 23756,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "82bf72ad2e8184e4a560135d7fa2ea1f37d95a0a7524100554da527f816ca876",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.infotagger/script.module.infotagger-0.1.0.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/38bef10e25e54bc618b202841d8582a34a2f3808/omega/zips/script.module.infotagger/script.module.infotagger-0.1.0.zip"
    },
    "version": "0.1.0",
    "zip": "zips/script.module.infotagger/script.module.infotagger-0.1.0.zip"
@@ -133,9 +133,9 @@
    "size": 57131,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "80302314cdbc5a75611b0c2866eb1c7b4e93ccadaf20208ef7eb79b79c1fb749",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/094e732133f8a3f53f425cdde37e0e1f6c655c7e/omega/zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip"
    },
    "version": "0.2.35",
    "zip": "zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip"
@@ -149,9 +149,9 @@
    "size": 483953,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "b8175017513f7540af1a4f4d33af3967b59527f187b5d69060d98f8286faf572",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/e1ee43587b370382e05decf601f6e9fa08d77559/omega/zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip"
    },
    "version": "1.1.4",
    "zip": "zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip"
@@ -165,9 +165,9 @@
    "size": 240583,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "caa15464788667aed0f8dea5942bbe8c6fb93c6df11b46dad02ed42b256304fe",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.skinvariables/script.skinvariables-2.2.12.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/dbd478534771ae342743afcddf1d13e3615277ce/omega/zips/script.skinvariables/script.skinvariables-2.2.12.zip"
    },
    "version": "2.2.12",
    "zip": "zips/script.skinvariables/script.skinvariables-2.2.12.zip"
@@ -181,32 +181,32 @@
    "size": 172494,
    "source": "carry",
    "upstream": {
-    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)",
+    "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)",
     "sha256": "051bca651c467901b12fcae56ca430402427149d801fa7a7cfd1254d386a738b",
-    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.texturemaker/script.texturemaker-0.2.11.zip"
+    "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/63e5c7560d1c51108849418be702250ecc9e100f/omega/zips/script.texturemaker/script.texturemaker-0.2.11.zip"
    },
    "version": "0.2.11",
    "zip": "zips/script.texturemaker/script.texturemaker-0.2.11.zip"
   },
   {
-   "added": 102,
-   "changed": 48,
-   "content_sha256": "da79328d0e389b6fcfa43095978b7336c942018b2eaa8d5d883bc5aa6da61fcb",
-   "files": 3839,
+   "added": 113,
+   "changed": 53,
+   "content_sha256": "202d7dd1febc216311cc5b6ddf7f0ae96b2cabba5cefaffc88576bd0b4b40e20",
+   "files": 3850,
    "id": "skin.arctic.fuse.3",
    "overlay": "inputs/overlays/skin.arctic.fuse.3",
-   "overlay_sha256": "c2709a6adb7f3e75c3efd1c77f04ddd8a76383828daa8ae061c6c139e3c81667",
+   "overlay_sha256": "789026f62d3bc1527bc5deeba922731d268d12b39e2bc4c8676c3744d4cad58c",
    "removed": 2,
-   "sha256": "7f6b41582fb6bb3c63572b7c4ba9dabcccb4a290dd705ebe05f3cd59669b6e76",
-   "size": 60492010,
+   "sha256": "58b816f150e4228ffccf7299a2d2da74a133a5d8e59a791193ca67356bf34cf8",
+   "size": 60528499,
    "source": "upstream+overlay",
    "upstream": {
     "file": "skin.arctic.fuse.3-3.4.18.zip",
     "sha256": "ed7ec6ba9845bc3ae4a07b9ab6577b41617c6c32705b3ccbdbca343cba545e1a",
     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/dbecc1eab3384007e8ff36a9dde2fec1336a96e6/omega/zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.4.18.zip"
    },
-   "version": "3.99.418.7",
-   "zip": "zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.99.418.7.zip"
+   "version": "3.99.418.8",
+   "zip": "zips/skin.arctic.fuse.3/skin.arctic.fuse.3-3.99.418.8.zip"
   }
  ],
  "base_url": "https://paulgithitgub.github.io/ChadFlix-Kodi-Skin/",
@@ -217,10 +217,10 @@
  },
  "index": {
   "file": "zips/addons.xml",
-  "md5": "eb668bfb726b1e21eea063e35c00be68",
-  "sha256": "7cf69f6fc60e4ee22c3e6c6a2ba3b6c8ab5e799a82e2958e9d9dbf01f7b3f884"
+  "md5": "4507f862cc22857a613082e3f5e4837a",
+  "sha256": "c1de047a0b9866331b6f881a944dce59040e850243997dc559ea3b23371b812b"
  },
- "lock_sha256": "a34427a5168d4ec09532bc2507c6ebebbf92071c26594bd85d05a4af65de2b62",
- "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.51-plot-text-2026-11-18; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files, unchanged in R10.51)",
+ "lock_sha256": "4c386a53f5e8f851ed3e647f7c1edbd904b39d035ad267d0ebb75e8d81b538f8",
+ "release": "8 (release 7 + the build in daily use on both Shields = snapshot R10.57-fixes-2026-11-21: R10.52, R10.53, R10.54, R10.53.1, R10.55, R10.55.1-R10.55.4, R10.56, R10.55.5, R10.57; Setup 1.0.7 ships R10.57's NetflixExitConfirm.xml key file)",
  "repository_zip": "repository.chadflix-1.0.1.zip"
 }

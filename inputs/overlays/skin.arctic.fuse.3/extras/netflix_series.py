@@ -6,7 +6,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from threading import Thread
+from threading import Thread, Timer
 from uuid import uuid4
 from time import monotonic, sleep, time
 from urllib.parse import parse_qsl, urlencode, urlsplit
@@ -58,7 +58,7 @@ TMDB_FEED = "Netflix.TMDbFeed"
 TMDB_RATING_PROPS = ("IMDb_Rating", "RottenTomatoes_Rating", "Letterboxd_Rating", "RottenTomatoes_Image")
 BACK = {9, 10, 92}
 LEFT, RIGHT = 1, 2
-CACHE_SIZE = 4
+CACHE_SIZE = 6  # R10.56: was 4; also holds the seasons fetched by the background count lookups
 COUNT_REST = 0.8  # seconds the season focus must rest before a background count lookup starts
 SEPARATOR = "  ·  "
 # Show-page load (staged/show-page-load). Owner's rule for the description: a show nobody has started (or
@@ -80,7 +80,15 @@ QUIET = 0.15                         # seconds between the end of any show-page 
 SETTLE = 0.03                        # seconds a new claim waits before it counts (see stake / holds)
 LOST = object()                      # worker answer: another page won the request claim, ask again
 RATINGS_WAIT = 20                    # seconds a page keeps looking for ratings that were not ready at open
-RATINGS_EVERY = 0.5
+RATINGS_EVERY = 0.1                  # R10.54: was 0.5 (two property reads per look) ...
+RATINGS_FAST_FOR = 3.0               # ... for the first seconds of a look (when ratings usually arrive), then:
+RATINGS_SLOW = 0.5                   # most shows never get every rating: no 0.1 s polling for the whole RATINGS_WAIT
+# R10.54 reveal once (Netflix_Series.xml Series.Settled): the main page's text and buttons stay transparent until the Play
+# episode is known (or a not-started show's "Play S1: E1"), and its like/watchlist state; at most HOLD_CAP seconds after
+# the page appeared. An arrow or Play reveals it at once.
+HOLD_CAP = 1.2
+RATINGS_SEEN = "Netflix.Ratings.Seen"   # Window(Home): "1" once any title's ratings arrived this Kodi session (reserves the ratings line)
+ARROWS = {1, 2, 3, 4}                # left, right, up, down
 NATIVE_LISTS = {"590", "591", "593"}  # lists whose own Select is taken over by the OK keymap script
 # R10-playback: Play loads ON this page (design B loader, Includes_Netflix_Playback.xml): the page stays open while
 # POV finds and opens the episode, and POV closes it when the video starts. Focus rests on LOADER_FOCUS meanwhile.
@@ -89,6 +97,38 @@ NATIVE_LISTS = {"590", "591", "593"}  # lists whose own Select is taken over by 
 LOADER_FOCUS = 46
 COVER_RENEW = 2.0
 FLIGHT = "Netflix.Flight"            # the title pages' single-flight entry (extras/netflix_movie_details.py)
+# R10.55.3 FIX A (Back 0.1-0.2 s after Play, main Shield 2026-11-20: the page closed to the row 3/32, focus lost 5/32).
+# PlayMedia makes Kodi open its busy dialog ~0.2 s in. R10.53.1's DialogBusy onload closes it only while the loader is up,
+# but a Back that lands after launch_play() queued PlayMedia has already taken the loader down: the dialog stayed (taking
+# keys until POV ended) and this page's loop let the page go. Such a Back sets WITHDRAWN (Window(Home), "1") first; while
+# it is set and this page is visible, DialogBusy.xml's second onload closes the dialog at once, and the page's loop keeps
+# the page while it is visible (run()'s up(): the busy dialog is on top for an instant). Cleared by a new Play (play()),
+# when the page's loop ends (run()), and WITHDRAWN_KEEP after it was set. The movie page has its own mark
+# (Netflix.Play.Withdrawn, R10.55.2), not this one.
+WITHDRAWN = "Netflix.Series.Withdrawn"
+WITHDRAWN_KEEP = 5.0
+# R10.57 (late Back, main Shield 2026-11-20/21): once POV has the stream (Phase "play") its request can no longer be withdrawn:
+# it has already handed the file to Kodi. A Back from then on was swallowed and the episode played (the loader stayed ~3 s more).
+# Such a Back now marks the request (SeriesPlayer.late_back) and the player is stopped the moment it has the file: by this page's
+# loop while the page is up, by play_and_wait() once Kodi has gone to the video. Stamped like Stop (Netflix.Exit.NoNext with this
+# request's token, Netflix.Exit.Fast): POV never starts a next episode for it and open_series reopens the page with the short wait.
+# A second Stop LATE_RETRY s later if the player is still up; the mark is dropped LATE_KEEP s after the Back if nothing played.
+# Every Stop needs this request still running in POV (pov_playing: its flight entry says "play" with this token), and the mark
+# is cleared once play_and_wait() / end_play() is done with the request: a closed page's player lives on (CLOSED_KEEP) and
+# hears every later playback, so it must never stop the viewer's own replay of the same episode (review of 82c23947).
+# Stopped before the video, POV closes every dialog (player.py run(): close_all_dialog), this page too (main Shield 2026-11-21:
+# reopened 1 of 2, lost 1 of 2). So for LATE_SETTLE s after the Stop the request is kept (watch_play), the closed page goes on to
+# play_and_wait(), and that counts the stopped file as finished and reopens the page as after Stop.
+LATE_RETRY = 3.0
+LATE_KEEP = 30.0
+LATE_SETTLE = 2.0
+# R10.52 (Kodi abort on Back, main Shield 2026-11-19): Kodi deletes this page's window as soon as the script lets go of
+# it. TMDb Helper's service threads read properties of the topmost dialog through an xbmcgui.Window(<id>) wrapper, which
+# holds a raw pointer. The race (R10.52 review): a wrapper made BEFORE the delete and a getProperty read through it AFTER
+# the delete locks a freed window ("pthread_mutex_lock called on a destroyed mutex"); a stale id on its own only raises
+# RuntimeError, which TMDb Helper catches. So a page that has left the screen is kept (closed, inert) until it has been
+# gone CLOSED_KEEP seconds; the script only waits, nothing on screen changes.
+CLOSED_KEEP = 30.0
 SAVED_DEFAULT = {"Favorite": "", "FavoriteLabel": "Favorite", "Bookmarked": "", "BookmarkLabel": "Add To Watchlist"}
 MARKUP = re.compile(r"\[/?(?:COLOR(?: [^\]]+)?|B|I)\]", re.IGNORECASE)
 RATINGS = {
@@ -199,6 +239,8 @@ def capture(source):
     if not values["Title"] or path != field("FileNameAndPath"):
         return None
     values["Poster"] = field("Art(poster)") or field("Art(thumb)")
+    # R10.54: nobody has started it (no episode watched, and not a Continue Watching card): Play is S1: E1 from frame 1
+    values["Fresh"] = "1" if field("Property(watchedepisodes)") == "0" and not field("Property(Netflix.CW.Kind)") else ""
     values.update(ratings(tmdb_id))
     return values
 
@@ -428,6 +470,10 @@ def known_restore(view):
     saved, rated = known.get("saved"), known.get("ratings")
     if isinstance(saved, dict) and set(saved) == set(SAVED_DEFAULT) and all(isinstance(v, str) for v in saved.values()):
         view.saved = remembered(saved)
+    count = known.get("episodes_saved")   # R10.54: "N Saved" as last seen, so it is not added after the first frame
+    if isinstance(count, str) and len(count) <= 16:
+        view.episodes_saved = count
+    view.started = known.get("started") is True   # R10.54: this session saw it started (see SeriesView.fresh)
     if any(view.fields.get(key) for key in RATINGS):
         known_store(view, ratings={key: view.fields[key] for key in RATINGS if view.fields.get(key)})
     elif isinstance(rated, dict) and set(rated) <= set(RATINGS) and all(isinstance(v, str) for v in rated.values()):
@@ -501,8 +547,15 @@ class SeriesView:
         self.open_target = None   # R10.22: (season, episode) a saved-episode card asked for: the list opens with that card focused
         self.episodes_saved = ""  # R10.22: "3 Saved" under More Episodes ("" = none), once known
         self.ratings_until = None
+        self.started = False      # R10.54: set by known_restore
         cache_restore(self)
         known_restore(self)
+        # R10.54 reveal once (see HOLD_CAP): settled = the main page may show. fresh = nobody has started this show (the
+        # browse row says so, and this session has not seen it started): Play is "Play S1: E1" before POV answers. Taken
+        # after cache_restore, so a remembered Play episode wins.
+        self.settled = False
+        self.hold_from = monotonic()
+        self.fresh = self.fields.get("Fresh") == "1" and self.primary is None and not self.started
 
     @property
     def primary_pending(self):
@@ -534,6 +587,8 @@ class SeriesView:
         self.failed.clear()
         self.revalidate = ""
         self.recheck_failed = False
+        self.settled = False   # R10.54: the page after an episode reveals once, with the new Play episode
+        self.fresh = False     # ... and the show is no longer "not started"
         remember(CACHE, CACHE_SHOWS, show_key(self.tmdb_id), None)
 
 
@@ -569,10 +624,18 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         self.tmdb_covered = False       # R10.47: the page left the top since that feed
         self.dialog_id = None           # R10.47: this page's window id (set by run())
         self.ended = float("-inf")      # when this page's last request ended
+        self.closed_at = None           # R10.52: when the shown page left the screen (see CLOSED_KEEP)
+        self.withdrawn_at = None        # R10.55.3: monotonic() when this page set WITHDRAWN (None: not set by this page)
+        self.force_focus = False        # R10.55.3: the next pending focus is sent even if getFocusId() already names it
 
     @property
     def view(self):
         return self.stack[-1]
+
+    @property
+    def lately_closed(self):
+        """R10.52: the page left the screen less than CLOSED_KEEP seconds ago."""
+        return self.closed_at is not None and monotonic() - self.closed_at < CLOSED_KEEP
 
     def properties(self, **values):
         for key, value in values.items():
@@ -601,6 +664,8 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
 
     def paint(self):
         """Everything already known about the view, in its final place. Safe before the window is shown."""
+        if not self.view.settled:
+            self.properties(Settled="")   # R10.54: hidden before anything of a new view is written (revealed in show_primary)
         self.properties(**{
             **dict.fromkeys(RATINGS, ""),
             **self.view.fields,
@@ -690,6 +755,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             self.properties(**self.view.saved)
             known_store(self.view, saved=remembered(self.view.saved))   # R10.18: adding to a watchlist is not announced (errors below still notify)
             self.refresh_episodes_saved()
+            self.update_settled()   # R10.54: a not-started show waits only for this (its icons and "N Saved")
         except (ListsError, OSError, RuntimeError, ImportError, KeyError) as error:
             if action is not None:
                 notify(str(error) if isinstance(error, ListsError) else "Could not update saved titles. Try again.")
@@ -703,6 +769,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             count = 0
         self.view.episodes_saved = f"{count} Saved" if count else ""
         self.properties(EpisodesSaved=self.view.episodes_saved)
+        known_store(self.view, episodes_saved=self.view.episodes_saved)   # R10.54 (known_restore)
 
     def set_lane(self, lane):
         if lane != self.lane:
@@ -773,9 +840,18 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
 
     def apply_pending_focus(self):
         focus = self.pending_focus
+        if focus == LOADER_FOCUS and not loading(self.play_token):
+            # R10.55.3 FIX A: Back already took the loader down (Control.IsVisible(46) still reads the last frame): never send
+            # focus to it now; end_play() restores the page's focus
+            self.pending_focus = None
+            return
         if focus is not None and xbmc.getCondVisibility(f"Control.IsVisible({focus})"):
-            if self.focus_id() != focus:
+            # R10.55.3 FIX A: after a request that ended without video (end_play) the focus is sent even when getFocusId()
+            # already names it: a setFocusId(LOADER_FOCUS) still queued in Kodi would otherwise land after the loader hid
+            # ("Control 46 ... asked to focus, but it can't") and leave nothing focused. Kodi runs them in order.
+            if self.force_focus or self.focus_id() != focus:
                 self.setFocusId(focus)
+            self.force_focus = False
             self.pending_focus = None
 
     def focus_id(self):
@@ -791,7 +867,8 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         if view.primary_pending:
             # Nothing is blanked while episodes load: the show's plot and every button stay where they
             # will be. Only the Play label ("Play" -> "Play S1: E1") and the episode line fill in later.
-            label = "Play"
+            # R10.54: a not-started show says its final label at once (and the page is revealed at once).
+            label = "Play S1: E1" if view.fresh else "Play"
         elif episode:
             label = f"{'Resume' if view.resumable else 'Watch Again' if view.again else 'Play'} {episode['code']}"
             if view.own_text:
@@ -817,6 +894,38 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                         CanPlay=play, CanRestart=restart, Status=status, CanSources=sources)
         if not sources:
             self.close_sources()
+        self.update_settled()   # R10.54: last, once everything above is in place
+
+    def update_settled(self):
+        """R10.54 reveal once: the main page shows (Series.Settled) once the Play episode is known (or the show is not
+        started) and its like/watchlist state is known, or as soon as Play was pressed. Never hidden again on this view."""
+        view = self.view
+        if not view.settled and (((not view.primary_pending or view.fresh) and view.saved is not None)
+                                 or self.play_wanted is not None):
+            self.settle(view, "play" if self.play_wanted is not None and view.primary_pending
+                        else "fresh" if view.primary_pending else "answer")
+        if view.settled:   # (review) never write "" here: a cap timer may have settled the view meanwhile; paint() hides
+            self.properties(Settled="1")
+
+    def settle(self, view, why):
+        view.settled = True
+        if view is self.view:
+            self.properties(Settled="1")
+        shown = monotonic() - self.shown_at
+        xbmc.log("Netflix Series: page revealed (%s) %s" % (
+            why, "%.2f s after it appeared" % shown if shown < 3600 else "before it appeared"), xbmc.LOGINFO)
+
+    def check_hold(self):
+        """R10.54: the main page is revealed at most HOLD_CAP after the page (or this view) appeared."""
+        view = self.view
+        if not view.settled and not view.page and monotonic() - max(self.shown_at, view.hold_from) >= HOLD_CAP:
+            self.settle(view, "cap")
+
+    def cap_timer(self, view):
+        """R10.54: HOLD_CAP for the page's first view from a timer thread, so the cap also holds while onInit or a callback
+        keeps run()'s loop busy (a slow window load or saved-state read): never later than the page showed it before."""
+        if not self.closed and self.closed_at is None and view is self.view and not view.settled and not view.page:
+            self.settle(view, "cap")
 
     def sources_open(self):
         return xbmcgui.Window(10000).getProperty(SOURCES_OPEN) == "true"
@@ -830,7 +939,7 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                 or self.getProperty("Series.CanSources") != "1" or rows is None or not rows.size()):
             return   # (an empty list cannot take focus: the pending focus would wait on it for ever)
         xbmcgui.Window(10000).setProperty(SOURCES_OPEN, "true")
-        self.pending_focus = SOURCES
+        self.pending_focus, self.force_focus = SOURCES, False   # R10.55.3: a replaced pending focus is not forced
         self.apply_pending_focus()
 
     def close_sources(self, focus=True):
@@ -839,9 +948,9 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         was_open = home.getProperty(SOURCES_OPEN) == "true"
         home.clearProperty(SOURCES_OPEN)
         if self.pending_focus == SOURCES:
-            self.pending_focus = None
+            self.pending_focus, self.force_focus = None, False
         if focus and was_open and self.ready and not self.closed:
-            self.pending_focus = PRIMARY
+            self.pending_focus, self.force_focus = PRIMARY, False
             self.apply_pending_focus()
 
     def settle_focus(self, was_pending=False):
@@ -1011,8 +1120,16 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         if self.play_request:
             # Back cancels until POV has the stream (Phase "play": the loader shows it is committed; review M3).
             if action in BACK and xbmcgui.Window(10000).getProperty("Netflix.Play.Phase") != "play":
+                if self.launched is not None and self.closed_at is None:
+                    # R10.55.3 FIX A: PlayMedia is already queued (see WITHDRAWN). Never from a page whose loop has ended
+                    # (its run() cleared the mark, and nothing would clear it again).
+                    self.mark_withdrawn()
                 stop_loading(self.play_token)  # POV reads it as cancelled; the loop puts the page back
+            elif action in BACK and self.player is not None and self.launched is not None:
+                self.player.withdraw_late()   # R10.57: past the point POV can cancel: stop the player as it starts
             return
+        if action in ARROWS and not view.page and not view.settled:
+            self.settle(view, "key")   # R10.54: a viewer who moves sees the page at once (OK reveals it through Play)
         if self.sources_open() and not view.page and action in BACK | {LEFT}:
             self.close_sources()   # R10.49: Back / Left on the All Sources menu: back to Play, the page stays
             return
@@ -1142,7 +1259,10 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             # episode the button named, and act on it when the answer is in ONLY if the answer still means
             # that. PlayMedia never starts beside a request, and never against a remembered target.
             episode = view.primary
-            self.play_wanted = (control, (episode["season"], episode["episode"]) if episode else None, view.again)
+            # R10.54: a not-started show's button said "Play S1: E1": the press names that episode (resolve_play plays
+            # it only if POV's answer agrees)
+            named = (episode["season"], episode["episode"]) if episode else (1, 1) if view.fresh else None
+            self.play_wanted = (control, named, view.again)
             self.show_primary()
         elif view.primary:
             self.play(view.primary, restart=control == RESTART, all_sources=control == SOURCES)
@@ -1206,12 +1326,14 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             params["autoplay"] = "false"
         # R10-playback: the request's token names it for POV (quiet mode: no loading window of its own, facts and
         # phase published for the loader) and is what Back withdraws. POV names the episode's source mid-load.
+        self.clear_withdrawn()   # R10.55.3 FIX A: a new press is not withdrawn
         self.play_token = uuid4().hex
         params["netflix_playback_cover"] = self.play_token
         if not all_sources:   # R10.49: as on the movie page, All Sources carries no facts (the viewer picks the source)
             params["netflix_play_facts"] = "true"
         # Playing changes what Play should do next, however this playback ends.
         remember(CACHE, CACHE_SHOWS, show_key(self.view.tmdb_id), None)
+        known_store(self.view, started=True)   # R10.54 (SeriesView.fresh)
         self.play_request = pov_url("play_media", self.view.tmdb_id, **params)
         resuming = params.get("netflix_resume") == "resume"
         start_loading(self.play_token, verb="Resuming" if resuming else "Starting", phase="find",
@@ -1219,12 +1341,13 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         self.cover = hold_cover(self.view.fields.get("Backdrop") or self.view.quick_backdrop)
         self.cover_renewed = monotonic()
         self.cover_release_at = None
-        self.pending_focus = LOADER_FOCUS
+        self.pending_focus, self.force_focus = LOADER_FOCUS, False   # R10.55.3: a replaced pending focus is not forced
 
     def launch_play(self):
         """PlayMedia, from this page's loop, once nothing else of POV's is out: this page's own request, any show
         page's request (and QUIET after it), and any title page's launch in flight. The page stays up meanwhile."""
-        if not self.play_request or self.launched is not None:
+        # R10.55.3 FIX A: a request Back withdrew (its loader is down) is never launched; watch_play() ends it
+        if not self.play_request or self.launched is not None or not loading(self.play_token):
             return
         if (self.pending is not None or self.worker is not None or holder(REQUEST, REQUEST_STALE)
                 or monotonic() - self.ended < QUIET or pov_in_flight()
@@ -1244,20 +1367,39 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         in launch_play() until POV's interpreter has left (pov_in_flight)."""
         stop_loading(self.play_token)
         release_cover(self.cover)
+        if self.player is not None:
+            self.player.end_late()   # R10.57
         self.play_request = self.play_token = self.player = self.launched = self.cover = None
         self.cover_release_at = None
         if not self.closed:
             self.show_primary()
+            self.force_focus = True   # R10.55.3 FIX A (see apply_pending_focus)
             self.restore_focus()
+
+    def mark_withdrawn(self):
+        """R10.55.3 FIX A: Back withdrew a request whose PlayMedia is already queued (see WITHDRAWN)."""
+        xbmcgui.Window(10000).setProperty(WITHDRAWN, "1")
+        self.withdrawn_at = monotonic()
+
+    def clear_withdrawn(self):
+        self.withdrawn_at = None
+        xbmcgui.Window(10000).clearProperty(WITHDRAWN)
+
+    def expire_withdrawn(self):
+        """R10.55.3 FIX A: the mark is good for WITHDRAWN_KEEP seconds (the busy dialog comes ~0.2 s into PlayMedia)."""
+        if self.withdrawn_at is not None and monotonic() - self.withdrawn_at >= WITHDRAWN_KEEP:
+            self.clear_withdrawn()
 
     def watch_play(self):
         if not self.play_request:
             return
+        if self.player is not None:
+            self.player.stop_late()   # R10.57
         now = monotonic()
         if self.cover and now - self.cover_renewed >= COVER_RENEW:
             self.cover_renewed = now
             renew_cover(self.cover)
-        if loading(self.play_token) or (self.player is not None and self.player.started):
+        if loading(self.play_token) or (self.player is not None and (self.player.started or self.player.late_settling())):
             return
         self.end_play()
 
@@ -1374,11 +1516,16 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         elif key == "related":
             view.related = related_rows(rows, view.tmdb_id)
         elif isinstance(key, tuple):
-            # Background count lookup for a season whose row came without one; episodes are not cached.
+            # Background count lookup for a season whose row came without one. R10.56: its episodes are kept while the
+            # cache has a free slot (never evicting anything), so moving onto that season shows its stills at once.
+            # Never the primary season: its episodes go through take_episodes (set_primary, cache_store, known_store).
             season = next((season for season in view.seasons or () if season["number"] == key[1]), None)
             if season and season["count"] is None:
-                season["count"] = len(episode_rows(rows, view.tmdb_id, key[1]))
+                episodes = episode_rows(rows, view.tmdb_id, key[1])
+                season["count"] = len(episodes)
                 self.show_season_count(view, season)
+                if key[1] != view.primary_season and key[1] not in view.episodes and len(view.episodes) < CACHE_SIZE:
+                    view.episodes[key[1]] = episodes
             return
         else:
             self.take_episodes(view, key, episode_rows(rows, view.tmdb_id, key))
@@ -1412,6 +1559,8 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         if key == view.primary_season:
             set_primary(view, season, episodes)
             cache_store(view)
+            if view.own_text or view.again:
+                known_store(view, started=True)   # R10.54: never "not started" again this session (SeriesView.fresh)
 
     def load_needed(self):
         view = self.view
@@ -1453,7 +1602,8 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         view, now = self.view, monotonic() if now is None else now
         if view.ratings_until is None:
             view.ratings_until = now + RATINGS_WAIT
-        if (now > view.ratings_until or now - self.ratings_checked < RATINGS_EVERY
+        fast = now - (view.ratings_until - RATINGS_WAIT) < RATINGS_FAST_FOR   # R10.54 (the look began RATINGS_WAIT before its end)
+        if (now > view.ratings_until or now - self.ratings_checked < (RATINGS_EVERY if fast else RATINGS_SLOW)
                 or all(view.fields.get(key) for key in RATINGS)):
             return
         self.ratings_checked = now
@@ -1462,9 +1612,17 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
             view.fields.update(values)
             self.properties(**values)
             known_store(view, ratings={key: view.fields[key] for key in RATINGS if view.fields.get(key)})
+            xbmcgui.Window(10000).setProperty(RATINGS_SEEN, "1")   # R10.54
+            self.properties(RatingsSlot="1")   # (the next show opened on this page keeps the line too)
 
     def run(self, monitor):
         self.update_ratings()  # one more look before painting: usually TMDb Helper has them by now
+        # R10.54: the ratings line is held for this show's ratings once any ratings were seen this session (with ratings
+        # off, never: no gap). TMDb Helper's values of the last title fed count too.
+        home = xbmcgui.Window(10000)
+        if any(home.getProperty("TMDbHelper.ListItem." + field) for field in RATINGS.values()):
+            home.setProperty(RATINGS_SEEN, "1")
+        self.properties(RatingsSlot="1" if home.getProperty(RATINGS_SEEN) else "")
         self.paint()  # the first frame already carries everything known from the browse row
         if self.opener and not holds(OPENING, self.opener):
             self.closed = True  # a second OK on the same title: the other script's page is the one that opens
@@ -1473,12 +1631,18 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
         self.show()
         self.shown_at = monotonic()
         window = self.dialog_id = xbmcgui.getCurrentWindowDialogId()
+        cap = Timer(HOLD_CAP, self.cap_timer, (self.view,))   # R10.54 (cancelled when the loop ends; a no-op after the page left)
+        if not self.view.settled:
+            cap.start()
 
         def up():
             # R10: while a play request is loading, another dialog may sit on top (POV's resume question, a busy
             # spinner): the page is still this loop's until it is closed.
+            # R10.55.3 FIX A: also while WITHDRAWN is this page's: the withdrawn PlayMedia's busy dialog is on top for an
+            # instant (until its onload closes it), after end_play() has already cleared play_request.
             return xbmcgui.getCurrentWindowDialogId() == window or (
-                self.play_request is not None and xbmc.getCondVisibility(f"Window.IsVisible({window})"))
+                (self.play_request is not None or self.withdrawn_at is not None)
+                and xbmc.getCondVisibility(f"Window.IsVisible({window})"))
 
         try:
             while not self.closed and not monitor.abortRequested() and up():
@@ -1514,19 +1678,25 @@ class SeriesDialog(xbmcgui.WindowXMLDialog):
                     self.update_season()
                     self.watch_tmdb_cover()
                     self.update_ratings()
+                    self.check_hold()   # R10.54
                     self.load_needed()
                     self.launch_play()
                     self.watch_play()
                     self.watch_cover()
+                    self.expire_withdrawn()   # R10.55.3
                 self.renew_claims()
                 waiting = (self.pending is not None or self.pending_focus is not None or not self.ready
                            or self.play_wanted is not None or self.play_request is not None)
                 if monitor.waitForAbort(0.04 if waiting else 0.09):
                     break
         finally:
+            self.closed_at = monotonic()   # R10.52 (review: first, so an exception below cannot drop the CLOSED_KEEP hold)
+            self.clear_withdrawn()   # R10.55.3 FIX A (before up() below: the close decision is R10.52's, unchanged)
+            cap.cancel()   # R10.54
             xbmcgui.Window(10000).clearProperty(SOURCES_OPEN)   # R10.49 (also the XML onunload)
             if up():
                 self.close()
+                self.closed_at = monotonic()
 
 
 class SeriesPlayer(xbmc.Player):
@@ -1538,6 +1708,49 @@ class SeriesPlayer(xbmc.Player):
         self.started = False
         self.finished = False
         self.unrelated = False
+        self.late_back = None      # R10.57: monotonic() of a Back after POV had the stream (see LATE_RETRY)
+        self.late_stops = []       # R10.57: monotonic() of each Stop sent for it
+
+    def withdraw_late(self):
+        """R10.57: Back after POV handed the file to Kodi (Phase "play"): stamp it like Stop, then stop the player once it is up."""
+        if self.late_back is not None or self.finished:
+            return
+        self.late_back = monotonic()
+        home = xbmcgui.Window(10000)
+        home.setProperty("Netflix.Exit.NoNext", "%s|%s" % (time(), self.play_token))
+        home.setProperty("Netflix.Exit.Fast", str(time()))
+        xbmc.log("Netflix Series: Back after the stream was handed to Kodi: stopping the episode as soon as it starts", xbmc.LOGINFO)
+        self.stop_late()
+
+    def end_late(self):
+        """R10.57: the request is over (play_and_wait() returned, or end_play()): forget the late Back for good."""
+        self.late_back = None
+
+    def late_settling(self):
+        """R10.57: a late Back's Stop went out less than LATE_SETTLE s ago (see LATE_SETTLE)."""
+        return bool(self.late_stops) and monotonic() - self.late_stops[-1] < LATE_SETTLE
+
+    def stop_late(self):
+        """R10.57: Stop for a late Back, the first moment Kodi has the file (again once after LATE_RETRY if it is still up)."""
+        if self.late_back is None or self.unrelated:
+            return
+        now = monotonic()
+        if not self.late_stops and now - self.late_back > LATE_KEEP:
+            self.late_back = None   # nothing ever played for it
+            return
+        if len(self.late_stops) >= 2 or (self.late_stops and now - self.late_stops[-1] < LATE_RETRY):
+            return
+        if not pov_playing(self.play_token):
+            return   # this request is over in POV: whatever plays now was started by something else
+        if not (self.isPlaying() or xbmc.getCondVisibility("Player.HasMedia")):
+            return
+        # Only this request's episode (its tag may not be readable yet while Kodi opens the file: None); a retry only
+        # while that episode is still the one playing.
+        if self.video_identity() not in ((self.episode,) if self.late_stops else (None, self.episode)):
+            return
+        self.late_stops.append(now)
+        xbmc.log("Netflix Series: late Back: Stop %.2f s after the Back" % (now - self.late_back), xbmc.LOGINFO)
+        xbmc.executebuiltin("PlayerControl(Stop)")
 
     def return_target(self, field, raw=None):
         if raw is None:
@@ -1571,6 +1784,9 @@ class SeriesPlayer(xbmc.Player):
         except RuntimeError:
             return None
 
+    def onPlayBackStarted(self):
+        self.stop_late()   # R10.57: the file is open; a late Back stops it now
+
     def onAVStarted(self):
         actual = self.video_identity()
         target = self.return_target("video")
@@ -1579,6 +1795,7 @@ class SeriesPlayer(xbmc.Player):
         self.unrelated = actual != self.episode
         self.started = not self.unrelated
         self.finished = False
+        self.stop_late()   # R10.57
 
     def onPlayBackStopped(self):
         self.finished = not self.isPlayingVideo() or self.video_identity() != self.episode
@@ -1642,6 +1859,9 @@ def play_and_wait(player, request, monitor, origin, current_origin, cover=None):
         if cover and (renewed is None or now - renewed >= COVER_RENEW):
             renewed = now
             renew_cover(cover)
+        player.stop_late()   # R10.57: a late Back on the page, once Kodi has gone to the video
+        if player.late_stops and not player.isPlaying() and not xbmc.getCondVisibility("Player.HasMedia"):
+            player.finished = True   # R10.57: that Stop ended it (a file stopped while opening may report no stop)
         if player.started:
             stop_loading(request)
             if not player.isPlayingVideo() and not pov_playing(request):
@@ -1691,7 +1911,8 @@ def open_series(source):
     if native:
         source = info("System.CurrentControlID")
         if xbmcgui.getCurrentWindowId() != VIDEOS or source not in NATIVE_LISTS:
-            xbmc.executebuiltin("Action(Select)")
+            # R10.55.4 (sweep 2 #1): focus moved (Back / arrow) before this ran: a Select would press the new focus. Dropped.
+            xbmc.log("Netflix Series: OK ignored, focus moved to %s before the page opened" % source, xbmc.LOGINFO)
             return
     monitor = xbmc.Monitor()
     opener = f"{id(monitor)}.{monotonic()}"
@@ -1699,10 +1920,12 @@ def open_series(source):
         return  # a second OK: another script is already opening, or showing, a show page
     staked = monotonic()
     cover = None   # R10: the transition cover, from Play until the page is back after the episode
+    dialog, kept = None, []   # R10.52: the page, and earlier pages closed less than CLOSED_KEEP ago (see CLOSED_KEEP)
     try:
         fields = episode_target[0] if episode_target else capture(source)
         if not fields:
-            if native:
+            # R10.55.4 (sweep 2 #1): only while focus is still on the list this OK was for
+            if native and info("System.CurrentControlID") == source:
                 xbmc.executebuiltin("Action(Select)")
             return
 
@@ -1728,6 +1951,7 @@ def open_series(source):
             if first.seasons:   # remembered seasons (this Kodi session): pick the card's season now, the re-check keeps it (restore_season)
                 first.season_index = next((index for index, row in enumerate(first.seasons) if row["number"] == episode_target[1][0]), first.season_index)
         while not monitor.abortRequested():
+            kept = [page for page in kept + [dialog] if page is not None and page.lately_closed]   # R10.52
             dialog = SeriesDialog("Netflix_Series.xml", "special://skin", "Default", "1080i")
             dialog.stack = stack
             dialog.cover = cover  # handed over: it comes down once this page is up (watch_cover)
@@ -1746,7 +1970,9 @@ def open_series(source):
                     # The page went away before PlayMedia (its loop launches only when no other POV call is out).
                     stop_loading(dialog.play_token)
                     break
-                if not play_and_wait(dialog.player, dialog.play_token, monitor, origin, current_origin, cover):
+                waited = play_and_wait(dialog.player, dialog.play_token, monitor, origin, current_origin, cover)
+                dialog.player.end_late()   # R10.57: this request is done; its player may live on in `kept`
+                if not waited:
                     break
                 view = stack[-1]
                 view.invalidate_playback()
@@ -1763,6 +1989,18 @@ def open_series(source):
         if opener:
             release(OPENING, opener)
         release_cover(cover)
+        # R10.52: let go of the closed pages only when TMDb Helper can no longer be reading them (see CLOSED_KEEP).
+        # A page still up under another dialog is closed first, as Kodi did when the script let go of it (R10.51).
+        # R10.52 review: always (closing a closed dialog does nothing; dialog_id can be another dialog's id).
+        # time.sleep, not monitor.waitForAbort: that would run the closed page's queued callbacks (onInit, onAction).
+        if dialog is not None and dialog.closed_at is not None:
+            dialog.close()
+            dialog.closed_at = monotonic()
+        # R10.55.4: also ends when Kodi quits (Netflix.Quitting, set by POV's service on System.OnQuit): a RunScript skin
+        # script never sees abortRequested, so Kodi waited 5 s for this hold and then killed it.
+        while (not monitor.abortRequested() and xbmc.getInfoLabel("Window(Home).Property(Netflix.Quitting)") != "true"
+               and any(page.lately_closed for page in kept + [dialog] if page is not None)):
+            sleep(0.25)
 
 
 if __name__ == "__main__" and len(sys.argv) == 2:

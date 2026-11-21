@@ -34,10 +34,15 @@ PROMPT = 11178
 NO_DIALOG = 9999
 RETURN = "Netflix.Exit.Return"
 NO_NEXT = "Netflix.Exit.NoNext"
-RUNNING_SECONDS = 10
+RUNNING_SECONDS = 25   # R10.55.2: longer than the longest run (4 s + WINDOW_WAIT + 3 s settle + page + release; was 10)
 RUNNING = "Netflix.Exit.Running"
 LOG = "Netflix Exit: "
 RESUME_FROM, WATCHED_FROM = 5, 80   # POV player.py: set_resume, set_watched (percent)
+# R10.55.2 (Stop -> row on big remuxes): the player stops at once, but Kodi leaves fullscreen only when VideoPlayer's
+# callback queue reaches OnPlayBackStopped, and that waits behind the stop's own MyVideos write (CSaveFileState; SQLite
+# retries while the database is locked). When the movie's cover is up and the player has stopped, the window gets this
+# many seconds more to leave fullscreen before the page is given up.
+WINDOW_WAIT = 10
 
 
 def log(message):
@@ -79,6 +84,10 @@ def main(mode):
             # A repeated Stop still stops media right away; only the original
             # script can reopen its captured title or release its cover.
             home.setProperty(NO_NEXT, str(time.time()))
+            if mode == "exit":
+                # R10.55.2 (review): this press's Exit.Go (set by Custom_1178) belongs to no run that clears it; a stale
+                # one hides the seek bar on the next playback.
+                home.clearProperty("Netflix.Exit.Go")
             xbmc.executebuiltin("PlayerControl(Stop)")
             return
     except ValueError:
@@ -99,7 +108,7 @@ def main(mode):
         if playing and not trailer and target.get("kind") == "movie" and (not tmdb or tmdb == target.get("ID")):
             # Up before the stop: Videos is drawn under it from its first frame. Trailers keep their own (the
             # trailer script holds one through the trailer); episodes too (netflix_series.play_and_wait).
-            cover = hold_cover(target.get("Backdrop", ""), seconds=20)   # stop 4 s + settle 3 s + page + release
+            cover = hold_cover(target.get("Backdrop", ""), seconds=30)   # stop 4 s + WINDOW_WAIT + settle 3 s + page + release
         # Stamp the original exit intent for POV, then stop without waiting for its worker or Flight.
         play = target.get("play") if target.get("kind") == "episode" and (not tmdb or target.get("ID") == tmdb) else None
         home.setProperty(NO_NEXT, str(time.time()) + ("|" + play if isinstance(play, str) and play else ""))
@@ -109,6 +118,18 @@ def main(mode):
             return  # an async successor may still be opening; retain the NoNext intent
         stopped = wait(monitor, lambda: not player.isPlaying()
                        and xbmcgui.getCurrentWindowId() != FULLSCREEN_VIDEO, 4)
+        if not stopped and cover and not player.isPlaying():
+            # R10.55.2: stopped, still on the fullscreen window (see WINDOW_WAIT). The prompt is not left over the black
+            # screen meanwhile (it closes here at the same moment as before).
+            if xbmcgui.getCurrentWindowDialogId() == PROMPT:
+                xbmc.executebuiltin("Dialog.Close(1178,true)")
+            began = time.monotonic()
+            stopped = wait(monitor, lambda: not player.isPlaying()
+                           and xbmcgui.getCurrentWindowId() != FULLSCREEN_VIDEO, WINDOW_WAIT)
+            # Its own line, worded so that neither the line below (ev_flows.py exit_line) nor a stop mark
+            # (ev_kodi.py STOP_MARK) matches it.
+            log("fullscreen still up 4 s after the %s; waited %.1f s more for the window (%s)" % (
+                mode, time.monotonic() - began, "left" if stopped else "gave up"))
         if xbmcgui.getCurrentWindowDialogId() == PROMPT:
             xbmc.executebuiltin("Dialog.Close(1178,true)")
         log("%s: stopped=%s at %.0f/%.0f s, window %d, trailer=%s, stash=%s" % (

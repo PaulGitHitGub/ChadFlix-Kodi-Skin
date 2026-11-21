@@ -70,7 +70,7 @@
         <control type="group">
             <left>70</left><top>192</top><width>360</width><height>412</height>
             <visible>String.IsEqual(Window(Home).Property(Netflix.Showing.Kind),movies)</visible>
-            <include>Animation_Left_Delay</include>
+            <include>Animation_Left</include>
             <control type="group">
                 <width>360</width><height>412</height>
                 <include>Netflix_Menu_Solid_Background</include>
@@ -201,7 +201,7 @@
         <control type="group">
             <left>70</left><top>192</top><width>360</width><height>412</height>
             <visible>String.IsEqual(Window(Home).Property(Netflix.Showing.Kind),shows)</visible>
-            <include>Animation_Left_Delay</include>
+            <include>Animation_Left</include>
             <control type="group">
                 <width>360</width><height>412</height>
                 <include>Netflix_Menu_Solid_Background</include>
@@ -332,7 +332,7 @@
         <control type="group">
             <left>70</left><top>192</top><width>360</width><height>732</height>
             <visible>String.IsEqual(Window(Home).Property(Netflix.Showing.Kind),anime-movies)</visible>
-            <include>Animation_Left_Delay</include>
+            <include>Animation_Left</include>
             <control type="group">
                 <width>360</width><height>732</height>
                 <include>Netflix_Menu_Solid_Background</include>
@@ -578,7 +578,7 @@
         <control type="group">
             <left>70</left><top>192</top><width>360</width><height>732</height>
             <visible>String.IsEqual(Window(Home).Property(Netflix.Showing.Kind),anime-shows)</visible>
-            <include>Animation_Left_Delay</include>
+            <include>Animation_Left</include>
             <control type="group">
                 <width>360</width><height>732</height>
                 <include>Netflix_Menu_Solid_Background</include>

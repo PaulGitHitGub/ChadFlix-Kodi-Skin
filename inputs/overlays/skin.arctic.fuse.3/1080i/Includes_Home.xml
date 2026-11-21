@@ -838,6 +838,20 @@
         String.IsEmpty(Window(Home).Property(Netflix.BackTwice.Cool))
     </expression>
 
+    <!-- R10.57 (sweep 2 #8): Back on the Search page's top bar (a tab, the genre button or Options) leaves Search for the page it
+         was opened from (Kodi's previous window: Videos). Videos reloads its folder and Kodi then focuses the Trending row (591)
+         on its first title, with Continue Watching scrolled off. These lines note the tab that page shows (Netflix.SearchBack);
+         591's onfocus (Includes_Search.xml) sends that refocus through Continue Watching (page at its top) to the tab, once.
+         Not Netflix.TabArrival: dialog 1168 consumes that as soon as Videos is back, before the reload's refocus (emulator,
+         21 Nov: still landed on 591). The note expires after 3 s if 591 never takes focus. Back itself is unchanged: no numeric
+         target here, so Kodi's previous-window Back still runs after these actions. -->
+    <include name="Netflix_Search_Back_Return">
+        <onback condition="Window.IsActive(1105) + String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">SetProperty(Netflix.SearchBack,3732,Home)</onback>
+        <onback condition="Window.IsActive(1105) + !String.IsEqual(Window(Home).Property(Netflix.Tab),shows)">SetProperty(Netflix.SearchBack,3733,Home)</onback>
+        <onback condition="Window.IsActive(1105)">CancelAlarm(netflix_search_back,true)</onback>
+        <onback condition="Window.IsActive(1105)">AlarmClock(netflix_search_back,ClearProperty(Netflix.SearchBack,Home),00:03,silent)</onback>
+    </include>
+
     <!-- Movies / Shows header Back (tabs, Options, genre button). The control's own numeric relay (3762/3763/3764) still
          runs after these, so focus stays where it was and Kodi's window default never runs. -->
     <include name="Netflix_Back_Twice_Back">
@@ -1153,6 +1167,7 @@
                          intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
                          window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
                          hence the relay. -->
+                    <include>Netflix_Search_Back_Return</include>
                     <include>Netflix_Back_Twice_Back</include>
                     <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
                     <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3763</onback>
@@ -1283,11 +1298,14 @@
                 <onleft>SetProperty(Netflix.TabDwellTarget,3730,Home)</onleft>
                 <onleft>SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onleft>
                 <onleft>Skin.TimerStart(netflix_tab_dwell)</onleft>
+                <!-- R10.56: Movies already showing (the Movies tab's own "opened" test): focus only, no dwell, so no tab-switch cards flash over the page.
+                     Conditions are read before the actions run; none of these actions changes them. -->
                 <onright>ClearProperty(Netflix.TabArrival,Home)</onright>
                 <onright>SetFocus(3733)</onright>
-                <onright>SetProperty(Netflix.TabDwellTarget,3733,Home)</onright>
-                <onright>SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onright>
-                <onright>Skin.TimerStart(netflix_tab_dwell)</onright>
+                <onright condition="Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]">ClearProperty(Netflix.TabDwellTarget,Home)</onright>
+                <onright condition="![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]">SetProperty(Netflix.TabDwellTarget,3733,Home)</onright>
+                <onright condition="![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]">SetProperty(Netflix.TabDwellWindow,$INFO[System.CurrentWindow],Home)</onright>
+                <onright condition="![Window.IsActive(1163) | $EXP[Netflix_Movies_Catalog]]">Skin.TimerStart(netflix_tab_dwell)</onright>
                 <!-- Parked state (grid Back reopened the drawer, focus still here): Back also closes the drawer. -->
                 <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true)">ClearProperty(Netflix.GenreMenu.Open,Home)</onback>
                 <onback condition="String.IsEqual(Window(Home).Property(Netflix.GenreMenu.Open),true)">ClearProperty(Netflix.GenreMenu.Window,Home)</onback>
@@ -1300,6 +1318,7 @@
                      intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
                      window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
                      hence the relay. -->
+                <include>Netflix_Search_Back_Return</include>
                 <include>Netflix_Back_Twice_Back</include>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3764</onback>
@@ -2381,6 +2400,7 @@
                      intercepted by a script, so this line runs; it ends on a numeric target because without one Kodi runs the
                      window default (parent folder, or Videos -> Home). Kodi refuses a target equal to the focused control,
                      hence the relay. -->
+                <include>Netflix_Search_Back_Return</include>
                 <include>Netflix_Back_Twice_Back</include>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">ClearProperty(Netflix.TabDwellTarget,Home)</onback>
                 <onback condition="$EXP[Netflix_Tab_Catalog_Root]">3762</onback>
@@ -2956,7 +2976,7 @@
                 <font>font_mini</font><aligny>center</aligny><textcolor>FFBBBBBB</textcolor><label>$VAR[Netflix_Watchlists_Count]</label>
             </control>
         </control>
-        <!-- loading: the five cards of the row, flat (Netflix_Loading_Card, no sweep); the first one carries the focus stand-in 8533 -->
+        <!-- loading: the five cards of the row (Netflix_Loading_Card; R10.56: with the sweep); the first one carries the focus stand-in 8533 -->
         <control type="group">
             <visible>Integer.IsEqual(Container(533).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Watchlists.Error))</visible>
             <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
@@ -2964,6 +2984,7 @@
             <include content="Netflix_Loading_Card"><param name="left">782</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
             <include content="Netflix_Loading_Card"><param name="left">1138</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
             <include content="Netflix_Loading_Card"><param name="left">1494</param><param name="top">160</param><param name="width">340</param><param name="height">232</param><param name="mask">special://skin/extras/mylists/card-mask-340x232.png</param></include>
+            <include content="Netflix_Loading_Sweep"><param name="left">0</param><param name="top">160</param><param name="width">1920</param><param name="height">232</param><param name="mask">mask-ml-card-row.png</param><param name="gif">sweep-dark-row.gif</param><param name="condition">Window.IsVisible(1165) + !$EXP[Netflix_MyLists_View_Any] + Integer.IsEqual(Container(533).NumItems,0) + String.IsEmpty(Window(Home).Property(Netflix.Watchlists.Error))</param></include>
             <control type="image">
                 <left>70</left><top>160</top><width>340</width><height>232</height>
                 <texture colordiffuse="FFFFFFFF" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
@@ -2971,7 +2992,7 @@
             </control>
             <control type="image">
                 <left>74</left><top>164</top><width>332</width><height>224</height>
-                <texture colordiffuse="FF222222" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
+                <texture colordiffuse="FF141414" diffuse="special://skin/extras/mylists/card-mask-340x232.png">common/white.png</texture>
                 <visible>Control.HasFocus(8533)</visible>
             </control>
         </control>
@@ -3481,6 +3502,7 @@
             <include content="Netflix_Loading_Card"><param name="left">1478</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
             <include content="Netflix_Loading_Card"><param name="left">1654</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
             <include content="Netflix_Loading_Card"><param name="left">1830</param><param name="top">464</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Sweep"><param name="left">0</param><param name="top">464</param><param name="width">1920</param><param name="height">240</param><param name="mask">mask-ml-poster-row.png</param><param name="gif">sweep-dark-row.gif</param><param name="condition">Window.IsVisible(1165) + !$EXP[Netflix_MyLists_View_Any] + !Integer.IsGreater(Container(531).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.531)) | Container(531).IsUpdating]</param></include>
         </control>
         <include content="Netflix_My_Lists_Poster_Row">
             <param name="id">531</param>
@@ -3554,6 +3576,7 @@
             <include content="Netflix_Loading_Card"><param name="left">1478</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
             <include content="Netflix_Loading_Card"><param name="left">1654</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
             <include content="Netflix_Loading_Card"><param name="left">1830</param><param name="top">776</param><param name="width">160</param><param name="height">240</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">true</param></include>
+            <include content="Netflix_Loading_Sweep"><param name="left">0</param><param name="top">776</param><param name="width">1920</param><param name="height">240</param><param name="mask">mask-ml-poster-row.png</param><param name="gif">sweep-dark-row.gif</param><param name="condition">Window.IsVisible(1165) + !$EXP[Netflix_MyLists_View_Any] + !Integer.IsGreater(Container(532).NumItems,0) + [String.IsEmpty(Window(Home).Property(Netflix.Browse.Completed.532)) | Container(532).IsUpdating]</param></include>
         </control>
         <include content="Netflix_My_Lists_Poster_Row">
             <param name="id">532</param>
@@ -3908,7 +3931,7 @@
                 </control>
                 <control type="image">
                     <left>74</left><top>200</top><width>212</width><height>322</height>
-                    <texture colordiffuse="FF222222" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                    <texture colordiffuse="FF141414" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
                     <visible>Control.HasFocus(8534)</visible>
                 </control>
             </control>
@@ -4431,7 +4454,7 @@
             </control>
             <control type="image">
                 <left>74</left><top>116</top><width>419</width><height>308</height>
-                <texture colordiffuse="FF222222" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
+                <texture colordiffuse="FF141414" diffuse="special://skin/extras/mylists/tile-mask-427x316.png">common/white.png</texture>
                 <visible>Control.HasFocus(8535)</visible>
             </control>
         </control>
@@ -4520,7 +4543,7 @@
                 </control>
                 <control type="image">
                     <left>4</left><top>4</top><width>152</width><height>232</height>
-                    <texture colordiffuse="FF222222" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
+                    <texture colordiffuse="FF141414" diffuse="diffuse/poster_w480_h720.png">common/white.png</texture>
                 </control>
             </control>
             <control type="group">

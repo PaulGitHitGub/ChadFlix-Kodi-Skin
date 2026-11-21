@@ -372,6 +372,7 @@ GRID_RESTED_SECONDS = 2.0
 GRID_STRAY_SECONDS = .3       # focus on a control a grid page hides, this long, before the observer moves it
 NOFOCUS_SECONDS = .3          # no focused control on the Movies/Shows page, this long, before it is restored
 GRID_RETURN_SECONDS = 5.0     # how long after leaving a grid page the "where to land" note stays valid
+GRID_PLACE_SECONDS = 1.0      # R10.57: longest wait for list 593 to reach its first title before the page is shown anyway
 GRID_MAX_RETRIES = 2          # reloads after an empty answer, and failed steps, per visit of the page
 # Header tabs, the genre menu button and its drawer: focus there belongs to the viewer, never move it.
 GRID_HEADER = frozenset((3730, 3732, 3733, 3734, 3735, 3736, 3761, 3765) + tuple(range(3750, 3761)) + tuple(range(3771, 3776)))   # R10.10: 3765 = the A24 entry of the drawer; R10.15a: 3771-3775 = the views column
@@ -485,7 +486,11 @@ MOVING_GAP = .2            # a change this soon after the previous one = the vie
 MOVING_FULL_SECONDS = 1.0  # while moving, a full tick still runs this often (refresh, grid steps, row starts)
 MOVING_BUSY_FULL_SECONDS = .3   # ... and this often while a row / grid step / list refresh is loading: a job (>= 0.4 s on the
                                 # Shield) is still seen updating, so it settles on its answer, not on the 1.5 s fallback
-BOOT_CATALOGS = ('movies', 'shows', 'movies')
+# R10.55.5 (owner, 20 Nov: "Yes, build it"): the startup screen waits for the Movies catalog only. It used to visit
+# ('movies', 'shows', 'movies'): the Shows visit (10 rows, one at a time) held the screen ~6.5 s on the Shield. The Shows
+# rows now load through the same serial queue the first time the Shows tab is shown (its normal loading placeholders, then
+# the rows, focused row first). Kodi never fetches a hidden list, so nothing of Shows loads while Movies is in front.
+BOOT_CATALOGS = ('movies',)
 BOOT_PATHS = {
     'movies': 'plugin://plugin.video.pov/?mode=build_movie_list&action=trakt_movies_trending&name=32458',
     'shows': 'plugin://plugin.video.pov/?mode=build_tvshow_list&action=trakt_tv_trending&name=32458',
@@ -838,7 +843,7 @@ def publish_profiles(api, now=None):
 
 
 class CatalogBootGate:
-    """Visit both native catalogs behind the startup screen using the serial row loader."""
+    """Visit the BOOT_CATALOGS behind the startup screen using the serial row loader (R10.55.5: Movies only)."""
     def __init__(self, api):
         self.api = api
         self.started = None
@@ -1898,7 +1903,7 @@ class Coordinator:
     @property
     def grid_busy(self):
         grid = self.grid
-        return bool(grid) and (grid['phase'] in ('wait', 'loading') or bool(grid['step']))
+        return bool(grid) and (grid['phase'] in ('wait', 'loading', 'placing') or bool(grid['step']))
 
     def grid_origin(self, path):
         """Where a "More Titles" page was opened from: (tab, row, index of the tile), read while the row
@@ -1989,6 +1994,9 @@ class Coordinator:
             api.log('grid: window rebuilt, starting the page again')
             api.clear(GRID_READY)
             self.grid_off()
+            return True
+        if grid['phase'] == 'placing':
+            self.grid_placed(grid, now)   # R10.57: no route change here, so also while Kodi refreshes a kept list
             return True
         if updating:
             return True   # never change the route of a list that is loading
@@ -2257,9 +2265,7 @@ class Coordinator:
 
     def grid_ready(self, grid, how):
         api = self.api
-        grid['phase'] = 'ready'
         api.clear(GRID_FAILED)
-        api.put(GRID_READY, grid['path'])
         count = api.count(GRID)
         current = api.number('Container(%d).CurrentItem' % GRID)
         # A page that was only covered (details page, Search, playback) returns to where it was. A page that is
@@ -2271,12 +2277,58 @@ class Coordinator:
         if count > 0 and not api.prop('Netflix.GenreMenu.Open') and (focus in (3736, GRID_HOLD) or focus not in GRID_HEADER):
             # 3736: the genre menu parks focus on its button until the page arrives. 8593: the rest button
             # under the grey cards. Anything else outside the header is a control this page hides.
+            if current - 1 != grid['index'] and self.grid_place(grid, focus):
+                # R10.57 (sweep 2 #5, the More Titles flash): the list still held another position (an earlier visit
+                # scrolled it down; Kodi keeps a list's selected title across loads). Shown now, its 250 ms fade-in
+                # ran while Kodi scrolled it back to the first title: other posters, then a jump. The page stays
+                # behind its grey cards until the list has arrived there (grid_placed).
+                grid.update(phase='placing', placing_since=time.monotonic(), placing_how=how)
+                api.log('grid: moving the list from title %d to %d before showing it' % (current, grid['index'] + 1))
+                return
             if not self.grid_focus(grid, GRID, grid['index']):
                 # Not on screen yet / page still settling: try again on the next ticks while focus stays where it
                 # was (Mac 2026-11-11 10:40: a genre-menu page whose list was kept stayed on 3736 for good).
                 grid['focus_retry'] = (focus, 10)
                 api.log('grid: focus to the grid deferred (focus %d)' % focus)
-        api.log('grid: ready (%s), %d titles' % (how, count))
+        self.grid_show(grid, how)
+
+    def grid_place(self, grid, focus):
+        """R10.57: put the still transparent list 593 on grid['index'] without leaving focus on it: one SetFocus there (Kodi moves
+        a list's selection only with focus) and straight back, as the search timer does with its hidden grid. Focus rests on
+        the genre button or the rest button meanwhile (a hidden control: the rest button). False when the page cannot take it."""
+        api = self.api
+        hold = focus if focus in (3736, GRID_HOLD) else GRID_HOLD
+        if (api.page() != grid['path'] or api.visible('Container.IsUpdating')
+                or not api.visible('Control.IsVisible(%d)' % GRID) or not api.visible('Control.IsVisible(%d)' % hold)):
+            return False
+        xbmc.executebuiltin('SetFocus(%d,%d,absolute)' % (GRID, grid['index']))
+        xbmc.executebuiltin('SetFocus(%d)' % hold)
+        grid['placing_hold'] = hold
+        grid['stray'] = None
+        return True
+
+    def grid_show(self, grid, how):
+        api = self.api
+        grid['phase'] = 'ready'
+        api.put(GRID_READY, grid['path'])
+        api.log('grid: ready (%s), %d titles' % (how, api.count(GRID)))
+
+    def grid_placed(self, grid, now):
+        """R10.57: the page goes on screen once list 593 rests on the title grid_place moved it to (or after GRID_PLACE_SECONDS);
+        focus then goes onto the list, unless the viewer has moved it from where it was held."""
+        api = self.api
+        there = (api.number('Container(%d).CurrentItem' % GRID) == grid['index'] + 1
+                 and not api.visible('Container(%d).Scrolling' % GRID))
+        waited = now - grid['placing_since']
+        if not (there or waited >= GRID_PLACE_SECONDS):
+            return
+        if not there:
+            api.log('grid: list not on title %d after %.1f s, shown anyway' % (grid['index'] + 1, waited))
+        self.grid_show(grid, grid['placing_how'])
+        focus = api.number('System.CurrentControlID')
+        if focus == grid['placing_hold'] and not api.prop('Netflix.GenreMenu.Open'):
+            if not self.grid_focus(grid, GRID, grid['index']):
+                grid['focus_retry'] = (focus, 10)
 
     def focus_net(self, mode, window, now):
         """Movies/Shows page: land where the viewer came from after a grid page, and never leave focus nowhere."""

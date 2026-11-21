@@ -648,9 +648,9 @@ def saved_properties(item, store=None):
 
 
 def sync_movie(store=None):
+    # R10.54: no clearing first: the page opened with this movie's last known state (netflix_movie_details.show_movie, or
+    # the plain icons when there is none), and this read corrects it in place, so a saved movie's icon never swaps.
     home = xbmcgui.Window(10000)
-    for key in ('Favorite', 'Bookmarked'):
-        home.setProperty(PREFIX + key, '')
     try:
         item = current_movie()
     except ListsError:
@@ -735,6 +735,16 @@ def update_movie_state(item, store=None):
         return
     for key, value in properties.items():
         home.setProperty(PREFIX + key, value)
+    remember_movie_state(home, item['id'])
+
+
+def remember_movie_state(home, movie_id):
+    """R10.54: a Favorite / Watchlist change on the movie page is what its next page shows first (netflix_movie_details.remember_saved)."""
+    try:
+        from netflix_movie_details import remember_saved
+        remember_saved(home, movie_id)
+    except Exception as error:   # memory only: the change itself is done
+        xbmc.log('Netflix Lists: movie state not remembered: %s' % type(error).__name__, xbmc.LOGWARNING)
 
 
 def favorite_movie(store=None):
@@ -895,6 +905,12 @@ PICKER_ROW_HEIGHT = 62
 PICKER_MAX_ROWS = 4
 WATCHLIST_BUTTON = 18
 CREATE_WATCHLIST_LABEL = 'Create New Watchlist…'
+# R10.55.2 (same race as R10.52's CLOSED_KEEP in netflix_series.py): Kodi deletes the picker's window as soon as this
+# script lets go of it. TMDb Helper's service threads read properties of the topmost dialog through an xbmcgui.Window(<id>)
+# wrapper that holds a raw pointer; a wrapper made before the delete and read after it locks a freed window ("pthread_mutex_lock
+# called on a destroyed mutex", Kodi aborts). So the closed picker is kept (closed, inert) until it has been gone PICKER_KEEP
+# seconds. The wait runs after the click lock is released, so the Watchlist button works again at once.
+PICKER_KEEP = 30.0
 WATCHLIST_UPDATE_ERROR = 'Could Not Update Watchlist. Try Again.'
 
 
@@ -905,6 +921,7 @@ def update_movie_bookmark(item, collections):
     holding = [collection for collection in collections if holds(collection, item)]
     for key, value in bookmark_properties(item, collections, holding).items():
         home.setProperty(PREFIX + key, value)
+    remember_movie_state(home, item['id'])   # R10.54
 
 
 class WatchlistPicker(xbmcgui.WindowXMLDialog):
@@ -973,6 +990,7 @@ class WatchlistPicker(xbmcgui.WindowXMLDialog):
 def bookmark_movie(store=None, *, force_picker=False):
     if xbmcgui.getCurrentWindowDialogId() != DETAILS or not xbmc.getCondVisibility('Control.HasFocus(18)'):
         return
+    picker = None   # R10.55.2: kept PICKER_KEEP seconds after it closed (see PICKER_KEEP)
     with one_at_a_time() as free:
         if not free:
             return
@@ -996,10 +1014,20 @@ def bookmark_movie(store=None, *, force_picker=False):
         try:
             picker.doModal()
         finally:
-            del picker
+            picker.closed_at = time.monotonic()   # R10.55.2: was "del picker" (see PICKER_KEEP)
             if (xbmcgui.getCurrentWindowDialogId() == DETAILS
                     and xbmcgui.Window(10000).getProperty(PREFIX + 'ID') == item['id']):
                 xbmc.executebuiltin('SetFocus(%d)' % WATCHLIST_BUTTON, True)
+    # R10.55.2: outside the click lock. Only waits: nothing on screen changes, and Kodi's quit ends it within 0.25 s.
+    # time.sleep, not monitor.waitForAbort: that would run the closed picker's queued callbacks (onClick could toggle a
+    # watchlist or open the keyboard), as R10.52 avoids in netflix_series.py.
+    if picker is not None:
+        monitor = xbmc.Monitor()
+        # R10.55.4: also ends when Kodi quits (Netflix.Quitting, set by POV's service on System.OnQuit): a RunScript skin
+        # script never sees abortRequested, so Kodi waited 5 s for this hold and then killed it.
+        while (not monitor.abortRequested() and time.monotonic() - picker.closed_at < PICKER_KEEP
+               and xbmc.getInfoLabel('Window(Home).Property(Netflix.Quitting)') != 'true'):
+            time.sleep(0.25)
 
 
 def main(command, *arguments):

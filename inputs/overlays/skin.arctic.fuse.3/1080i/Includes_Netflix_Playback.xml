@@ -33,7 +33,7 @@
     <include name="Netflix_Play_Loader">
         <control type="group">
             <visible>$EXP[Netflix_Play_Loading]</visible>
-            <animation effect="fade" start="0" end="100" time="300" tween="sine">Visible</animation>
+            <animation effect="fade" start="0" end="100" time="150" tween="sine">Visible</animation>
             <control type="image">
                 <width>1920</width><height>1080</height>
                 <texture colordiffuse="57000000">common/white.png</texture>
@@ -59,8 +59,8 @@
                 <left>96</left><top>744</top>
                 <visible>!String.IsEmpty(Window(Home).Property(Netflix.Play.Res))</visible>
                 <animation type="Visible">
-                    <effect type="fade" start="0" end="100" time="400" tween="sine"/>
-                    <effect type="slide" start="0,18" end="0,0" time="400" tween="quadratic" easing="out"/>
+                    <effect type="fade" start="0" end="100" time="200" tween="sine"/>
+                    <effect type="slide" start="0,18" end="0,0" time="200" tween="quadratic" easing="out"/>
                 </animation>
                 <!-- Flows left to right: "4K" and "1080p" differ in width, the divider and lines follow the number. -->
                 <control type="grouplist">
@@ -117,6 +117,53 @@
                 <animation effect="fade" start="0" end="100" time="250">Visible</animation>
             </control>
         </control>
+    </include>
+
+    <!-- R10.53 instant reactions: the movie page's Play, Start Over, quality rows and All Sources raise the loader
+         themselves, in the frame of the key press, as the request "skin" (Netflix.Play.Loading), with the fields
+         start_loading() would write. extras/netflix_movie_details.py play_movie() adopts it once its interpreter is up
+         (0.3 to 0.6 s on the Shield) or takes it down. Kodi reads every condition of a click before the first action
+         runs, so each line carries the same guard (raw properties, not an $EXP): pressed while a request is leaving
+         (netflix_pov_leaving) or while a loader is up, nothing runs, the script included. The facts are cleared first:
+         a cancelled or failed request leaves its fields behind. Params: open = Phase "open" at once (the script's
+         loader_facts() test), resume = the request resumes (Verb "Resuming", "NN% watched"), command = the script's. -->
+    <include name="Netflix_Movie_Play_Request">
+        <param name="open">false</param>
+        <param name="resume">String.IsEqual(Window(Home).Property(Netflix.Movie.Action),Resume)</param>
+        <param name="command">play</param>
+        <definition>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.Verb,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.Res,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.SpecA,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.SpecB,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.Watched,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">SetProperty(Netflix.Play.Phase,find,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + $PARAM[open]">SetProperty(Netflix.Play.Phase,open,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + $PARAM[resume]">SetProperty(Netflix.Play.Verb,Resuming,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + $PARAM[resume] + !String.IsEmpty(Window(Home).Property(Netflix.Movie.Percent))">SetProperty(Netflix.Play.Watched,$INFO[Window(Home).Property(Netflix.Movie.Percent)]% watched,Home)</onclick>
+            <!-- R10.55.2 FIX 4: a new press is not withdrawn (Back sets Netflix.Play.Withdrawn; netflix_movie_details.py WITHDRAWN) -->
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.Withdrawn,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">SetProperty(Netflix.Play.Loading,skin,Home)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">AlarmClock(netflix_loader_focus,SetFocus(42),00:00,silent)</onclick>
+            <onclick condition="!System.HasAlarm(netflix_pov_leaving) + String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">RunScript(special://skin/extras/netflix_movie_details.py,$PARAM[command])</onclick>
+        </definition>
+    </include>
+
+    <!-- R10.53 (review #4): Back on a page button while its loader is up but focus has not reached the loader's catcher
+         (42) yet: the same as Back on 42 (withdraw the request, the cover with it when it is the request's, keep the
+         page), plus the pending catcher focus is cancelled so it can never land after the page changed. Every line
+         carries the same raw condition (Kodi reads them all before the first action runs); with no loader up none
+         applies and Back is the page's own. focus = the control that gets focus back. -->
+    <include name="Netflix_Movie_Loader_Back">
+        <definition>
+            <!-- R10.55.2 FIX 4: mark the withdrawal first (the script that takes the loader over checks it after start_loading) -->
+            <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + !String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">SetProperty(Netflix.Play.Withdrawn,true,Home)</onback>
+            <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + !String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">CancelAlarm(netflix_loader_focus,true)</onback>
+            <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + !String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play) + String.IsEqual(Window(Home).Property(Netflix.PlaybackCover),Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.PlaybackCover,Home)</onback>
+            <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + !String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">ClearProperty(Netflix.Play.Loading,Home)</onback>
+            <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + !String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">AlarmClock(netflix_loader_back,SetFocus($PARAM[focus]),00:00,silent)</onback>
+            <onback condition="!String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) + !String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">16</onback>
+        </definition>
     </include>
 
     <!-- The cover itself. Same backdrop geometry as both title pages (full width, aligned right, scaled), and the

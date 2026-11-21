@@ -122,9 +122,50 @@ def collection_rows(store, api, everything=False):
     return rows, len(lists)
 
 
+def movie_bookmarks():
+    """R10.57 (sweep 2 #7): POV's movie resume points, {tmdb id: (percent, seconds)}, read once per list from the same local
+    table the browse rows read (caches/watched_cache.py get_bookmarks: GET_BM over the watched_indicators database). Read here
+    directly: importing watched_cache would load the Trakt / MDBList clients (requests) for every list open. No network.
+    Read-only (a missing database file is not created) with a 1 s lock wait: a POV write in progress never holds a list
+    open longer; the list then opens without resume points. Without them a part-watched movie's page said "Play" and
+    started at 0."""
+    try:
+        import sqlite3
+        from contextlib import closing
+        from urllib.parse import quote
+        from modules.settings import watched_indicators
+        path = kodi_utils.translate_path(kodi_utils.get_database(watched_indicators()))
+        with closing(sqlite3.connect('file:%s?mode=ro' % quote(path), uri=True, timeout=1.0)) as dbcon:
+            rows = dbcon.execute('SELECT * FROM progress WHERE db_type = ? ORDER BY last_played DESC', ('movie',)).fetchall()
+        # get_bookmarks' key f"{media_id}_{season}_{episode}" with the movie lookup's season = episode = '' (detect_bookmark)
+        return {'%s' % i[1]: (i[4], i[5]) for i in rows if '%s_%s' % (i[2], i[3]) == '_'}
+    except Exception:
+        return {}
+
+
+def set_resume(tag, bookmarks, media_id):
+    """R10.57: the resume point the browse rows give this movie (watched_cache.get_resumetime + set_resumetime, which round
+    both values and use the tag's runtime), so ListItem.PercentPlayed and the page's "Resume" match them. A list snapshot may
+    carry no runtime: the bookmark's own seconds and percent then give the total (PercentPlayed needs one)."""
+    try:
+        percent, seconds = bookmarks[str(media_id)]
+        percent, seconds = round(float(percent)), round(float(seconds))
+    except (KeyError, TypeError, ValueError):
+        return
+    duration = tag.getDuration()
+    if duration > 0:
+        if seconds:
+            tag.setResumePoint(seconds, duration)
+        elif percent:
+            tag.setResumePoint(percent * duration / 100, duration)
+    elif seconds > 0 and 0 < percent < 100:
+        tag.setResumePoint(seconds, seconds * 100 / percent)
+
+
 def title_rows(collection, api):
     identifier = api.list_id(collection['id'])
     rows = []
+    bookmarks = movie_bookmarks() if any(isinstance(i, dict) and i.get('type') == 'movie' for i in collection['items']) else {}
     for stored in collection['items']:
         data = api.media_item(stored)  # Ignore any untrusted stored URL/action keys.
         kind, media_id = data['type'], data['id']
@@ -148,6 +189,8 @@ def title_rows(collection, api):
                     tag.setMpaa(part)
         if kind == 'tvshow':
             tag.setTvShowTitle(data['title'])
+        elif bookmarks:
+            set_resume(tag, bookmarks, media_id)
         item.setProperties({'tmdb_id': media_id, 'IsPlayable': 'true' if kind == 'movie' else 'false',
                             'Netflix.Watchlist.ID': identifier, 'Netflix.Watchlist.ItemID': media_id,
                             'Netflix.Watchlist.ItemType': kind, 'Netflix.Watchlist.Meta': data['meta']})

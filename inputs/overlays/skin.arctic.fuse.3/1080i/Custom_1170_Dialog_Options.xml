@@ -17,7 +17,7 @@
         <include>Part_Dim_Overlay</include>
         <control type="group">
             <left>1200</left><top>40</top><width>680</width><height>1000</height>
-            <include>Animation_Right_Delay</include>
+            <include>Animation_Right</include>
             <control type="image"><width>680</width><height>1000</height><texture border="24" colordiffuse="FA08090B">common/box.png</texture></control>
             <include>Netflix_Menu_Glass_Background</include>
             <control type="label"><left>52</left><top>36</top><width>500</width><height>64</height><aligny>center</aligny><font>font_head_bold</font><textcolor>FFF5F5F5</textcolor><label>Settings</label></control>
@@ -143,8 +143,10 @@
                         <onup>7001</onup>
                         <ondown>7001</ondown>
                         <onleft>PreviousMenu</onleft><onright>noop</onright><onback>PreviousMenu</onback>
-                        <onclick>Action(Back)</onclick>
-                        <onclick>ActivateWindow(settings)</onclick>
+                        <!-- R10.53 (owner, 2026-11-19): the sheet closes at once; Kodi's Settings (a slow build) opens on the next
+                             frame through a zero-second alarm, instead of behind a sheet still closing -->
+                        <onclick>Dialog.Close(1170,true)</onclick>
+                        <onclick>AlarmClock(netflix_open_settings,ActivateWindow(settings),00:00,silent)</onclick>
                     </control>
                 </control>
             </control>

@@ -72,6 +72,7 @@ class POVPlayer(MediaPlayer):
 			self.title, self.year = self.meta_get('title'), self.meta_get('year')
 			self.mediatype, self.tvdb_id = self.meta_get('mediatype'), self.meta_get('tvdb_id')
 			self.season, self.episode = self.meta_get('season', ''), self.meta_get('episode', '')
+			self.resume_seconds = 0   # R10.55.3 FIX C: set by check_bookmarks() when the bookmark has a stop time
 			# A series-details restart starts at zero without deleting the stored bookmark.
 			if resume_action == 'restart' or any(i in self.meta for i in ('random', 'random_continual')): bookmark = 0
 			else: bookmark = self.check_bookmarks(force_resume=resume_action == 'resume')
@@ -82,7 +83,13 @@ class POVPlayer(MediaPlayer):
 			listitem.setLabel(self.title)
 			listitem.setArt(art_infodict(self.meta, self.art_provider, meta_user_info()))
 			listitem.setPath(url)
-			listitem.setProperty('StartPercent', str(bookmark))
+			# R10.55.3 FIX C: Kodi 21 reads a string StartPercent as a whole number (CVariant::asDouble -> str2uint64: "14.9"
+			# is 14), so every resume went back to the whole percent (up to 1 % of the runtime). When the bookmark has its
+			# stop time, StartOffset (seconds, decimals kept) starts where set_bookmark's percent points; Kodi zeroes the
+			# offset when a StartPercent is present, so then none is set. Bookmarks without a time (Trakt / MDBList progress)
+			# and 0 (start at the beginning) keep StartPercent as before.
+			if bookmark and self.resume_seconds > 0: listitem.setProperty('StartOffset', '%.3f' % self.resume_seconds)
+			else: listitem.setProperty('StartPercent', str(bookmark))
 
 			self.playback_event = False
 			if previous is None:
@@ -333,6 +340,9 @@ class POVPlayer(MediaPlayer):
 		resume_check = float(resume_point)
 		if not resume_check: return 0
 		percent = str(resume_point)
+		# R10.55.3 FIX C: set_bookmark stores the stop time and the percent of (stop time - 5 s): resume at that second
+		try: self.resume_seconds = max(0.0, float(curr_time) - 5)
+		except (TypeError, ValueError): self.resume_seconds = 0
 		raw_time = float(curr_time)
 		if watched_indicators in (1, 2): resume_point = '%s%%' % str(percent)
 		else: resume_point = sec2time(raw_time, n_msec=0)

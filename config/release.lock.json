@@ -1,7 +1,7 @@
 {
  "_comment": "Every input of a release build. tools/build_release.py reads nothing else. Change a version here and in the overlay addon.xml together.",
- "release": "7 (release 6 + the build in daily use on the TV = snapshot R10.51-plot-text-2026-11-18; Setup 1.0.6 with the R10.44 release-only Setup changes and the R10.48b key files, unchanged in R10.51)",
- "previous_release": "6",
+ "release": "8 (release 7 + the build in daily use on both Shields = snapshot R10.57-fixes-2026-11-21: R10.52, R10.53, R10.54, R10.53.1, R10.55, R10.55.1-R10.55.4, R10.56, R10.55.5, R10.57; Setup 1.0.7 ships R10.57's NetflixExitConfirm.xml key file)",
+ "previous_release": "7",
  "github_user": "PaulGitHitGub",
  "repo_slug": "ChadFlix-Kodi-Skin",
  "repository_addon": "repository.chadflix",
@@ -9,15 +9,15 @@
   "plugin.program.autocompletion": "2.1.2"
  },
  "previous_versions": {
-  "skin.arctic.fuse.3": "3.99.418.6",
-  "plugin.video.pov": "6.99.1103.5",
-  "script.chadflix.setup": "1.0.5",
+  "skin.arctic.fuse.3": "3.99.418.7",
+  "plugin.video.pov": "6.99.1103.6",
+  "script.chadflix.setup": "1.0.6",
   "repository.chadflix": "1.0.1"
  },
  "addons": [
   {
    "id": "plugin.video.pov",
-   "version": "6.99.1103.6",
+   "version": "6.99.1103.7",
    "source": {
     "type": "upstream+overlay",
     "upstream": {
@@ -38,9 +38,9 @@
     "zip": "zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip",
     "sha256": "5c1a7d8e6cb89366fe9226db4f9e632e6413829f73cc836e705a7e0f61b736d1",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/0781b0f0c1e7aeea9c10c655f69bd0265631853e/omega/zips/plugin.video.themoviedb.helper/plugin.video.themoviedb.helper-6.20.8.zip",
      "sha256": "dd50ba2a474cf040cb960397bd1973e21750477e6d32158ccb78e24f4bc36d6e",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
@@ -61,9 +61,9 @@
     "zip": "zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip",
     "sha256": "c125af8cc180b4a57f6f41be4affbc37be59c9a6ce0423e556491d86d690747e",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/00f4160e62ea3dfa6b2f399c8a4ba2f58d903448/omega/zips/resource.font.robotocjksc/resource.font.robotocjksc-0.0.3.zip",
      "sha256": "58c3e32cafbbf0984896c4ab317c820e555f3deacae977598e4a03a0f8139743",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
@@ -75,9 +75,9 @@
     "zip": "zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip",
     "sha256": "e7288ecb941c8b84eac669a041867c7b82243b8911c59ffa2ea05707822328bf",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/02954377908f657cda6d509e7692572e5e97f07a/repo/zips/resource.images.arctic.splash/resource.images.arctic.splash-1.1.0.zip",
      "sha256": "3d5f377f4c0c1e0459948b1b1fc635038fa9a5a8fffbc1d60aed505b62d34714",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
@@ -89,16 +89,16 @@
     "zip": "zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip",
     "sha256": "c67e224f8e2f18c7fd8006e574345bef532eb209056e83570232777457c11f68",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/repo/zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/cb876b5273ca2a7943f731448d19cb7af28fd1a1/repo/zips/resource.images.arctic.weather/resource.images.arctic.weather-1.0.4.zip",
      "sha256": "a7e84af8747611c8517bfb278b7610053653c95107a10307dc48ee15e6cef0c4",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
   {
    "id": "script.chadflix.setup",
    "name": "ChadFlix Setup",
-   "version": "1.0.6",
+   "version": "1.0.7",
    "requires": [
     "skin.arctic.fuse.3",
     "plugin.video.pov",
@@ -121,9 +121,9 @@
     "zip": "zips/script.module.infotagger/script.module.infotagger-0.1.0.zip",
     "sha256": "7af295508d29b7682587567824be57eb02220018ba469045f08278e420e7be3a",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.infotagger/script.module.infotagger-0.1.0.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/38bef10e25e54bc618b202841d8582a34a2f3808/omega/zips/script.module.infotagger/script.module.infotagger-0.1.0.zip",
      "sha256": "82bf72ad2e8184e4a560135d7fa2ea1f37d95a0a7524100554da527f816ca876",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
@@ -135,9 +135,9 @@
     "zip": "zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip",
     "sha256": "d4fc3dcc512fc164c616c1a0975cd4ccafd397531db8b28c5db051b386da28a9",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/094e732133f8a3f53f425cdde37e0e1f6c655c7e/omega/zips/script.module.jurialmunkey/script.module.jurialmunkey-0.2.35.zip",
      "sha256": "80302314cdbc5a75611b0c2866eb1c7b4e93ccadaf20208ef7eb79b79c1fb749",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
@@ -149,9 +149,9 @@
     "zip": "zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip",
     "sha256": "20ec3e8f9f0a852b478e13bab264aa2e3e5e75fe31d80a3fb11c267fa9d08e01",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/e1ee43587b370382e05decf601f6e9fa08d77559/omega/zips/script.module.tmdbhelper.sync.mdblist/script.module.tmdbhelper.sync.mdblist-1.1.4.zip",
      "sha256": "b8175017513f7540af1a4f4d33af3967b59527f187b5d69060d98f8286faf572",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
@@ -163,9 +163,9 @@
     "zip": "zips/script.skinvariables/script.skinvariables-2.2.12.zip",
     "sha256": "7e62ea8d9e259927b3cccff4d2fdf027e7962338091ab2f754ea4906146f1c52",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.skinvariables/script.skinvariables-2.2.12.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/dbd478534771ae342743afcddf1d13e3615277ce/omega/zips/script.skinvariables/script.skinvariables-2.2.12.zip",
      "sha256": "caa15464788667aed0f8dea5942bbe8c6fb93c6df11b46dad02ed42b256304fe",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
@@ -177,15 +177,15 @@
     "zip": "zips/script.texturemaker/script.texturemaker-0.2.11.zip",
     "sha256": "15fa05a9192ec88a90984a9354f0e49e29fb227c2fad2fcacfb12b4458ccdcd1",
     "upstream": {
-     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/omega/zips/script.texturemaker/script.texturemaker-0.2.11.zip",
+     "url": "https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/63e5c7560d1c51108849418be702250ecc9e100f/omega/zips/script.texturemaker/script.texturemaker-0.2.11.zip",
      "sha256": "051bca651c467901b12fcae56ca430402427149d801fa7a7cfd1254d386a738b",
-     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14)"
+     "note": "unmodified upstream add-on: every file equals the upstream archive (tools/verify_upstream.py, 2026-11-14); URL pinned to an upstream commit 2026-11-21 (the master links can disappear when upstream moves on)"
     }
    }
   },
   {
    "id": "skin.arctic.fuse.3",
-   "version": "3.99.418.7",
+   "version": "3.99.418.8",
    "source": {
     "type": "upstream+overlay",
     "upstream": {

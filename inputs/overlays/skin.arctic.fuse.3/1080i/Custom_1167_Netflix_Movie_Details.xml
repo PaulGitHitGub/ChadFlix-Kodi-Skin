@@ -6,6 +6,7 @@
     <onunload>ClearProperty(Netflix.Movie.Plot,Home)</onunload>
     <onunload>ClearProperty(Netflix.Movie.Meta,Home)</onunload>
     <onunload>ClearProperty(Netflix.Movie.Backdrop,Home)</onunload>
+    <onunload>ClearProperty(Netflix.Movie.BackdropQuick,Home)</onunload>
     <onunload>ClearProperty(Netflix.Movie.Poster,Home)</onunload>
     <onunload>ClearProperty(Netflix.Movie.Logo,Home)</onunload>
     <onunload>ClearProperty(Netflix.Movie.Action,Home)</onunload>
@@ -88,6 +89,15 @@
             <texture colordiffuse="FF080808">common/white.png</texture>
             <visible>!$EXP[Netflix_Cover_Held]</visible>
         </control>
+        <!-- R10.54: the browse-size backdrop the row already loaded (netflix_movie_details.show_movie), under the full-size
+             one while that downloads, as on the show page: never text on black. -->
+        <control type="image">
+            <left>0</left>
+            <right>0</right>
+            <aspectratio align="right">scale</aspectratio>
+            <texture background="true">$INFO[Window(Home).Property(Netflix.Movie.BackdropQuick)]</texture>
+            <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.BackdropQuick))</visible>
+        </control>
         <control type="image">
             <left>0</left>
             <right>0</right>
@@ -163,8 +173,11 @@
                     <label>$INFO[Window(Home).Property(Netflix.Movie.Meta)]</label>
                     <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Meta))</visible>
                 </control>
+                <!-- R10.54: shown only while the page carries no copy of its own (the row below): a page that opened with its
+                     ratings (a reopen, or remembered from this movie's last page) keeps that row, so its ratings never blink
+                     when TMDb Helper's lookup ends (this row's items would fade in again). -->
                 <control type="grouplist">
-                    <visible>$EXP[Exp_TMDbHelper_IsData] + [!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + String.IsEqual(Window(Home).Property(Netflix.Movie.ID),Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_id)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_type),movie) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdatingRatings))] + [!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating))]</visible>
+                    <visible>$EXP[Exp_TMDbHelper_IsData] + $EXP[Exp_Netflix_MovieRatingsLive] + String.IsEmpty(Window(Home).Property(Netflix.Movie.IMDb_Rating)) + String.IsEmpty(Window(Home).Property(Netflix.Movie.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(Netflix.Movie.Letterboxd_Rating))</visible>
                     <top>7</top>
                     <width>675</width>
                     <height>34</height>
@@ -198,9 +211,10 @@
                 <!-- R10.9: the same row from the page's own copy (Netflix.Movie.*_Rating, set by show_movie() when the page
                      reopens after playback or a trailer), shown only when the row above cannot show: TMDb Helper's
                      monitor describes the browse focus under the page, which is not this title after a return.
+                     R10.54: also remembered from this movie's last page (show_movie); shown whenever the page has a copy.
                      Same sizes, icons and gaps as Netflix_Focused_Rating, so the two rows look identical. -->
                 <control type="grouplist">
-                    <visible>$EXP[Exp_TMDbHelper_IsData] + ![[!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID)) + String.IsEqual(Window(Home).Property(Netflix.Movie.ID),Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_id)) + String.IsEqual(Window(Home).Property(TMDbHelper.ListItem.monitor.tmdb_type),movie) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdating)) + String.IsEmpty(Window(Home).Property(TMDbHelper.IsUpdatingRatings))] + [!String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.IMDb_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.RottenTomatoes_Rating)) | !String.IsEmpty(Window(Home).Property(TMDbHelper.ListItem.Letterboxd_Rating))]] + [!String.IsEmpty(Window(Home).Property(Netflix.Movie.IMDb_Rating)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.RottenTomatoes_Rating)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.Letterboxd_Rating))]</visible>
+                    <visible>$EXP[Exp_TMDbHelper_IsData] + [!String.IsEmpty(Window(Home).Property(Netflix.Movie.IMDb_Rating)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.RottenTomatoes_Rating)) | !String.IsEmpty(Window(Home).Property(Netflix.Movie.Letterboxd_Rating))]</visible>
                     <top>7</top>
                     <width>675</width>
                     <height>34</height>
@@ -276,12 +290,29 @@
                         </control>
                     </control>
                 </control>
+                <!-- R10.54: the ratings line's place (same top and height as the two rows above), held while neither row can show,
+                     so the ratings fade into it and nothing moves. Only once ratings have been seen in this Kodi session
+                     (Netflix.Ratings.Seen: netflix_movie_details.harvest_ratings, netflix_series.py): with ratings off, no gap.
+                     Draws nothing. -->
+                <control type="image">
+                    <top>7</top>
+                    <width>1</width>
+                    <height>34</height>
+                    <texture />
+                    <visible>$EXP[Exp_TMDbHelper_IsData] + !String.IsEmpty(Window(Home).Property(Netflix.Ratings.Seen)) + !$EXP[Exp_Netflix_MovieRatingsLive] + String.IsEmpty(Window(Home).Property(Netflix.Movie.IMDb_Rating)) + String.IsEmpty(Window(Home).Property(Netflix.Movie.RottenTomatoes_Rating)) + String.IsEmpty(Window(Home).Property(Netflix.Movie.Letterboxd_Rating))</visible>
+                </control>
                 <!-- 1 to 5 lines; a longer description stops after the fifth line (Read Full Description removed). -->
                 <!-- Long description: two identical boxes share this slot (same text, size and position, so layout cannot change).
-                         Quiet box (this one): shown while a key was pressed in the last second or focus is off the buttons.
-                         Scrolling box (next): shown when the page is still and focus is on the buttons; autoscroll starts delay ms
-                         after it appears, moves one line per time ms, holds repeat ms at the end, fades and returns to the top.
-                         Hiding a textbox resets its scroll position, so any key press puts the text back on top. -->
+                         Quiet box (this one): shown while a key was pressed in the last second, after 30 s without a key press,
+                         or while focus is off the buttons.
+                         Scrolling box (next): shown from 1 s to 30 s without a key press while focus is on the buttons; autoscroll
+                         starts delay ms after it appears, moves one line per time ms, holds repeat ms at the end, fades and returns
+                         to the top. It is limited to 30 s because a running autoscroll redraws the whole page every frame (about
+                         0.9 of a core on the Shield). Plots of up to 12 lines (about 530 characters) get at least one full pass
+                         with the hold and fade. At 30 s the text goes back to the top: unseen when the box is already at the top,
+                         otherwise a jump without the fade (as after a key press), which cuts short a second pass of a shorter plot
+                         and the first pass of a plot over 12 lines.
+                         Hiding a textbox resets its scroll position, so any key press puts the text back on top and starts again. -->
                 <control type="textbox">
                     <top>13</top>
                     <width>640</width>
@@ -290,7 +321,7 @@
                     <textcolor>FFE7E7E7</textcolor>
                     <label>$INFO[Window(Home).Property(Netflix.Movie.Plot)]</label>
                     <autoscroll>false</autoscroll>
-                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Plot)) + ![System.IdleTime(1) + ControlGroup(14).HasFocus + !Control.HasFocus(30)]</visible>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Plot)) + ![System.IdleTime(1) + !System.IdleTime(30) + ControlGroup(14).HasFocus + !Control.HasFocus(30)]</visible>
                 </control>
                 <control type="textbox">
                     <top>13</top>
@@ -300,7 +331,7 @@
                     <textcolor>FFE7E7E7</textcolor>
                     <label>$INFO[Window(Home).Property(Netflix.Movie.Plot)]</label>
                     <autoscroll delay="4500" time="2500" repeat="5000">true</autoscroll>
-                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Plot)) + System.IdleTime(1) + ControlGroup(14).HasFocus + !Control.HasFocus(30)</visible>
+                    <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.Plot)) + System.IdleTime(1) + !System.IdleTime(30) + ControlGroup(14).HasFocus + !Control.HasFocus(30)</visible>
                 </control>
                 <control type="label">
                     <top>8</top>
@@ -479,13 +510,24 @@
                         <visible>!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))</visible>
                         <onfocus>ClearProperty(Netflix.Movie.QualityOpen,Home)</onfocus>
                         <onleft>noop</onleft>
+                        <!-- R10.53: the menu opens in the frame of the key press (focus through a zero-second alarm: the list is
+                             visible on the next frame); open_movie_quality() only starts the check, and leaves the menu
+                             alone when it was closed again meanwhile or focus already moved in it. -->
+                        <onright>SetProperty(Netflix.Movie.QualityOpen,true,Home)</onright>
+                        <onright condition="String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),idle)">SetProperty(Netflix.Movie.QualityState,checking,Home)</onright>
+                        <onright>AlarmClock(netflix_quality_focus,SetFocus(30,0,absolute),00:00,silent)</onright>
                         <onright>RunScript(special://skin/extras/netflix_movie_details.py,open-quality)</onright>
                         <onup>SetFocus(17)</onup>
                         <ondown condition="String.IsEqual(Window(Home).Property(Netflix.Movie.Action),Resume)">13</ondown>
                         <ondown condition="System.AddonIsEnabled(plugin.video.youtube)">12</ondown>
                         <ondown>11</ondown>
-                        <!-- R10 (review M4): no script starts in the 2 s a POV request is leaving (netflix_pov_leaving). -->
-                        <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play)</onclick>
+                        <include content="Netflix_Movie_Loader_Back"><param name="focus">10</param></include>
+                        <!-- R10 (review M4): no script starts in the 2 s a POV request is leaving (netflix_pov_leaving).
+                             R10.53: the loader goes up from here (Includes_Netflix_Playback.xml, Netflix_Movie_Play_Request). -->
+                        <include content="Netflix_Movie_Play_Request">
+                            <param name="open">String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),ready) + !String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityHighestRes))</param>
+                            <param name="command">play</param>
+                        </include>
                     </control>
                     <control type="image">
                         <left>284</left><top>15</top><width>22</width><height>22</height>
@@ -519,7 +561,9 @@
                             <onleft>ClearProperty(Netflix.Movie.QualityOpen,Home)</onleft>
                             <onleft>10</onleft>
                             <onback>ClearProperty(Netflix.Movie.QualityOpen,Home)</onback>
-                            <onback>10</onback>
+                            <!-- R10.53 (re-review): with a loader up the include below handles Back (Play is hidden then) -->
+                            <onback condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading)) | String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">10</onback>
+                            <include content="Netflix_Movie_Loader_Back"><param name="focus">10</param></include>
                             <onright>noop</onright><onup>noop</onup><ondown>noop</ondown>
                             <itemlayout width="560" height="84" infoupdate="250">
                                 <control type="label">
@@ -605,22 +649,33 @@
                                 <item id="1">
                                     <label>Highest Quality</label>
                                     <property name="QualityTier">Highest</property>
-                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-highest)</onclick>
+                                    <include content="Netflix_Movie_Play_Request">
+                                        <param name="open">String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),ready)</param>
+                                        <param name="command">play-highest</param>
+                                    </include>
                                 </item>
                                 <item id="2">
                                     <label>Medium Quality</label>
                                     <property name="QualityTier">Medium</property>
-                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-medium)</onclick>
+                                    <include content="Netflix_Movie_Play_Request">
+                                        <param name="open">String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),ready)</param>
+                                        <param name="command">play-medium</param>
+                                    </include>
                                 </item>
                                 <item id="3">
                                     <label>Low Quality</label>
                                     <property name="QualityTier">Lowest</property>
-                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-lowest)</onclick>
+                                    <include content="Netflix_Movie_Play_Request">
+                                        <param name="open">String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),ready)</param>
+                                        <param name="command">play-lowest</param>
+                                    </include>
                                 </item>
                                 <item id="4">
                                     <label>All Sources</label>
                                     <property name="QualityTier">All</property>
-                                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-all)</onclick>
+                                    <include content="Netflix_Movie_Play_Request">
+                                        <param name="command">play-all</param>
+                                    </include>
                                 </item>
                             </content>
                         </control>
@@ -644,7 +699,12 @@
                     <onup>10</onup>
                     <ondown condition="System.AddonIsEnabled(plugin.video.youtube)">12</ondown>
                     <ondown>11</ondown>
-                    <onclick condition="!System.HasAlarm(netflix_pov_leaving)">RunScript(special://skin/extras/netflix_movie_details.py,play-restart)</onclick>
+                    <include content="Netflix_Movie_Loader_Back"><param name="focus">13</param></include>
+                    <include content="Netflix_Movie_Play_Request">
+                        <param name="open">String.IsEqual(Window(Home).Property(Netflix.Movie.QualityState),ready) + !String.IsEmpty(Window(Home).Property(Netflix.Movie.QualityHighestRes))</param>
+                        <param name="resume">false</param>
+                        <param name="command">play-restart</param>
+                    </include>
                 </control>
                 <control type="button" id="12">
                     <width>320</width>
@@ -662,7 +722,19 @@
                     <onup condition="!String.IsEmpty(Window(Home).Property(Netflix.Movie.ID))">10</onup>
                     <onup>noop</onup>
                     <ondown>11</ondown>
-                    <onclick>RunScript(special://skin/extras/netflix_movie_details.py,trailer)</onclick>
+                    <include content="Netflix_Movie_Loader_Back"><param name="focus">12</param></include>
+                    <!-- R10.53: the trailer's loader goes up from here too (play_trailer() adopts it or takes it down); no focus
+                         park, the trailer has no cancel. Same guard on every line (conditions are read before any action). -->
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.Res,Home)</onclick>
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.SpecA,Home)</onclick>
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.SpecB,Home)</onclick>
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.Watched,Home)</onclick>
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">SetProperty(Netflix.Play.Verb,Trailer,Home)</onclick>
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">SetProperty(Netflix.Play.Phase,open,Home)</onclick>
+                    <!-- R10.55.2 FIX 4: a new press is not withdrawn (Back sets Netflix.Play.Withdrawn) -->
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.Play.Withdrawn,Home)</onclick>
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">SetProperty(Netflix.Play.Loading,skin,Home)</onclick>
+                    <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">RunScript(special://skin/extras/netflix_movie_details.py,trailer)</onclick>
                 </control>
                 <control type="button" id="11">
                     <width>320</width>
@@ -703,6 +775,8 @@
             <onleft condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">10</onleft>
             <onright condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">10</onright>
             <onclick condition="String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">SetFocus(10)</onclick>
+            <!-- R10.55.2 FIX 4: mark the withdrawal first (netflix_movie_details.py WITHDRAWN) -->
+            <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">SetProperty(Netflix.Play.Withdrawn,true,Home)</onback>
             <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play) + String.IsEqual(Window(Home).Property(Netflix.PlaybackCover),Window(Home).Property(Netflix.Play.Loading))">ClearProperty(Netflix.PlaybackCover,Home)</onback>
             <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play)">ClearProperty(Netflix.Play.Loading,Home)</onback>
             <onback condition="!String.IsEqual(Window(Home).Property(Netflix.Play.Phase),play) | String.IsEmpty(Window(Home).Property(Netflix.Play.Loading))">AlarmClock(netflix_loader_back,SetFocus(10),00:00,silent)</onback>

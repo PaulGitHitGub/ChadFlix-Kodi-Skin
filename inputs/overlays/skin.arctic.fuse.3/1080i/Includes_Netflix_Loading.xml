@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- R10.12-loading-look: ONE look for every card-shaped wait (design: staged/loading-look-design/DESIGN.md, Option B).
      Rules, all from here:
-       fill     FF222222 (the grey the skin already puts under every loaded poster)
+       fill     FF141414 (R10.56; R10.12 used FF222222, the grey under every loaded poster)
        shape    the SAME diffuse mask as the loaded art (poster, landscape, square = common/white.png)
        in/out   instant in; the host's group fades it out in 120 ms (every host group carries that Hidden animation)
        sliver   kept in the scroll direction by the host (rows: the 6th card is cut by the screen edge)
        sweep    ONE moving highlight per card row (Netflix_Loading_Sweep below), only after 400 ms of waiting (the GIF's first 10 frames are flat)
-     Option A (flat cards, no motion) = empty the <definition> of Netflix_Loading_Sweep. That is the only place to edit. -->
+     R10.56-loading-look (owner's pick A, "Quiet shimmer", 20 Nov): fill FF141414 (was FF222222), and the sweep is back, slower and fainter:
+       extras/loading/sweep-dark-row.gif / sweep-dark-col.gif, #141414 -> #1F1F1F, flat for its first 600 ms (frame 0), one pass, 3.4 s loop,
+       always through the card-shaped masks (never in the gaps). My Lists' rows have it too (Includes_Home.xml, masks mask-ml-*.png).
+     FALLBACK "A flat" (no motion, dark cards): delete the ONE line marked "A-FLAT" inside Netflix_Loading_Sweep below (its <definition> is then
+       empty). Nothing else changes: the masks / GIFs simply stop being used. -->
 <includes>
 
     <!-- One flat card. mask: the final art's diffuse mask (square card: leave the default, an opaque white image). -->
@@ -20,7 +24,7 @@
         <definition>
             <control type="image">
                 <left>$PARAM[left]</left><top>$PARAM[top]</top><width>$PARAM[width]</width><height>$PARAM[height]</height>
-                <texture diffuse="$PARAM[mask]" colordiffuse="FF222222">common/white.png</texture>
+                <texture diffuse="$PARAM[mask]" colordiffuse="FF141414">common/white.png</texture>
                 <visible>$PARAM[visible]</visible>
             </control>
         </definition>
@@ -35,13 +39,13 @@
         <definition>
             <control type="image">
                 <left>$PARAM[left]</left><top>$PARAM[top]</top><width>$PARAM[width]</width><height>$PARAM[height]</height>
-                <texture border="11" colordiffuse="FF222222">special://skin/extras/loading/stub-pill.png</texture>
+                <texture border="11" colordiffuse="FF141414">special://skin/extras/loading/stub-pill.png</texture>
             </control>
         </definition>
     </include>
 
     <!-- THE SWEEP (one control per card row; remove its <definition> content to get Option A).
-         A tiny grey animated GIF (extras/loading/sweep-*.gif: the card fill with a soft lighter band travelling left to right) is stretched over
+         A tiny grey animated GIF (extras/loading/sweep-dark-*.gif: the card fill with a soft lighter band travelling left to right) is stretched over
          the row and shown through `mask`, a PNG with the row's card shapes. The highlight therefore exists only inside the cards: never in the margin,
          the gaps or over the fanart.
          "Only if the wait lasts more than 400 ms": the GIF restarts at its first frame every time this control is shown (measured on Kodi 21), and its
@@ -59,10 +63,11 @@
         <param name="width">1920</param>
         <param name="height">489</param>
         <param name="mask">mask-browse-row.png</param>
-        <param name="gif">sweep-row.gif</param>
+        <param name="gif">sweep-dark-row.gif</param>
         <param name="condition">true</param>
         <definition>
-            <!-- Option A: no sweep. The cards stay flat FF222222. -->
+            <!-- A-FLAT: delete the next line (and only it) to turn the sweep off everywhere. -->
+            <control type="image"><left>$PARAM[left]</left><top>$PARAM[top]</top><width>$PARAM[width]</width><height>$PARAM[height]</height><texture diffuse="special://skin/extras/loading/$PARAM[mask]">special://skin/extras/loading/$PARAM[gif]</texture><visible>$PARAM[condition]</visible><animation effect="fade" start="100" end="0" time="100">Hidden</animation></control>
         </definition>
     </include>
 
@@ -95,7 +100,7 @@
                 </control>
                 <control type="image">
                     <left>$PARAM[ring_inner]</left><top>4</top><width>295</width><height>481</height>
-                    <texture diffuse="diffuse/poster_w560_h820.png" colordiffuse="FF222222">common/white.png</texture>
+                    <texture diffuse="diffuse/poster_w560_h820.png" colordiffuse="FF141414">common/white.png</texture>
                     <visible>$PARAM[ring]</visible>
                 </control>
             </control>
@@ -103,8 +108,9 @@
     </include>
 
     <!-- When the Movies / Shows tab-switch cards (MyVideoNav.xml) are up: the moment Left/Right is pressed on the top tabs
-         until the new tab's rows arrive. One expression, used by the host group AND by its sweeps. -->
-    <expression name="Netflix_Loading_Tab_Overlay">[$EXP[Netflix_Movies_Catalog] | $EXP[Netflix_Shows_Catalog]] + $EXP[Netflix_Tab_Pending] + !String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)</expression>
+         until the new tab's rows arrive. One expression, used by the host group AND by its sweeps.
+         R10.56: never for a dwell onto My Lists (3734): that page is another window with its own skeleton; the Movies/Shows layout was wrong there. -->
+    <expression name="Netflix_Loading_Tab_Overlay">[$EXP[Netflix_Movies_Catalog] | $EXP[Netflix_Shows_Catalog]] + $EXP[Netflix_Tab_Pending] + !String.IsEqual(Window(Home).Property(Netflix.TabDwellTarget),3734) + !String.IsEqual(Window(Home).Property(Netflix.MoviesBoot.Pending),true)</expression>
 
     <!-- Show page, season / episode cards (Netflix_Series.xml, group at left 784 top 153): 3 cards 437x247, pitch 272, in the
          episode list's cells (3 px in), the loaded still's mask (landscape, corner 17), and the 55 px sliver of the 4th card the
@@ -118,7 +124,7 @@
             <include content="Netflix_Loading_Card"><param name="left">3</param><param name="top">816</param><param name="width">437</param><param name="height">55</param><param name="mask">special://skin/extras/loading/mask-landscape-sliver.png</param></include>
             <include content="Netflix_Loading_Sweep">
                 <param name="left">3</param><param name="top">0</param><param name="width">437</param><param name="height">871</param>
-                <param name="mask">mask-episode-col.png</param><param name="gif">sweep-col.gif</param>
+                <param name="mask">mask-episode-col.png</param><param name="gif">sweep-dark-col.gif</param>
                 <param name="condition">$PARAM[condition]</param>
             </include>
         </definition>
@@ -144,7 +150,7 @@
             <include content="Netflix_Loading_Card"><param name="left">792</param><param name="top">776</param><param name="width">240</param><param name="height">26</param><param name="mask">special://skin/extras/loading/mask-poster-sliver-240.png</param></include>
             <include content="Netflix_Loading_Sweep">
                 <param name="left">0</param><param name="top">0</param><param name="width">1032</param><param name="height">802</param>
-                <param name="mask">mask-related-grid.png</param><param name="gif">sweep-row.gif</param>
+                <param name="mask">mask-related-grid.png</param><param name="gif">sweep-dark-row.gif</param>
                 <param name="condition">$PARAM[condition]</param>
             </include>
         </definition>
@@ -171,34 +177,72 @@
             <include content="Netflix_Loading_Card"><param name="left">1504</param><param name="top">374</param><param name="width">226</param><param name="height">344</param><param name="mask">common/white.png</param></include>
             <include content="Netflix_Loading_Sweep">
                 <param name="left">4</param><param name="top">4</param><param name="width">1726</param><param name="height">344</param>
-                <param name="mask">mask-grid-row.png</param><param name="gif">sweep-row.gif</param>
+                <param name="mask">mask-grid-row.png</param><param name="gif">sweep-dark-row.gif</param>
                 <param name="condition">$PARAM[condition]</param>
             </include>
             <include content="Netflix_Loading_Sweep">
                 <param name="left">4</param><param name="top">374</param><param name="width">1726</param><param name="height">344</param>
-                <param name="mask">mask-grid-row.png</param><param name="gif">sweep-row.gif</param>
+                <param name="mask">mask-grid-row.png</param><param name="gif">sweep-dark-row.gif</param>
                 <param name="condition">$PARAM[condition]</param>
             </include>
         </definition>
     </include>
 
     <!-- Continue Watching, while its row is loading and was non-empty last time (Includes_Search.xml, Netflix_Continue_Row group; its list sits at
-         top 102): 8 poster cards 220x330 (pitch 236, first at x 70, the 8th cut by the screen edge) in the loaded tile's mask. -->
+         top 102): up to 8 poster cards 220x330 (pitch 236, first at x 70, the 8th cut by the screen edge) in the loaded tile's mask.
+         R10.56: as many cards as the row had last time (Skin.String(Netflix.CW.Count.<id>), kept by the netflix_cw_remember_<id> timers; 8 when not
+         known yet), and the sweep through a mask with exactly that many cards (mask-cw-row-<n>.png; 8 or more: mask-cw-row.png). id: 594 | 595. -->
     <include name="Netflix_Loading_CW_Row">
+        <param name="id">594</param>
         <param name="condition">true</param>
         <definition>
-            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
-            <include content="Netflix_Loading_Card"><param name="left">306</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
-            <include content="Netflix_Loading_Card"><param name="left">542</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
-            <include content="Netflix_Loading_Card"><param name="left">778</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
-            <include content="Netflix_Loading_Card"><param name="left">1014</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
-            <include content="Netflix_Loading_Card"><param name="left">1250</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
-            <include content="Netflix_Loading_Card"><param name="left">1486</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
-            <include content="Netflix_Loading_Card"><param name="left">1722</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">70</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),0)</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">306</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),1)</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">542</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),2)</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">778</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),3)</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1014</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),4)</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1250</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),5)</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1486</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),6)</param></include>
+            <include content="Netflix_Loading_Card"><param name="left">1722</param><param name="top">102</param><param name="width">220</param><param name="height">330</param><param name="mask">diffuse/poster_w480_h720.png</param><param name="visible">String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),7)</param></include>
             <include content="Netflix_Loading_Sweep">
                 <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
-                <param name="mask">mask-cw-row.png</param><param name="gif">sweep-row.gif</param>
-                <param name="condition">$PARAM[condition]</param>
+                <param name="mask">mask-cw-row-1.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + String.IsEqual(Skin.String(Netflix.CW.Count.$PARAM[id]),1)</param>
+            </include>
+            <include content="Netflix_Loading_Sweep">
+                <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
+                <param name="mask">mask-cw-row-2.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + String.IsEqual(Skin.String(Netflix.CW.Count.$PARAM[id]),2)</param>
+            </include>
+            <include content="Netflix_Loading_Sweep">
+                <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
+                <param name="mask">mask-cw-row-3.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + String.IsEqual(Skin.String(Netflix.CW.Count.$PARAM[id]),3)</param>
+            </include>
+            <include content="Netflix_Loading_Sweep">
+                <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
+                <param name="mask">mask-cw-row-4.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + String.IsEqual(Skin.String(Netflix.CW.Count.$PARAM[id]),4)</param>
+            </include>
+            <include content="Netflix_Loading_Sweep">
+                <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
+                <param name="mask">mask-cw-row-5.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + String.IsEqual(Skin.String(Netflix.CW.Count.$PARAM[id]),5)</param>
+            </include>
+            <include content="Netflix_Loading_Sweep">
+                <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
+                <param name="mask">mask-cw-row-6.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + String.IsEqual(Skin.String(Netflix.CW.Count.$PARAM[id]),6)</param>
+            </include>
+            <include content="Netflix_Loading_Sweep">
+                <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
+                <param name="mask">mask-cw-row-7.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + String.IsEqual(Skin.String(Netflix.CW.Count.$PARAM[id]),7)</param>
+            </include>
+            <include content="Netflix_Loading_Sweep">
+                <param name="left">0</param><param name="top">102</param><param name="width">1920</param><param name="height">330</param>
+                <param name="mask">mask-cw-row.png</param><param name="gif">sweep-dark-row.gif</param>
+                <param name="condition">[$PARAM[condition]] + [String.IsEmpty(Skin.String(Netflix.CW.Count.$PARAM[id])) | Integer.IsGreater(Skin.String(Netflix.CW.Count.$PARAM[id]),7)]</param>
             </include>
         </definition>
     </include>
